@@ -2,14 +2,21 @@
 """
 Very very very basic application
 """
-from flask import Flask
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return jsonify({
+        'meta': {
+            'source_repository': 'https://www.github.com/whitewhim2718/TopChef',
+            'version': '0.1dev',
+            'author': 'Michal Kononenko',
+            'email': "michalkononenko@gmail.com"
+        }
+    })
 
 
 @app.route('/users', methods=["GET"])
