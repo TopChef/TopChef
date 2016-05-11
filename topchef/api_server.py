@@ -30,7 +30,7 @@ def get_users():
 
     return jsonify({
         'data': {
-            'users': [user.short_json_representation for user in user_list]
+            'users': User.UserSchema(many=True).dump(user_list).data
         }
     })
 
