@@ -2,10 +2,11 @@
 """
 Very very very basic application
 """
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
 from .models import User
 from .config import ROOT_EMAIL, ROOT_USERNAME
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 
@@ -37,7 +38,28 @@ def get_users():
 
 @app.route('/users', methods=["POST"])
 def make_user():
-    return 'POST /users, no user made'
+    session = SESSION_FACTORY()
+
+    user, errors = User.UserSchema().load(request.json)
+
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    try:
+        session.add(user)
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        response = jsonify({'errors': 'A user with username %s already exists' % user.username})
+        response.status_code = 400
+        return response
+
+    response = jsonify({'data': {'user %s successfully created' % user.username}})
+    response.headers['Location'] = url_for('get_user_info', user.username)
+    response.status_code = 201
+    return response
 
 
 @app.route('/users/<username>', methods=["GET"])
