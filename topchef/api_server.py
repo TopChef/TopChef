@@ -3,6 +3,8 @@
 Very very very basic application
 """
 from flask import Flask, jsonify
+from .database import SESSION_FACTORY
+from .models import User
 
 app = Flask(__name__)
 
@@ -21,7 +23,15 @@ def hello_world():
 
 @app.route('/users', methods=["GET"])
 def get_users():
-    return '/users endpoint'
+    session = SESSION_FACTORY()
+
+    user_list = session.query(User).all()
+
+    return jsonify({
+        'data': {
+            'users': [user.short_json_representation for user in user_list]
+        }
+    })
 
 
 @app.route('/users', methods=["POST"])
