@@ -2,19 +2,37 @@
 """
 Very very very basic application
 """
-from flask import Flask
+from flask import Flask, jsonify
+from .database import SESSION_FACTORY, METADATA, ENGINE
+from .models import User
+from .config import ROOT_EMAIL, ROOT_USERNAME
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return jsonify({
+        'meta': {
+            'source_repository': 'https://www.github.com/whitewhim2718/TopChef',
+            'version': '0.1dev',
+            'author': 'Michal Kononenko',
+            'email': "michalkononenko@gmail.com"
+        }
+    })
 
 
 @app.route('/users', methods=["GET"])
 def get_users():
-    return '/users endpoint'
+    session = SESSION_FACTORY()
+
+    user_list = session.query(User).all()
+
+    return jsonify({
+        'data': {
+            'users': [user.short_json_representation for user in user_list]
+        }
+    })
 
 
 @app.route('/users', methods=["POST"])
@@ -61,5 +79,16 @@ def get_programs():
 def get_program_by_id(program_id):
     return 'Here is business logic to retrieve a program file with id %d' % program_id
 
-if __name__ == '__main__':
-    app.run()
+
+def create_root_user():
+    session = SESSION_FACTORY()
+    root_user = User(ROOT_USERNAME, ROOT_EMAIL)
+
+    if session.query(User).filter_by(username=ROOT_USERNAME).first() is None:
+        session.add(root_user)
+
+    session.commit()
+
+
+def create_metadata():
+    METADATA.create_all(bind=ENGINE)
