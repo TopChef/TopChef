@@ -3,8 +3,9 @@
 Very very very basic application
 """
 from flask import Flask, jsonify
-from .database import SESSION_FACTORY
+from .database import SESSION_FACTORY, METADATA, ENGINE
 from .models import User
+from .config import ROOT_EMAIL, ROOT_USERNAME
 
 app = Flask(__name__)
 
@@ -78,5 +79,12 @@ def get_programs():
 def get_program_by_id(program_id):
     return 'Here is business logic to retrieve a program file with id %d' % program_id
 
-if __name__ == '__main__':
-    app.run()
+
+def create_root_user():
+    session = SESSION_FACTORY()
+    root_user = User(ROOT_USERNAME, ROOT_EMAIL)
+    session.add(root_user)
+
+
+def create_metadata():
+    METADATA.create_all(bind=ENGINE)

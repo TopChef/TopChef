@@ -6,7 +6,7 @@ from .config import DATABASE_URI
 
 ENGINE = create_engine(DATABASE_URI)
 
-METADATA = MetaData()
+METADATA = MetaData(bind=ENGINE)
 
 SESSION_FACTORY = sessionmaker(bind=ENGINE)
 
