@@ -13,7 +13,7 @@ DEBUG = True
 BASE_DIRECTORY = os.path.abspath(os.path.curdir)
 
 # DATABASE
-DATABASE_URI = 'sqlite://%s/db.sqlite' % BASE_DIRECTORY
+DATABASE_URI = 'sqlite:////var/tmp/topchef_db.sqlite'
 
 
 # ROOT USER

@@ -83,7 +83,11 @@ def get_program_by_id(program_id):
 def create_root_user():
     session = SESSION_FACTORY()
     root_user = User(ROOT_USERNAME, ROOT_EMAIL)
-    session.add(root_user)
+
+    if session.query(User).filter_by(username=ROOT_USERNAME).first() is None:
+        session.add(root_user)
+
+    session.commit()
 
 
 def create_metadata():
