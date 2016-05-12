@@ -1,6 +1,6 @@
-#!/usr/bin/env python
 """
-Very very very basic application
+Contains the routing map for the API, along with function definitions for the
+endpoints
 """
 from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
@@ -13,13 +13,44 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
+    """
+    Returns metadata relating to the API, the maintainer, and the version
+
+    **Example Request**
+
+    .. sourcecode:: http
+
+        GET / HTTP/1.1
+        Content-Type: application/json
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            'meta':
+            {
+                "author": "Michal Kononenko"
+            }
+        }
+
+    :statuscode 200: The request completed successfully
+
+    :return: A Flask response with required metadata
+    :rtype: Flask.Response
+    """
     return jsonify({
         'meta': {
-            'source_repository': 'https://www.github.com/whitewhim2718/TopChef',
+            'source_repository':
+                'https://www.github.com/whitewhim2718/TopChef',
             'version': '0.1dev',
             'author': 'Michal Kononenko',
             'email': "michalkononenko@gmail.com"
-        }
+        },
+        'data': {}
     })
 
 

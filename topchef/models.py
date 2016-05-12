@@ -1,5 +1,7 @@
+from datetime import datetime
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from .database import users_table, METADATA
+from .database import users_table, jobs_table, METADATA
 from marshmallow import Schema, fields, post_load
 
 BASE = declarative_base(metadata=METADATA)
@@ -27,3 +29,16 @@ class User(BASE):
         return '<%s(username=%s, email=%s)>' % (
             self.__class__.__name__, self.username, self.email
         )
+
+
+class Job(BASE):
+    __table__ = jobs_table
+
+    id = __table__.job_id
+    date_created = __table__.date_created
+
+    owner = relationship(User, backref='jobs')
+
+    def __init__(self, priority, date_created=datetime.utcnow()):
+        self.date_created = date_created
+        self.priority = priority
