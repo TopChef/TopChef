@@ -2,6 +2,7 @@
 """
 Very very very basic application
 """
+from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
 from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
 from .models import User
@@ -15,10 +16,10 @@ app = Flask(__name__)
 def hello_world():
     return jsonify({
         'meta': {
-            'source_repository': 'https://www.github.com/whitewhim2718/TopChef',
-            'version': '0.1dev',
-            'author': 'Michal Kononenko',
-            'email': "michalkononenko@gmail.com"
+            'source_repository': SOURCE_REPOSITORY,
+            'version': VERSION,
+            'author': AUTHOR,
+            'email': AUTHOR_EMAIL
         }
     })
 
