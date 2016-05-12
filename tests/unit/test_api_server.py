@@ -1,5 +1,7 @@
 import pytest
 from topchef.api_server import app
+from topchef.models import User
+import json
 
 username = 'foo'
 job_id = 1
@@ -8,6 +10,11 @@ job_id = 1
 def client():
     client = app.test_client()
     return client
+
+@pytest.fixture
+def user():
+    user = User('test_user', 'test-user@test-user.com')
+    return user
 
 
 def framework(client, url):
@@ -23,9 +30,17 @@ def test_get_users(client):
     framework(client, '/users')
 
 
-def test_post_users(client):
-    response = client.post('/users')
-    assert response.status_code == 200
+class TestPostUsers(object):
+    def test_post_users(self, client, user, monkeypatch):
+        def patch_all():
+            return [user]
+
+        monkeypatch.setattr('sqlalchemy.orm.query.Query.first', patch_all)
+        monkeypatch.setattr('sqlalchemy.orm.session.Session.commit', lambda x: True)
+        response = client.post(
+            '/users', data=json.dumps(user.UserSchema().dump(user).data), headers={'Content-Type': 'application/json'}
+        )
+        assert response.status_code == 201
 
 
 def test_get_user_info(client):

@@ -40,6 +40,11 @@ def get_users():
 def make_user():
     session = SESSION_FACTORY()
 
+    if not request.json:
+        response = jsonify({'errors': 'The supplied data is not JSON'})
+        response.status_code = 400
+        return response
+
     user, errors = User.UserSchema().load(request.json)
 
     if errors:
@@ -56,8 +61,8 @@ def make_user():
         response.status_code = 400
         return response
 
-    response = jsonify({'data': {'user %s successfully created' % user.username}})
-    response.headers['Location'] = url_for('get_user_info', user.username)
+    response = jsonify({'data': 'user %s successfully created' % user.username})
+    response.headers['Location'] = url_for('get_user_info', username=user.username, _external=True)
     response.status_code = 201
     return response
 
