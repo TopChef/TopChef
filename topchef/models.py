@@ -42,3 +42,8 @@ class Job(BASE):
     def __init__(self, priority, date_created=datetime.utcnow()):
         self.date_created = date_created
         self.priority = priority
+
+    def __repr__(self):
+        return '<%s(priority=%d, date_created=%s)' % (
+            self.__class__.__name__, self.priority, self.date_created
+        )

@@ -56,6 +56,39 @@ def hello_world():
 
 @app.route('/users', methods=["GET"])
 def get_users():
+    """
+    Return the list of users on the system
+
+    **Example Request**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 GET
+        Content-Type: application/json
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "data": {
+                "users": [
+                    {
+                        "username": "root",
+                        "email": "root@root.com"
+                    }
+                ]
+            }
+        }
+
+    :statuscode 200: The request completed successfully
+
+    :return: A Flask response with the required data
+    :rtype: flask.Response
+    """
     session = SESSION_FACTORY()
 
     user_list = session.query(User).all()
@@ -69,6 +102,39 @@ def get_users():
 
 @app.route('/users', methods=["POST"])
 def make_user():
+    """
+    Create a new user
+
+    **Example Request**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 POST /users
+        Content-Type: application/json
+
+        {
+            "username": "foo",
+            "email": "foo@bar.com"
+        }
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 201 CREATED
+        Content-Type: application/json
+        Location: http://localhost/users/foo
+
+        {
+            'data': 'user foo successfully created'
+        }
+
+    :statuscode 201: The user was successfully created
+    :statuscode 400: The user did not post the correct data to create a user
+
+    :return: The correct Flask response
+    :rtype: Flask.Response
+    """
     session = SESSION_FACTORY()
 
     if not request.json:
@@ -139,6 +205,10 @@ def get_program_by_id(program_id):
 
 
 def create_root_user():
+    """
+    At boot time, create the root user and put the user in the database if
+    the root user doesn't exist
+    """
     session = SESSION_FACTORY()
     root_user = User(ROOT_USERNAME, ROOT_EMAIL)
 
@@ -149,4 +219,7 @@ def create_root_user():
 
 
 def create_metadata():
+    """
+    Using SQLAlchemy, build the schema in the database
+    """
     METADATA.create_all(bind=ENGINE)
