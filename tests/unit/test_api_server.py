@@ -2,6 +2,8 @@ import pytest
 from topchef.api_server import app
 from topchef.models import User
 import json
+from sqlalchemy.exc import IntegrityError
+import mock
 
 username = 'foo'
 job_id = 1
@@ -41,6 +43,32 @@ class TestPostUsers(object):
             '/users', data=json.dumps(user.UserSchema().dump(user).data), headers={'Content-Type': 'application/json'}
         )
         assert response.status_code == 201
+
+    def test_bad_json(self, client):
+        response = client.post(
+            '/users', data='{}', headers={'Content-Type': 'application/json'}
+        )
+
+        assert response.status_code == 400
+
+    def test_bad_load(self, client):
+        response = client.post(
+            '/users', data=json.dumps({'data': 'bad_data'}), headers={'Content-Type': 'application/json'}
+        )
+
+        assert response.status_code == 400
+
+    def test_commit_error(self, client, user, monkeypatch):
+        def kaboom(*args, **kwargs):
+            raise IntegrityError('Kaboom', ['params'], 'orig')
+
+        monkeypatch.setattr('sqlalchemy.orm.session.Session.add', kaboom)
+
+        response = client.post(
+            '/users', data=json.dumps(user.UserSchema().dump(user).data), headers={'Content-Type': 'application/json'}
+        )
+
+        assert response.status_code == 400
 
 
 def test_get_user_info(client):

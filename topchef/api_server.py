@@ -7,6 +7,7 @@ from .database import SESSION_FACTORY, METADATA, ENGINE
 from .models import User
 from .config import ROOT_EMAIL, ROOT_USERNAME
 from sqlalchemy.exc import IntegrityError
+from marshmallow import ValidationError
 
 app = Flask(__name__)
 
@@ -45,10 +46,10 @@ def make_user():
         response.status_code = 400
         return response
 
-    user, errors = User.UserSchema().load(request.json)
-
-    if errors:
-        response = jsonify({'errors': errors})
+    try:
+        user = User.UserSchema(strict=True).load(request.json).data
+    except (ValidationError, KeyError) as exc:
+        response = jsonify({'errors': str(exc)})
         response.status_code = 400
         return response
 
