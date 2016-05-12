@@ -3,6 +3,12 @@ Contains user-serviceable configuration parameters
 """
 import os
 
+# METADATA
+SOURCE_REPOSITORY = 'https://www.github.com/MichalKononenko/TopChef'
+VERSION = '0.1dev'
+AUTHOR = 'Michal Kononenko'
+AUTHOR_EMAIL = 'michalkononenko@gmail.com'
+
 # HOSTING PARAMETERS
 PORT = 5000
 HOSTNAME = 'localhost'

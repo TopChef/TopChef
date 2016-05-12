@@ -34,8 +34,8 @@ class User(BASE):
 class Job(BASE):
     __table__ = jobs_table
 
-    id = __table__.job_id
-    date_created = __table__.date_created
+    id = __table__.c.job_id
+    date_created = __table__.c.date_created
 
     owner = relationship(User, backref='jobs')
 
