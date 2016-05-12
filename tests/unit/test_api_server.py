@@ -26,7 +26,8 @@ def test_hello_world(client):
     framework(client, '/')
 
 
-def test_get_users(client):
+def test_get_users(client, user, monkeypatch):
+    monkeypatch.setattr('sqlalchemy.orm.query.Query.all', lambda x: [user])
     framework(client, '/users')
 
 

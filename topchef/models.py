@@ -15,7 +15,6 @@ class User(BASE):
         self.username = username
         self.email = email
 
-
     class UserSchema(Schema):
         username = fields.Str()
         email = fields.Email()
