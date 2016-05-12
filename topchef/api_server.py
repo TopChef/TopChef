@@ -2,7 +2,7 @@
 """
 Very very very basic application
 """
-from config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
+from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
 from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
 from .models import User
