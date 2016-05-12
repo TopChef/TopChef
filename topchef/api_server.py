@@ -2,24 +2,69 @@
 """
 Very very very basic application
 """
-from flask import Flask
+from flask import Flask, jsonify, request, url_for
+from .database import SESSION_FACTORY, METADATA, ENGINE
+from .models import User
+from .config import ROOT_EMAIL, ROOT_USERNAME
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return jsonify({
+        'meta': {
+            'source_repository': 'https://www.github.com/whitewhim2718/TopChef',
+            'version': '0.1dev',
+            'author': 'Michal Kononenko',
+            'email': "michalkononenko@gmail.com"
+        }
+    })
 
 
 @app.route('/users', methods=["GET"])
 def get_users():
-    return '/users endpoint'
+    session = SESSION_FACTORY()
+
+    user_list = session.query(User).all()
+
+    return jsonify({
+        'data': {
+            'users': User.UserSchema(many=True).dump(user_list).data
+        }
+    })
 
 
 @app.route('/users', methods=["POST"])
 def make_user():
-    return 'POST /users, no user made'
+    session = SESSION_FACTORY()
+
+    if not request.json:
+        response = jsonify({'errors': 'The supplied data is not JSON'})
+        response.status_code = 400
+        return response
+
+    user, errors = User.UserSchema().load(request.json)
+
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    try:
+        session.add(user)
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        response = jsonify({'errors': 'A user with username %s already exists' % user.username})
+        response.status_code = 400
+        return response
+
+    response = jsonify({'data': 'user %s successfully created' % user.username})
+    response.headers['Location'] = url_for('get_user_info', username=user.username, _external=True)
+    response.status_code = 201
+    return response
 
 
 @app.route('/users/<username>', methods=["GET"])
@@ -61,5 +106,16 @@ def get_programs():
 def get_program_by_id(program_id):
     return 'Here is business logic to retrieve a program file with id %d' % program_id
 
-if __name__ == '__main__':
-    app.run()
+
+def create_root_user():
+    session = SESSION_FACTORY()
+    root_user = User(ROOT_USERNAME, ROOT_EMAIL)
+
+    if session.query(User).filter_by(username=ROOT_USERNAME).first() is None:
+        session.add(root_user)
+
+    session.commit()
+
+
+def create_metadata():
+    METADATA.create_all(bind=ENGINE)
