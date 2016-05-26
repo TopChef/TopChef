@@ -70,7 +70,18 @@ def make_user():
 
 @app.route('/users/<username>', methods=["GET"])
 def get_user_info(username):
-    return '/users/<username> endpoint. Found user %s' % username
+    session = SESSION_FACTORY()
+    user = session.query(User).filter_by(username=username).first()
+
+    if user is None:
+        response = jsonify({'errors': 'Unable to find user with username %s' % username})
+        response.status_code = 404
+        return response
+
+    response = jsonify({
+        'data': User.DetailedUserSchema().dump(user).data
+    })
+    return response
 
 
 @app.route('/users/<username>/jobs', methods=["GET"])

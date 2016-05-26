@@ -27,3 +27,7 @@ class User(BASE):
         return '<%s(username=%s, email=%s)>' % (
             self.__class__.__name__, self.username, self.email
         )
+
+    class DetailedUserSchema(Schema):
+        username = fields.Str()
+        email = fields.Email()
