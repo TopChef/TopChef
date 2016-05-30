@@ -44,7 +44,8 @@ class TestPostUsers(object):
         assert response.status_code == 201
 
 
-def test_get_user_info(client):
+def test_get_user_info(client, user, monkeypatch):
+    monkeypatch.setattr('sqlalchemy.orm.query.Query.first', lambda x: user)
     response = client.get('/users/%s' % username)
     assert response.status_code == 200
 
