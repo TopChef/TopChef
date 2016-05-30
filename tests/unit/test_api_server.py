@@ -1,6 +1,6 @@
 import pytest
 from topchef.api_server import app
-from topchef.models import User
+from topchef.models import User, UnableToFindItemError
 import json
 
 username = 'foo'
@@ -50,10 +50,19 @@ def test_get_user_info(client, user, monkeypatch):
     assert response.status_code == 200
 
 
-def test_get_jobs_for_user(client, user, monkeypatch):
-    monkeypatch.setattr('topchef.models.User.jobs', [])
-    monkeypatch.setattr('topchef.models.User.from_session', lambda x, session: user)
-    framework(client, '/users/%s/jobs' % username)
+class TestGetJobsForUser(object):
+    def test_get_jobs_for_user(self, client, user, monkeypatch):
+        monkeypatch.setattr('topchef.models.User.jobs', [])
+        monkeypatch.setattr('topchef.models.User.from_session', lambda x, session: user)
+        framework(client, '/users/%s/jobs' % username)
+
+    def test_get_jobs_no_user(self, client, monkeypatch):
+        def kaboom(*args):
+            raise UnableToFindItemError('Kaboom')
+
+        monkeypatch.setattr('topchef.models.User.from_session', kaboom)
+        response = client.get('/users/foo/jobs')
+        assert response.status_code == 404
 
 
 def test_make_job_for_user(client):
