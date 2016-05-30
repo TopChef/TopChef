@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Table, Column, String, Integer
-from sqlalchemy import ForeignKey, DateTime
+from sqlalchemy import ForeignKey, DateTime, Enum
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
@@ -22,6 +22,8 @@ job_table = Table(
     'jobs', METADATA,
     Column('job_id', Integer, primary_key=True, nullable=False),
     Column('owner', String(30), ForeignKey('users.username'), nullable=False),
-    Column('due_date', DateTime, nullable=False, default=datetime.utcnow())
+    Column('due_date', DateTime, nullable=False, default=datetime.utcnow()),
+    Column('program', Integer),
+    Column('status', Enum('QUEUED', 'WORKING', 'FINISHED'))
 )
 

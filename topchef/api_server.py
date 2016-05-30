@@ -5,7 +5,7 @@ Very very very basic application
 from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
 from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
-from .models import User
+from .models import User, Job, UnableToFindItemError
 from .config import ROOT_EMAIL, ROOT_USERNAME
 from sqlalchemy.exc import IntegrityError
 
@@ -86,7 +86,18 @@ def get_user_info(username):
 
 @app.route('/users/<username>/jobs', methods=["GET"])
 def get_jobs_for_user(username):
-    return 'There will be jobs for user %s here' % username
+    session = SESSION_FACTORY()
+
+    try:
+        user = User.from_session(username, session)
+    except UnableToFindItemError:
+        response = jsonify({'errors': 'Unable to find user with username %s' % username})
+        response.status_code = 404
+        return response
+
+    response = jsonify({'data': Job.JobSchema(many=True).dump(user.jobs).data})
+    response.status_code = 200
+    return response
 
 
 @app.route('/users/<username>/jobs', methods=["POST"])
