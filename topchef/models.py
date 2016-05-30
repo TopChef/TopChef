@@ -66,7 +66,17 @@ class Job(BASE):
 
     job_owner = relationship(User, backref='jobs', lazy='dynamic', uselist=True)
 
+    def __init__(self, program, due_date):
+        self.due_date = due_date
+        self.program = program
+        self.status = 'PENDING'
+
     class JobSchema(Schema):
         id = fields.Int()
         due_date = fields.DateTime()
         status = fields.Str()
+        program = fields.Integer()
+
+        @post_load
+        def make_job(self, data):
+            return self.__class__(data['program'], data['due_date'])

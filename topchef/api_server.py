@@ -102,7 +102,40 @@ def get_jobs_for_user(username):
 
 @app.route('/users/<username>/jobs', methods=["POST"])
 def make_job_for_user(username):
-    return 'The User %s makes jobs here' % username
+    session = SESSION_FACTORY()
+
+    try:
+        user = User.from_session(username, session)
+    except UnableToFindItemError:
+        response = jsonify({'errors': 'Unable to find user with username %s' % username})
+        response.status_code = 404
+        return response
+
+    if not request.json:
+        response = jsonify({'errors': 'The request is not JSON'})
+        response.status_code = 400
+        return response
+
+    job, errors = Job.JobSchema().load(request.json)
+
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        response = jsonify({'errors': 'A job with ID %d already exists' % job.id})
+        response.status_code = 400
+        return response
+
+    response = jsonify({'data': 'job %d created successfully' % job.id})
+    response.headers['Location'] = url_for(get_job_details, username=user.username, _external=True)
+    return response
 
 
 @app.route('/users/<username>/jobs/<int:job_id>', methods=["GET"])
