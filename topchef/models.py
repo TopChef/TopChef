@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from .database import users_table, METADATA
+from .database import users_table, job_table, METADATA
 from marshmallow import Schema, fields, post_load
 
 BASE = declarative_base(metadata=METADATA)
@@ -31,3 +31,6 @@ class User(BASE):
     class DetailedUserSchema(Schema):
         username = fields.Str()
         email = fields.Email()
+
+class Job(BASE):
+    __table__ = job_table
