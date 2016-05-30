@@ -50,7 +50,9 @@ def test_get_user_info(client, user, monkeypatch):
     assert response.status_code == 200
 
 
-def test_get_jobs_for_user(client):
+def test_get_jobs_for_user(client, user, monkeypatch):
+    monkeypatch.setattr('topchef.models.User.jobs', [])
+    monkeypatch.setattr('topchef.models.User.from_session', lambda x, session: user)
     framework(client, '/users/%s/jobs' % username)
 
 
