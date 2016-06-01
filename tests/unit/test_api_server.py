@@ -1,7 +1,8 @@
 import pytest
 from topchef.api_server import app
-from topchef.models import User, UnableToFindItemError
+from topchef.models import User, Job
 import json
+from datetime import datetime
 
 username = 'foo'
 job_id = 1
@@ -14,8 +15,15 @@ def client():
 @pytest.fixture
 def user():
     user = User('test_user', 'test-user@test-user.com')
+    user.from_session = lambda x: user
     return user
 
+@pytest.fixture
+def job():
+    job = Job(1, datetime.utcnow())
+    job.id = 1
+    job.job_owner = user()
+    return job
 
 def framework(client, url):
     response = client.get(url)
@@ -39,7 +47,8 @@ class TestPostUsers(object):
         monkeypatch.setattr('sqlalchemy.orm.query.Query.first', patch_all)
         monkeypatch.setattr('sqlalchemy.orm.session.Session.commit', lambda x: True)
         response = client.post(
-            '/users', data=json.dumps(user.UserSchema().dump(user).data), headers={'Content-Type': 'application/json'}
+            '/users', data=json.dumps(user.UserSchema().dump(user).data),
+            headers={'Content-Type': 'application/json'}
         )
         assert response.status_code == 201
 
@@ -58,16 +67,32 @@ class TestGetJobsForUser(object):
 
     def test_get_jobs_no_user(self, client, monkeypatch):
         def kaboom(*args):
-            raise UnableToFindItemError('Kaboom')
+            raise User.UnableToFindItemError('Kaboom')
 
         monkeypatch.setattr('topchef.models.User.from_session', kaboom)
         response = client.get('/users/foo/jobs')
         assert response.status_code == 404
 
 
-def test_make_job_for_user(client):
-    response = client.post('/users/<username>/jobs')
-    assert response.status_code == 200
+def test_make_job_for_user(client, user, monkeypatch, job):
+    monkeypatch.setattr(
+        'topchef.models.User.from_session',
+        lambda x, session: user
+    )
+    monkeypatch.setattr(
+        'sqlalchemy.orm.Session.add', lambda *args: None
+    )
+    monkeypatch.setattr(
+        'sqlalchemy.orm.Session.commit', lambda *args: None
+    )
+
+    response = client.post(
+        '/users/foo/jobs',
+        data=job.JobSchema().dumps(job).data,
+        headers={'Content-Type': 'application/json'}
+    )
+
+    assert response.status_code == 201
 
 
 def test_get_job_details(client):

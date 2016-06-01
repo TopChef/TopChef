@@ -1,3 +1,8 @@
+"""
+Contains model classes for the API. These classes are atomic data types that
+have JSON representations written in marshmallow, and a single representation
+in the database.
+"""
 from sqlalchemy.ext.declarative import declarative_base
 from .database import users_table, job_table, METADATA
 from marshmallow import Schema, fields, post_load
@@ -6,18 +11,12 @@ from sqlalchemy.orm import relationship
 BASE = declarative_base(metadata=METADATA)
 
 
-class UnableToFindItemError(Exception):
-    """
-    Thrown if the constructor is unable to find a user with the given session
-    """
-    pass
-
-
 class User(BASE):
     __table__ = users_table
 
     username = __table__.c.username
     email = __table__.c.email
+    jobs = relationship('Job', backref='job_owner', lazy='dynamic')
 
     def __init__(self, username, email):
         self.username = username
@@ -26,24 +25,47 @@ class User(BASE):
     @classmethod
     def from_session(cls, username, session):
         """
-        Construct the user from a session
-        :param username:
-        :param session:
-        :return:
+        Construct the user from a given database session. If the user doesn't
+        exist in the DB, throw an error
+
+        :param str username: The username of the user to fetch
+        :param Session session: the session to use for the construction
+        :return: The user
+        :rtype: User
+        :raises: User.UnableToFindItemError if unable to retrieve the user
         """
         user = session.query(cls).filter_by(username=username).first()
 
         if not user or user is None:
-            raise UnableToFindItemError('Unable to find user with username %s' % username)
+            raise cls.UnableToFindItemError(
+                'Unable to find user with username %s' % username
+            )
 
         return user
 
+    class UnableToFindItemError(Exception):
+        """
+        Thrown if the constructor is unable to find a user with the given
+        session
+        """
+        pass
+
     class UserSchema(Schema):
+        """
+        Marshmallow schema responsible for providing a general schema, as well
+        as creating a new user
+        """
         username = fields.Str()
         email = fields.Email()
 
         @post_load
         def make_user(self, data):
+            """
+            Loader that takes in parsed JSON, and returns a new user
+
+            :param data: A dictionary with data used to make a user
+            :return:
+            """
             return User(data['username'], data['email'])
 
     def __repr__(self):
@@ -64,19 +86,24 @@ class Job(BASE):
     program = __table__.c.program
     status = __table__.c.status
 
-    job_owner = relationship(User, backref='jobs', lazy='dynamic', uselist=True)
-
-    def __init__(self, program, due_date):
+    def __init__(self, program, due_date, job_id=None):
         self.due_date = due_date
         self.program = program
         self.status = 'PENDING'
+        self.id = job_id
 
     class JobSchema(Schema):
         id = fields.Int()
-        due_date = fields.DateTime()
+        due_date = fields.DateTime(format="iso")
         status = fields.Str()
         program = fields.Integer()
 
         @post_load
         def make_job(self, data):
-            return self.__class__(data['program'], data['due_date'])
+            return Job(data['program'], data['due_date'], job_id=data['id'])
+
+    def __repr__(self):
+        return '<%s(id=%s, due_date=%s, program=%d, status=%s)>' % (
+            self.__class__.__name__, str(self.id), self.due_date.isoformat,
+            self.program, self.status
+        )

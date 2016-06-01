@@ -5,7 +5,7 @@ Very very very basic application
 from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
 from flask import Flask, jsonify, request, url_for
 from .database import SESSION_FACTORY, METADATA, ENGINE
-from .models import User, Job, UnableToFindItemError
+from .models import User, Job
 from .config import ROOT_EMAIL, ROOT_USERNAME
 from sqlalchemy.exc import IntegrityError
 
@@ -58,12 +58,21 @@ def make_user():
         session.commit()
     except IntegrityError:
         session.rollback()
-        response = jsonify({'errors': 'A user with username %s already exists' % user.username})
+        response = jsonify(
+            {
+                'errors':
+                    'A user with username %s already exists' % user.username
+            }
+        )
         response.status_code = 400
         return response
 
-    response = jsonify({'data': 'user %s successfully created' % user.username})
-    response.headers['Location'] = url_for('get_user_info', username=user.username, _external=True)
+    response = jsonify(
+        {'data': 'user %s successfully created' % user.username}
+    )
+    response.headers['Location'] = url_for(
+        'get_user_info', username=user.username, _external=True
+    )
     response.status_code = 201
     return response
 
@@ -90,7 +99,7 @@ def get_jobs_for_user(username):
 
     try:
         user = User.from_session(username, session)
-    except UnableToFindItemError:
+    except User.UnableToFindItemError:
         response = jsonify({'errors': 'Unable to find user with username %s' % username})
         response.status_code = 404
         return response
@@ -106,7 +115,7 @@ def make_job_for_user(username):
 
     try:
         user = User.from_session(username, session)
-    except UnableToFindItemError:
+    except User.UnableToFindItemError:
         response = jsonify({'errors': 'Unable to find user with username %s' % username})
         response.status_code = 404
         return response
@@ -134,7 +143,10 @@ def make_job_for_user(username):
         return response
 
     response = jsonify({'data': 'job %d created successfully' % job.id})
-    response.headers['Location'] = url_for(get_job_details, username=user.username, _external=True)
+    response.headers['Location'] = url_for(
+        'get_job_details', username=user.username, job_id=job.id, _external=True
+    )
+    response.status_code = 201
     return response
 
 
