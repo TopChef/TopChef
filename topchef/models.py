@@ -11,6 +11,14 @@ from sqlalchemy.orm import relationship
 BASE = declarative_base(metadata=METADATA)
 
 
+class UnableToFindItemError(Exception):
+    """
+    Thrown if the constructor is unable to find a user with the given
+    session
+    """
+    pass
+
+
 class User(BASE):
     __table__ = users_table
 
@@ -37,18 +45,11 @@ class User(BASE):
         user = session.query(cls).filter_by(username=username).first()
 
         if not user or user is None:
-            raise cls.UnableToFindItemError(
+            raise UnableToFindItemError(
                 'Unable to find user with username %s' % username
             )
 
         return user
-
-    class UnableToFindItemError(Exception):
-        """
-        Thrown if the constructor is unable to find a user with the given
-        session
-        """
-        pass
 
     class UserSchema(Schema):
         """
@@ -79,6 +80,9 @@ class User(BASE):
 
 
 class Job(BASE):
+    """
+    Base class for a programming job initiated by the user
+    """
     __table__ = job_table
 
     id = __table__.c.job_id
@@ -92,6 +96,15 @@ class Job(BASE):
         self.status = 'PENDING'
         self.id = job_id
 
+    @classmethod
+    def from_session(cls, job_id, session):
+        job = session.query(cls).filter_by(id=job_id).first()
+        if not job:
+            raise UnableToFindItemError(
+                'A job with id=%d could not be found' % job_id
+            )
+        return job
+
     class JobSchema(Schema):
         id = fields.Int()
         due_date = fields.DateTime(format="iso")
@@ -101,6 +114,13 @@ class Job(BASE):
         @post_load
         def make_job(self, data):
             return Job(data['program'], data['due_date'], job_id=data['id'])
+
+    class DetailedJobSchema(Schema):
+        id = fields.Int()
+        due_date = fields.DateTime(format='iso')
+        status = fields.Str()
+        program = fields.Integer()
+        job_owner = fields.Nested(User.UserSchema)
 
     def __repr__(self):
         return '<%s(id=%s, due_date=%s, program=%d, status=%s)>' % (

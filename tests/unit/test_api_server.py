@@ -1,16 +1,18 @@
 import pytest
 from topchef.api_server import app
-from topchef.models import User, Job
+from topchef.models import User, Job, UnableToFindItemError
 import json
 from datetime import datetime
 
 username = 'foo'
 job_id = 1
 
+
 @pytest.fixture
 def client():
     client = app.test_client()
     return client
+
 
 @pytest.fixture
 def user():
@@ -18,12 +20,14 @@ def user():
     user.from_session = lambda x: user
     return user
 
+
 @pytest.fixture
 def job():
     job = Job(1, datetime.utcnow())
     job.id = 1
     job.job_owner = user()
     return job
+
 
 def framework(client, url):
     response = client.get(url)
@@ -67,7 +71,7 @@ class TestGetJobsForUser(object):
 
     def test_get_jobs_no_user(self, client, monkeypatch):
         def kaboom(*args):
-            raise User.UnableToFindItemError('Kaboom')
+            raise UnableToFindItemError('Kaboom')
 
         monkeypatch.setattr('topchef.models.User.from_session', kaboom)
         response = client.get('/users/foo/jobs')
@@ -95,8 +99,17 @@ def test_make_job_for_user(client, user, monkeypatch, job):
     assert response.status_code == 201
 
 
-def test_get_job_details(client):
-    framework(client, '/users/%s/jobs/%d' % (username, job_id))
+def test_get_job_details(client, monkeypatch, job):
+    monkeypatch.setattr(
+        'sqlalchemy.orm.Query.first', lambda x: job
+    )
+    framework(client, '/jobs/%d' % job_id)
+
+
+def test_get_job_details_for_user(client, job, user, monkeypatch):
+    monkeypatch.setattr(
+        'topchef.models.User.from_session', lambda x, session: user
+    )
 
 
 def test_get_next_job(client):
