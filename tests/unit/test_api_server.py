@@ -99,6 +99,7 @@ def test_make_job_for_user(mock_user, client, monkeypatch, job):
     assert response.status_code == 201
     assert mock_user.called
 
+
 def test_get_job_details(client, monkeypatch, job):
     monkeypatch.setattr(
         'sqlalchemy.orm.Query.first', lambda x: job

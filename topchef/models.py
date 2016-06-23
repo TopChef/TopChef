@@ -3,6 +3,7 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
+from sqlalchemy import asc, desc
 from sqlalchemy.ext.declarative import declarative_base
 from .database import users_table, job_table, METADATA
 from marshmallow import Schema, fields, post_load
@@ -90,30 +91,45 @@ class Job(BASE):
     program = __table__.c.program
     status = __table__.c.status
 
-    def __init__(self, program, due_date, job_id=None):
+    def __init__(self, program, due_date, owner=None):
         self.due_date = due_date
         self.program = program
-        self.status = 'PENDING'
-        self.id = job_id
+        self.status = 'QUEUED'
+        self.job_owner = owner
 
     @classmethod
     def from_session(cls, job_id, session):
         job = session.query(cls).filter_by(id=job_id).first()
+
         if not job:
             raise UnableToFindItemError(
                 'A job with id=%d could not be found' % job_id
             )
         return job
 
+    @classmethod
+    def next_job(cls, user, session):
+        next_job = session.query(cls).filter(
+            cls.status == "QUEUED"
+        ).filter(
+            cls.job_owner == user
+        ).order_by(asc(cls.due_date)).first()
+
+        if next_job is None:
+            raise UnableToFindItemError('No next jobs located')
+
+        return next_job
+
     class JobSchema(Schema):
-        id = fields.Int()
+        id = fields.Int(required=False)
         due_date = fields.DateTime(format="iso")
         status = fields.Str()
         program = fields.Integer()
+        job_owner = fields.Nested(User.UserSchema)
 
         @post_load
         def make_job(self, data):
-            return Job(data['program'], data['due_date'], job_id=data['id'])
+            return Job(data['program'], data['due_date'])
 
     class DetailedJobSchema(Schema):
         id = fields.Int()

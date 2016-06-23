@@ -138,6 +138,7 @@ def make_job_for_user(username):
         response.status_code = 400
         return response
 
+    job.job_owner = user
     session.add(job)
 
     try:
@@ -203,7 +204,30 @@ def get_job_details_for_user(username, job_id):
 
 @app.route('/users/<username>/jobs/next', methods=["GET"])
 def get_next_job(username):
-    return "The Job user with username %s will be redirected to the next job" % username
+    session = SESSION_FACTORY()
+    try:
+        user = User.from_session(username, session)
+    except UnableToFindItemError:
+        response = jsonify({
+            'errors': 'Unable to find user with username %s' % username
+        })
+        response.status_code = 404
+        return response
+
+    try:
+        next_job = Job.next_job(user, session)
+    except UnableToFindItemError:
+        response = jsonify({
+            'errors': 'The user with username %s has no next job' % username
+        })
+        response.status_code = 404
+        return response
+
+    response = jsonify({
+        'data': next_job.DetailedJobSchema().dump(next_job).data
+    })
+
+    return response
 
 
 @app.route('/users/<username>/jobs/<int:job_id>', methods=["PATCH"])
