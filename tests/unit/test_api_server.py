@@ -3,6 +3,7 @@ from topchef.api_server import app
 from topchef.models import User, Job, UnableToFindItemError
 import json
 from datetime import datetime
+import mock
 
 username = 'foo'
 job_id = 1
@@ -64,25 +65,24 @@ def test_get_user_info(client, user, monkeypatch):
 
 
 class TestGetJobsForUser(object):
-    def test_get_jobs_for_user(self, client, user, monkeypatch):
+
+    @mock.patch('topchef.models.User.from_session', return_value=user())
+    def test_get_jobs_for_user(self, mock_constructor, client, monkeypatch):
         monkeypatch.setattr('topchef.models.User.jobs', [])
-        monkeypatch.setattr('topchef.models.User.from_session', lambda x, session: user)
         framework(client, '/users/%s/jobs' % username)
+        assert mock_constructor.called
 
-    def test_get_jobs_no_user(self, client, monkeypatch):
-        def kaboom(*args):
-            raise UnableToFindItemError('Kaboom')
-
-        monkeypatch.setattr('topchef.models.User.from_session', kaboom)
+    @mock.patch('topchef.models.User.from_session',
+                side_effect=UnableToFindItemError('Kaboom')
+    )
+    def test_get_jobs_no_user(self, mock_error, client):
         response = client.get('/users/foo/jobs')
         assert response.status_code == 404
+        assert mock_error.called
 
 
-def test_make_job_for_user(client, user, monkeypatch, job):
-    monkeypatch.setattr(
-        'topchef.models.User.from_session',
-        lambda x, session: user
-    )
+@mock.patch('topchef.models.User.from_session', return_value=user())
+def test_make_job_for_user(mock_user, client, monkeypatch, job):
     monkeypatch.setattr(
         'sqlalchemy.orm.Session.add', lambda *args: None
     )
@@ -97,7 +97,7 @@ def test_make_job_for_user(client, user, monkeypatch, job):
     )
 
     assert response.status_code == 201
-
+    assert mock_user.called
 
 def test_get_job_details(client, monkeypatch, job):
     monkeypatch.setattr(
