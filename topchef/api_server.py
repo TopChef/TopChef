@@ -197,7 +197,7 @@ def get_job_details_for_user(username, job_id):
         response.status_code = 404
         return response
 
-    response = jsonify({'data': job.DetailedJobSchema().dumps(job)})
+    response = jsonify({'data': job.DetailedJobSchema().dump(job).data})
 
     return response
 
@@ -232,7 +232,59 @@ def get_next_job(username):
 
 @app.route('/users/<username>/jobs/<int:job_id>', methods=["PATCH"])
 def do_stuff_to_job(username, job_id):
-    return "Post results, change state, for user %s and job %d" % (username, job_id)
+    session = SESSION_FACTORY()
+
+    try:
+        user = User.from_session(username, session)
+    except UnableToFindItemError:
+        response = jsonify({
+            'errors': 'Unable to find user with username %s' % username
+        })
+        response.status_code = 404
+        return response
+
+    try:
+        current_job = Job.from_session(job_id, session)
+    except UnableToFindItemError:
+        response = jsonify({
+            'errors': "Unable to find job with id %d" % job_id
+        })
+        response.status_code = 404
+        return response
+
+    if not request.json:
+        response = jsonify({'errors': 'The request is not JSON'})
+        response.status_code = 400
+        return response
+
+    new_job, errors = Job.JobSchema(partial=True).load(request.json)
+
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    current_job.update(new_job)
+
+    session.add(current_job)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        response = jsonify({
+            'errors': 'failed to merge job %s' % current_job.__repr__()
+        })
+        response.status_code = 400
+        return response
+
+    response = jsonify({
+        'data': {
+            'status': 'Job updated successfully',
+            'job': Job.DetailedJobSchema().dump(current_job).data
+        }
+    })
+    response.status_code = 200
+    return response
 
 
 @app.route('/programs', methods=["GET"])

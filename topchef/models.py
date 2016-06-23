@@ -120,6 +120,11 @@ class Job(BASE):
 
         return next_job
 
+    def update(self, other_job):
+        self.due_date = other_job.due_date
+        self.program = other_job.program
+        self.status = other_job.status
+
     class JobSchema(Schema):
         id = fields.Int(required=False)
         due_date = fields.DateTime(format="iso")
