@@ -90,6 +90,10 @@ def test_make_job_for_user(mock_user, client, monkeypatch, job):
         'sqlalchemy.orm.Session.commit', lambda *args: None
     )
 
+    monkeypatch.setattr(
+        'topchef.models.Job.id', 1
+    )
+
     response = client.post(
         '/users/foo/jobs',
         data=job.JobSchema().dumps(job).data,
@@ -99,6 +103,7 @@ def test_make_job_for_user(mock_user, client, monkeypatch, job):
     assert response.status_code == 201
     assert mock_user.called
 
+
 def test_get_job_details(client, monkeypatch, job):
     monkeypatch.setattr(
         'sqlalchemy.orm.Query.first', lambda x: job
@@ -106,18 +111,16 @@ def test_get_job_details(client, monkeypatch, job):
     framework(client, '/jobs/%d' % job_id)
 
 
-def test_get_job_details_for_user(client, job, user, monkeypatch):
-    monkeypatch.setattr(
-        'topchef.models.User.from_session', lambda x, session: user
-    )
+def test_do_stuff_to_job(client, job, monkeypatch):
+    monkeypatch.setattr('sqlalchemy.orm.Session.add', lambda *args: None)
+    monkeypatch.setattr('sqlalchemy.orm.Session.commit', lambda *args: None)
+    with mock.patch('sqlalchemy.orm.Query.first', return_value=job):
+        response = client.patch(
+            '/users/foo/jobs/1',
+            data=job.JobSchema().dumps(job).data,
+            headers={'Content-Type': 'application/json'}
+        )
 
-
-def test_get_next_job(client):
-    framework(client, '/users/%s/jobs/next' % username)
-
-
-def test_do_stuff_to_job(client):
-    response = client.patch('/users/%s/jobs/%d' % (username, job_id))
     assert response.status_code == 200
 
 
