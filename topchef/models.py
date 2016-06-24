@@ -70,6 +70,12 @@ class User(BASE):
             """
             return User(data['username'], data['email'])
 
+    def __eq__(self, other):
+        return self.username == other.username
+
+    def __ne__(self, other):
+        return self.username != other.username
+
     def __repr__(self):
         return '<%s(username=%s, email=%s)>' % (
             self.__class__.__name__, self.username, self.email

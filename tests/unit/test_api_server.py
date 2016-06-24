@@ -111,8 +111,16 @@ def test_get_job_details(client, monkeypatch, job):
     framework(client, '/jobs/%d' % job_id)
 
 
-def test_do_stuff_to_job(client):
-    response = client.patch('/users/%s/jobs/%d' % (username, job_id))
+def test_do_stuff_to_job(client, job, monkeypatch):
+    monkeypatch.setattr('sqlalchemy.orm.Session.add', lambda *args: None)
+    monkeypatch.setattr('sqlalchemy.orm.Session.commit', lambda *args: None)
+    with mock.patch('sqlalchemy.orm.Query.first', return_value=job):
+        response = client.patch(
+            '/users/foo/jobs/1',
+            data=job.JobSchema().dumps(job).data,
+            headers={'Content-Type': 'application/json'}
+        )
+
     assert response.status_code == 200
 
 
