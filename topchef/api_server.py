@@ -3,17 +3,14 @@
 Very very very basic application
 """
 from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
-from flask import Flask, jsonify, request, url_for
-from .database import SESSION_FACTORY, METADATA, ENGINE
-from .models import User, Job, UnableToFindItemError
-from .config import ROOT_EMAIL, ROOT_USERNAME
-from sqlalchemy.exc import IntegrityError
+from flask import Flask, jsonify
+from datetime import datetime
 
 app = Flask(__name__)
 
 
 @app.route('/')
-def hello_world():
+def hel1lo_world():
     return jsonify({
         'meta': {
             'source_repository': SOURCE_REPOSITORY,
@@ -24,288 +21,38 @@ def hello_world():
     })
 
 
-@app.route('/users', methods=["GET"])
-def get_users():
-    session = SESSION_FACTORY()
-
-    user_list = session.query(User).all()
-
-    return jsonify({
-        'data': {
-            'users': User.UserSchema(many=True).dump(user_list).data
-        }
-    })
+@app.route('/services', methods=["GET"])
+def get_services():
+    return jsonify({'meta': 'services go here'})
 
 
-@app.route('/users', methods=["POST"])
-def make_user():
-    session = SESSION_FACTORY()
-
-    if not request.json:
-        response = jsonify({'errors': 'The supplied data is not JSON'})
-        response.status_code = 400
-        return response
-
-    user, errors = User.UserSchema().load(request.json)
-
-    if errors:
-        response = jsonify({'errors': errors})
-        response.status_code = 400
-        return response
-
-    try:
-        session.add(user)
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        response = jsonify(
-            {
-                'errors':
-                    'A user with username %s already exists' % user.username
-            }
-        )
-        response.status_code = 400
-        return response
-
-    response = jsonify(
-        {'data': 'user %s successfully created' % user.username}
-    )
-    response.headers['Location'] = url_for(
-        'get_user_info', username=user.username, _external=True
-    )
-    response.status_code = 201
-    return response
+@app.route('/services', methods=["POST"])
+def register_service():
+    return jsonify({'meta': 'here is where services get registered'})
 
 
-@app.route('/users/<username>', methods=["GET"])
-def get_user_info(username):
-    session = SESSION_FACTORY()
-    user = session.query(User).filter_by(username=username).first()
-
-    if user is None:
-        response = jsonify({
-            'errors': 'Unable to find user with username %s' % username
-        })
-        response.status_code = 404
-        return response
-
-    response = jsonify({
-        'data': User.DetailedUserSchema().dump(user).data
-    })
-    return response
+@app.route('/services/<service_id>', methods=["GET"])
+def get_service_data(service_id):
+    return jsonify({'data': {'service_id': service_id}})
 
 
-@app.route('/users/<username>/jobs', methods=["GET"])
-def get_jobs_for_user(username):
-    session = SESSION_FACTORY()
-
-    try:
-        user = User.from_session(username, session)
-    except UnableToFindItemError:
-        response = jsonify({
-            'errors': 'Unable to find user with username %s' % username
-        })
-        response.status_code = 404
-        return response
-
-    response = jsonify({'data': Job.JobSchema(many=True).dump(user.jobs).data})
-    response.status_code = 200
-    return response
+@app.route('/services/<service_id>', methods=["PATCH"])
+def heartbeat(service_id):
+    return jsonify({'meta': 'service %s has heartbeated at %s' % (
+        service_id, datetime.now().isoformat()
+    )})
 
 
-@app.route('/users/<username>/jobs', methods=["POST"])
-def make_job_for_user(username):
-    session = SESSION_FACTORY()
-
-    try:
-        user = User.from_session(username, session)
-    except User.UnableToFindItemError:
-        response = jsonify({
-            'errors': 'Unable to find user with username %s' % username
-        })
-        response.status_code = 404
-        return response
-
-    if not request.json:
-        response = jsonify({'errors': 'The request is not JSON'})
-        response.status_code = 400
-        return response
-
-    job, errors = Job.JobSchema().load(request.json)
-
-    if errors:
-        response = jsonify({'errors': errors})
-        response.status_code = 400
-        return response
-
-    job.job_owner = user
-    session.add(job)
-
-    try:
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        response = jsonify(
-            {'errors': 'A job with ID %d already exists' % job.id}
-        )
-        response.status_code = 400
-        return response
-
-    response = jsonify({'data': 'job %d created successfully' % job.id})
-    response.headers['Location'] = url_for(
-        'get_job_details', username=user.username, job_id=job.id,
-        _external=True
-    )
-    response.status_code = 201
-    return response
+@app.route('/services/<service_id>/jobs', methods=["GET"])
+def get_jobs_for_service(service_id):
+    pass
 
 
-@app.route('/jobs', methods=["GET"])
-def get_all_jobs():
-    session = SESSION_FACTORY()
-    job_list = session.query(Job).all()
-    response = jsonify({'data': Job.JobSchema(many=True).dump(job_list).data})
-    response.status_code = 200
-    return response
+@app.route('/services/<service_id>/jobs', methods=["POST"])
+def request_job():
+    pass
 
 
-@app.route('/jobs/<int:job_id>', methods=["GET"])
-def get_job_details(job_id):
-    session = SESSION_FACTORY()
-    job = session.query(Job).filter_by(id=job_id).first()
-    if not job:
-        response = jsonify(
-            {'errors': 'A job with id=%d could not be found' % job_id}
-        )
-        response.status_code = 404
-        return response
-
-    return jsonify({'data': job.DetailedJobSchema().dump(job).data})
-
-
-@app.route('/users/<username>/jobs/<int:job_id>', methods=["GET"])
-def get_job_details_for_user(username, job_id):
-    session = SESSION_FACTORY()
-    user = User.from_session(username, session)
-
-    job = session.query(Job).filter_by(id=job_id, job_owner=user).first()
-
-    if not job:
-        response = jsonify(
-            {'errors': 'A job with id=%d could not be found' % job_id}
-        )
-        response.status_code = 404
-        return response
-
-    response = jsonify({'data': job.DetailedJobSchema().dump(job).data})
-
-    return response
-
-
-@app.route('/users/<username>/jobs/next', methods=["GET"])
-def get_next_job(username):
-    session = SESSION_FACTORY()
-    try:
-        user = User.from_session(username, session)
-    except UnableToFindItemError:
-        response = jsonify({
-            'errors': 'Unable to find user with username %s' % username
-        })
-        response.status_code = 404
-        return response
-
-    try:
-        next_job = Job.next_job(user, session)
-    except UnableToFindItemError:
-        response = jsonify({
-            'errors': 'The user with username %s has no next job' % username
-        })
-        response.status_code = 404
-        return response
-
-    response = jsonify({
-        'data': next_job.DetailedJobSchema().dump(next_job).data
-    })
-
-    return response
-
-
-@app.route('/users/<username>/jobs/<int:job_id>', methods=["PATCH"])
-def do_stuff_to_job(username, job_id):
-    session = SESSION_FACTORY()
-
-    try:
-        user = User.from_session(username, session)
-    except UnableToFindItemError:
-        response = jsonify({
-            'errors': 'Unable to find user with username %s' % username
-        })
-        response.status_code = 404
-        return response
-
-    try:
-        current_job = Job.from_session(job_id, session)
-    except UnableToFindItemError:
-        response = jsonify({
-            'errors': "Unable to find job with id %d" % job_id
-        })
-        response.status_code = 404
-        return response
-
-    if not request.json:
-        response = jsonify({'errors': 'The request is not JSON'})
-        response.status_code = 400
-        return response
-
-    new_job, errors = Job.JobSchema(partial=True).load(request.json)
-
-    if errors:
-        response = jsonify({'errors': errors})
-        response.status_code = 400
-        return response
-
-    current_job.update(new_job)
-
-    session.add(current_job)
-    try:
-        session.commit()
-    except IntegrityError:
-        session.rollback()
-        response = jsonify({
-            'errors': 'failed to merge job %s' % current_job.__repr__()
-        })
-        response.status_code = 400
-        return response
-
-    response = jsonify({
-        'data': {
-            'status': 'Job updated successfully',
-            'job': Job.DetailedJobSchema().dump(current_job).data
-        }
-    })
-    response.status_code = 200
-    return response
-
-
-@app.route('/programs', methods=["GET"])
-def get_programs():
-    return 'Here is a list of NMR programs'
-
-
-@app.route('/programs/<int:program_id>', methods=["GET"])
-def get_program_by_id(program_id):
-    return 'Here is business logic to retrieve a program file with id %d' % program_id
-
-
-def create_root_user():
-    session = SESSION_FACTORY()
-    root_user = User(ROOT_USERNAME, ROOT_EMAIL)
-
-    if session.query(User).filter_by(username=ROOT_USERNAME).first() is None:
-        session.add(root_user)
-
-    session.commit()
-
-
-def create_metadata():
-    METADATA.create_all(bind=ENGINE)
+@app.route('/services/<service_id>/jobs', methods=["PATCH"])
+def post_job_results():
+    pass
