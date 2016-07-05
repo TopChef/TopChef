@@ -30,13 +30,10 @@ class TestService(object):
             service.__class__.__name__, service.id, service.name
         )
 
-    def test_is_directory_available(self, service):
-        assert not service.is_directory_available
-
     def test_path_to_schema(self, service):
         assert service.path_to_schema == os.path.join(
             config.SCHEMA_DIRECTORY, '%s.json' % service.id
         )
 
     def test_reader(self, service):
-        assert service.schema == ''
+        assert service.schema.data == {'type': 'object'}

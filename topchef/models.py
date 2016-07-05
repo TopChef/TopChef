@@ -46,13 +46,16 @@ class Service(BASE):
         self.id = uuid.uuid1()
         self.name = name
 
-        # Create the file to hold the service schema
-        open(self.path_to_schema, mode='w').close()
+        self._create_schema_file()
 
     def __repr__(self):
         return '%s(id=%d, name=%s)' % (
             self.__class__.__name__, self.id, self.name
         )
+
+    def _create_schema_file(self):
+        with open(self.path_to_schema, mode='w') as file:
+            file.write('{}')
 
     @property
     def path_to_schema(self):
@@ -60,13 +63,13 @@ class Service(BASE):
 
     @property
     def is_directory_available(self):
-        return os.path.isdir(os.path.pardir(self.path_to_schema))
+        return os.path.isdir(os.path.split(self.path_to_schema)[0])
 
     @property
     def schema(self):
         with open(self.path_to_schema, mode='r') as schema_file:
             schema = json.loads(''.join([line for line in schema_file]))
-        return JSONSchema().loads(schema)
+        return JSONSchema().load(schema)
 
     @schema.setter
     def schema(self, new_schema):
@@ -100,12 +103,6 @@ class Service(BASE):
         if conditions_for_deletion or dangerous_delete:
             os.remove(self.path_to_schema)
 
-    class UnableToDeleteError(Exception):
-        """
-        Thrown if :meth:`Service.remove_schema_file` is unable to delete the
-        file
-        """
-        pass
 
 class Job(BASE):
     """
