@@ -3,16 +3,22 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
+import abc
 import os
 import uuid
 import json
 import tempfile
-from sqlalchemy.ext.declarative import declarative_base
-from . import database
-from . import config
+import logging
 from marshmallow import Schema, fields, post_load
 from marshmallow_jsonschema import JSONSchema
+from sqlalchemy import inspect
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from . import database
+from . import config
+
+
+LOG = logging.getLogger(__name__)
 
 BASE = declarative_base(metadata=database.METADATA)
 
@@ -34,11 +40,14 @@ class Service(BASE):
     id = __table__.c.service_id
     name = __table__.c.name
 
-    jobs = relationship(Job, backref="parent_service")
+    jobs = relationship('Job', backref="parent_service")
 
     def __init__(self, name):
         self.id = uuid.uuid1()
         self.name = name
+
+        # Create the file to hold the service schema
+        open(self.path_to_schema, mode='w').close()
 
     def __repr__(self):
         return '%s(id=%d, name=%s)' % (
@@ -48,6 +57,10 @@ class Service(BASE):
     @property
     def path_to_schema(self):
         return os.path.join(config.SCHEMA_DIRECTORY, '%s.json' % self.id)
+
+    @property
+    def is_directory_available(self):
+        return os.path.isdir(os.path.pardir(self.path_to_schema))
 
     @property
     def schema(self):
@@ -63,6 +76,36 @@ class Service(BASE):
 
         os.rename(path_to_write[1], self.path_to_schema)
 
+    def remove_schema_file(self, dangerous_delete=False):
+        """
+        If a schema file is present, and the conditions for deletion are met,
+        then the schema file will be removed
+
+        :param bool dangerous_delete: Suppress all warnings and delte the file
+        anyway
+
+        .. warning::
+
+            Calling this method with ```dangerous_delete=True``` may cause the
+            database to be inconsistent with the stored schema files.
+        """
+        inspector_clouseau = inspect(self)
+
+        conditions_for_deletion = any({
+            inspector_clouseau.transient,
+            inspector_clouseau.deleted,
+            inspector_clouseau.detached
+        }) and os.path.isfile(self.path_to_schema)
+
+        if conditions_for_deletion or dangerous_delete:
+            os.remove(self.path_to_schema)
+
+    class UnableToDeleteError(Exception):
+        """
+        Thrown if :meth:`Service.remove_schema_file` is unable to delete the
+        file
+        """
+        pass
 
 class Job(BASE):
     """

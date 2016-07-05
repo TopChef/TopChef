@@ -16,7 +16,7 @@ THREADS = 3
 DEBUG = True
 
 #DIRECTORY
-BASE_DIRECTORY = os.path.abspath(os.path.curdir)
+BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
 # DATABASE

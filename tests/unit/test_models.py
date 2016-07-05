@@ -2,40 +2,41 @@
 Contains tests for :mod:`topchef.models`
 """
 import pytest
-import mock
-from topchef.models import User, UnableToFindItemError
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+import os
+from topchef.models import Service
+from topchef import config
 
 
-@pytest.fixture
-def test_session():
-    return Session(bind=create_engine('sqlite:///'))
+class TestService(object):
+    service_name = 'TestService'
 
+    @pytest.yield_fixture
+    def service(self):
+        if not os.path.isdir(config.SCHEMA_DIRECTORY):
+            os.mkdir(config.SCHEMA_DIRECTORY)
 
-class TestUser(object):
-    username = 'charmander'
-    email = 'charmander@oak.com'
+        service = Service(self.service_name)
+        yield service
 
-    @staticmethod
-    @pytest.fixture
-    def user():
-        return User(TestUser.username, TestUser.email)
+        service.remove_schema_file()
+        if not os.listdir(config.SCHEMA_DIRECTORY):
+            os.removedirs(config.SCHEMA_DIRECTORY)
 
-    class TestFromSession(object):
+    def test_constructor(self, service):
+        assert service.name == self.service_name
 
-        def test_from_user_happy_path(self, user, test_session):
-            with mock.patch('sqlalchemy.orm.Query.first', return_value=user):
-                returned_user = user.__class__.from_session(
-                    user.username, test_session
-                )
+    def test_repr(self, service):
+        assert service.__repr__() == '%s(id=%d, name=%s)' % (
+            service.__class__.__name__, service.id, service.name
+        )
 
-            assert returned_user == user
+    def test_is_directory_available(self, service):
+        assert not service.is_directory_available
 
-        @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
-        def test_from_user_no_user(self, mock_first, user, test_session):
-            with pytest.raises(UnableToFindItemError):
-                user.__class__.from_session(user.username, test_session)
+    def test_path_to_schema(self, service):
+        assert service.path_to_schema == os.path.join(
+            config.SCHEMA_DIRECTORY, '%s.json' % service.id
+        )
 
-            assert mock_first.called
-
+    def test_reader(self, service):
+        assert service.schema == ''
