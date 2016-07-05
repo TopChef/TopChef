@@ -36,4 +36,16 @@ class TestService(object):
         )
 
     def test_reader(self, service):
-        assert service.schema.data == {'type': 'object'}
+        assert service.schema == {'type': 'object'}
+
+    def test_schema_setter(self, service):
+        schema_to_write = {
+            'type': 'object',
+            'properties': {
+                'type': 'integer'
+            }
+        }
+
+        service.schema = schema_to_write
+
+        assert service.schema == schema_to_write

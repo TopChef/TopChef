@@ -3,13 +3,11 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
-import abc
 import os
 import uuid
 import json
 import tempfile
 import logging
-from marshmallow import Schema, fields, post_load
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import declarative_base
@@ -69,12 +67,12 @@ class Service(BASE):
     def schema(self):
         with open(self.path_to_schema, mode='r') as schema_file:
             schema = json.loads(''.join([line for line in schema_file]))
-        return JSONSchema().load(schema)
+        return JSONSchema().load(schema).data
 
     @schema.setter
     def schema(self, new_schema):
         path_to_write = tempfile.mkstemp()
-        with open(path_to_write[0], mode='rw') as temporary_file:
+        with open(path_to_write[0], mode='w') as temporary_file:
             temporary_file.write(json.dumps(new_schema))
 
         os.rename(path_to_write[1], self.path_to_schema)
