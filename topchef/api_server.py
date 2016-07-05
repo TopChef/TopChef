@@ -23,7 +23,7 @@ def hel1lo_world():
 
 @app.route('/services', methods=["GET"])
 def get_services():
-    return jsonify({'meta': 'services go here'})
+    pass
 
 
 @app.route('/services', methods=["POST"])

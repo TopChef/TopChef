@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeDecorator, CHAR
@@ -42,10 +43,15 @@ class GUID(TypeDecorator):
 
 services = Table(
     'services', METADATA,
-    Column('service_id', GUID, primary_key=True, nullable=False)
+    Column('service_id', GUID, primary_key=True, nullable=False),
+    Column('name', String(30), nullable=False)
 )
 
 jobs = Table(
     'jobs', METADATA,
-    Column('job_id', GUID)
+    Column('job_id', GUID, primary_key=True, nullable=False),
+    Column('service_id', GUID, ForeignKey('services.service_id'),
+           nullable=False
+           ),
+    Column('date_submitted', DateTime, nullable=False)
 )

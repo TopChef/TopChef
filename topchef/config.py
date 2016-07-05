@@ -17,6 +17,7 @@ DEBUG = True
 
 #DIRECTORY
 BASE_DIRECTORY = os.path.abspath(os.path.curdir)
+SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
 # DATABASE
 DATABASE_URI = 'sqlite:////var/tmp/db.sqlite3'
