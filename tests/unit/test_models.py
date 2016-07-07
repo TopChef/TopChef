@@ -4,7 +4,7 @@ Contains tests for :mod:`topchef.models`
 import pytest
 import os
 from topchef.models import Service
-from topchef import config
+from topchef.config import config
 
 
 class TestService(object):

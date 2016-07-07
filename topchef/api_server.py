@@ -2,7 +2,7 @@
 """
 Very very very basic application
 """
-from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
+from .config import config
 from .database import SESSION_FACTORY
 from flask import Flask, jsonify
 from datetime import datetime
@@ -15,10 +15,10 @@ app = Flask(__name__)
 def hel1lo_world():
     return jsonify({
         'meta': {
-            'source_repository': SOURCE_REPOSITORY,
-            'version': VERSION,
-            'author': AUTHOR,
-            'email': AUTHOR_EMAIL
+            'source_repository': config.SOURCE_REPOSITORY,
+            'version': config.VERSION,
+            'author': config.AUTHOR,
+            'email': config.AUTHOR_EMAIL
         }
     })
 

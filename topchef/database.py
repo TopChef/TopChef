@@ -6,9 +6,9 @@ from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgres import UUID
 import uuid
 
-from .config import DATABASE_URI
+from .config import config
 
-ENGINE = create_engine(DATABASE_URI)
+ENGINE = create_engine(config.DATABASE_URI)
 
 METADATA = MetaData(bind=ENGINE)
 

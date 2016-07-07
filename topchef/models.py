@@ -14,7 +14,7 @@ from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from . import database
-from . import config
+from .config import config
 
 
 LOG = logging.getLogger(__name__)

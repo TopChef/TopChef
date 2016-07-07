@@ -1,13 +1,6 @@
 import pytest
 from topchef.api_server import app
 from contextlib import contextmanager
-from functools import wraps
-import json
-from datetime import datetime
-import mock
-
-username = 'foo'
-job_id = 1
 
 
 @contextmanager
