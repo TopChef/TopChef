@@ -61,8 +61,9 @@ class Service(BASE):
         return self.id != other.id
 
     def __repr__(self):
-        return '%s(id=%d, name=%s)' % (
-            self.__class__.__name__, self.id, self.name
+        return '%s(id=%d, name=%s, description=%s, schema=%s)' % (
+            self.__class__.__name__, self.id, self.name, self.description,
+            self.job_registration_schema
         )
 
     @property
@@ -140,7 +141,7 @@ class Service(BASE):
             return Service(
                 data['name'],
                 getattr(data, 'description', 'No Description'),
-                getattr(data, 'schema', {})
+                getattr(data, 'schema', {'type': 'object'})
             )
 
 
