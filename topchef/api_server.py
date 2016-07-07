@@ -3,12 +3,15 @@
 Very very very basic application
 """
 from .config import config
-from .database import SESSION_FACTORY
 from flask import Flask, jsonify
 from datetime import datetime
 from .models import Service
+from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__)
+app.config.update(config)
+
+SESSION_FACTORY = sessionmaker(bind=config.database_engine)
 
 
 @app.route('/')

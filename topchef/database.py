@@ -1,18 +1,10 @@
-from sqlalchemy import create_engine
 from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy import MetaData, Table, Column
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgres import UUID
 import uuid
 
-from .config import config
-
-ENGINE = create_engine(config.DATABASE_URI)
-
-METADATA = MetaData(bind=ENGINE)
-
-SESSION_FACTORY = sessionmaker(bind=ENGINE)
+METADATA = MetaData()
 
 
 class GUID(TypeDecorator):
