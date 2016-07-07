@@ -9,7 +9,7 @@ from .models import Service
 from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__)
-app.config.update(config)
+app.config.update(config.parameter_dict)
 
 SESSION_FACTORY = sessionmaker(bind=config.database_engine)
 

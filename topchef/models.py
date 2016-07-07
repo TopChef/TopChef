@@ -88,7 +88,7 @@ class Service(BASE):
         :return:
         """
         path_to_write = tempfile.mkstemp()
-        with open(path_to_write[0], mode='w') as temporary_file:
+        with open(str(path_to_write[1]), mode='w') as temporary_file:
             temporary_file.write(json.dumps(new_schema))
 
         os.rename(path_to_write[1], self.path_to_schema)

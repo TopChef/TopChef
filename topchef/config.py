@@ -3,13 +3,13 @@ Contains user-serviceable configuration parameters
 """
 import os
 import logging
-from collections import namedtuple, UserDict
+from collections import namedtuple, Iterable
 from sqlalchemy import create_engine
 
 LOG = logging.getLogger(__name__)
 
 
-class Config(UserDict):
+class Config(Iterable):
 
     # METADATA
     SOURCE_REPOSITORY = 'https://www.github.com/MichalKononenko/TopChef'
@@ -85,7 +85,7 @@ class Config(UserDict):
                 yield attribute
 
     @property
-    def data(self):
+    def parameter_dict(self):
         return {attribute: self.__dict__[attribute] for attribute in self}
 
     @property
