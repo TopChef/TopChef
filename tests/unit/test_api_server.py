@@ -4,18 +4,22 @@ from topchef.api_server import app
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from topchef.config import config
-from tempfile import mkstemp
 from topchef.database import METADATA
 
 
-@pytest.fixture(scope='module')
+@pytest.yield_fixture(scope='module')
 def database():
 
-    engine = create_engine('sqlite://')
+    db_filename = os.path.join(config.BASE_DIRECTORY, 'test_db.sqlite3')
+
+    engine = create_engine('sqlite:///%s' % db_filename)
     config._engine = engine
 
     METADATA.create_all(bind=engine)
 
+    yield
+
+    os.remove(db_filename)
 
 @contextmanager
 def app_client(endpoint):
