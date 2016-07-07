@@ -29,7 +29,7 @@ def get_services():
     service_list = session.query(Service).all()
 
     response = jsonify({
-        'data': Service.ServiceSchema(many=True).dump(service_list)
+        'data': Service.ServiceSchema(many=True).dump(service_list).data
     })
 
     response.status_code = 200
