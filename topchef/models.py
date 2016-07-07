@@ -8,6 +8,7 @@ import uuid
 import json
 import tempfile
 import logging
+from marshmallow import Schema, fields
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import declarative_base
@@ -46,6 +47,12 @@ class Service(BASE):
 
         self._create_schema_file()
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __ne__(self, other):
+        return self.id != other.id
+
     def __repr__(self):
         return '%s(id=%d, name=%s)' % (
             self.__class__.__name__, self.id, self.name
@@ -64,13 +71,22 @@ class Service(BASE):
         return os.path.isdir(os.path.split(self.path_to_schema)[0])
 
     @property
-    def schema(self):
+    def job_registration_schema(self):
+        """
+        This schema must be fulfilled in order to allow a job to be registered.
+        The getter returns the schema from this service's associated file
+        """
         with open(self.path_to_schema, mode='r') as schema_file:
             schema = json.loads(''.join([line for line in schema_file]))
         return JSONSchema().load(schema).data
 
-    @schema.setter
-    def schema(self, new_schema):
+    @job_registration_schema.setter
+    def job_registration_schema(self, new_schema):
+        """
+        The setter for this method
+        :param dict new_schema:
+        :return:
+        """
         path_to_write = tempfile.mkstemp()
         with open(path_to_write[0], mode='w') as temporary_file:
             temporary_file.write(json.dumps(new_schema))
@@ -100,6 +116,11 @@ class Service(BASE):
 
         if conditions_for_deletion or dangerous_delete:
             os.remove(self.path_to_schema)
+
+    class ServiceSchema(Schema):
+        id = fields.Str()
+        name = fields.Str()
+        schema = fields.Dict()
 
 
 class Job(BASE):

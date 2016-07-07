@@ -36,7 +36,7 @@ class TestService(object):
         )
 
     def test_reader(self, service):
-        assert service.schema == {'type': 'object'}
+        assert service.job_registration_schema == {'type': 'object'}
 
     def test_schema_setter(self, service):
         schema_to_write = {
@@ -46,6 +46,6 @@ class TestService(object):
             }
         }
 
-        service.schema = schema_to_write
+        service.job_registration_schema = schema_to_write
 
-        assert service.schema == schema_to_write
+        assert service.job_registration_schema == schema_to_write

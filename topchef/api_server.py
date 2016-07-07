@@ -3,8 +3,10 @@
 Very very very basic application
 """
 from .config import SOURCE_REPOSITORY, VERSION, AUTHOR, AUTHOR_EMAIL
+from .database import SESSION_FACTORY
 from flask import Flask, jsonify
 from datetime import datetime
+from .models import Service
 
 app = Flask(__name__)
 
@@ -23,7 +25,16 @@ def hel1lo_world():
 
 @app.route('/services', methods=["GET"])
 def get_services():
-    pass
+    session = SESSION_FACTORY()
+    service_list = session.query(Service).all()
+
+    response = jsonify({
+        'data': Service.ServiceSchema(many=True).dump(service_list)
+    })
+
+    response.status_code = 200
+
+    return response
 
 
 @app.route('/services', methods=["POST"])
