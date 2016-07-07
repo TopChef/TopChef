@@ -3,49 +3,48 @@ Contains tests for :mod:`topchef.models`
 """
 import pytest
 import os
+from uuid import UUID
 from topchef.models import Service
 from topchef.config import config
 
+SERVICE_NAME = 'TestService'
+SERVICE_DESCRIPTION = 'A service made from the ``service`` test fixture ' \
+                      'used for unit testing'
+
+SERVICE_SCHEMA = {'type': 'object'}
+
+
+@pytest.yield_fixture
+def service():
+    if not os.path.isdir(config.SCHEMA_DIRECTORY):
+        os.mkdir(config.SCHEMA_DIRECTORY)
+
+    test_service = Service(
+        SERVICE_NAME, description=SERVICE_DESCRIPTION, schema=SERVICE_SCHEMA
+    )
+
+    yield test_service
+
+    test_service.remove_schema_file()
+    if not os.listdir(config.SCHEMA_DIRECTORY):
+        os.removedirs(config.SCHEMA_DIRECTORY)
+
 
 class TestService(object):
-    service_name = 'TestService'
-
-    @pytest.yield_fixture
-    def service(self):
-        if not os.path.isdir(config.SCHEMA_DIRECTORY):
-            os.mkdir(config.SCHEMA_DIRECTORY)
-
-        service = Service(self.service_name)
-        yield service
-
-        service.remove_schema_file()
-        if not os.listdir(config.SCHEMA_DIRECTORY):
-            os.removedirs(config.SCHEMA_DIRECTORY)
 
     def test_constructor(self, service):
-        assert service.name == self.service_name
+        assert service.name == SERVICE_NAME
+        assert isinstance(service.id, UUID)
+        assert service.description == SERVICE_DESCRIPTION
+        assert service.job_registration_schema == SERVICE_SCHEMA
+        assert os.path.isfile(service.path_to_schema)
 
-    def test_repr(self, service):
-        assert service.__repr__() == '%s(id=%d, name=%s)' % (
-            service.__class__.__name__, service.id, service.name
-        )
+    def test_constructor_no_schema(self):
+        minimum_param_service = Service(SERVICE_NAME)
 
-    def test_path_to_schema(self, service):
-        assert service.path_to_schema == os.path.join(
-            config.SCHEMA_DIRECTORY, '%s.json' % service.id
-        )
-
-    def test_reader(self, service):
-        assert service.job_registration_schema == {'type': 'object'}
-
-    def test_schema_setter(self, service):
-        schema_to_write = {
-            'type': 'object',
-            'properties': {
-                'type': 'integer'
-            }
+        assert minimum_param_service.name == SERVICE_NAME
+        assert minimum_param_service.description
+        assert minimum_param_service.job_registration_schema == {
+            'type': 'object'
         }
-
-        service.job_registration_schema = schema_to_write
-
-        assert service.job_registration_schema == schema_to_write
+        assert os.path.isfile(minimum_param_service.path_to_schema)

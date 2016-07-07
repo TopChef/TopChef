@@ -7,8 +7,10 @@ import os
 import uuid
 import json
 import tempfile
+import shutil
 import logging
-from marshmallow import Schema, fields
+from flask import url_for
+from marshmallow import Schema, fields, post_dump, post_load
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect
 from sqlalchemy.ext.declarative import declarative_base
@@ -38,14 +40,19 @@ class Service(BASE):
 
     id = __table__.c.service_id
     name = __table__.c.name
+    description = __table__.c.description
 
     jobs = relationship('Job', backref="parent_service")
 
-    def __init__(self, name):
+    def __init__(self, name, description='No Description', schema=None):
         self.id = uuid.uuid1()
         self.name = name
+        self.description = description
 
-        self._create_schema_file()
+        if schema is None:
+            self.job_registration_schema = {'type': 'object'}
+        else:
+            self.job_registration_schema = schema
 
     def __eq__(self, other):
         return self.id == other.id
@@ -57,10 +64,6 @@ class Service(BASE):
         return '%s(id=%d, name=%s)' % (
             self.__class__.__name__, self.id, self.name
         )
-
-    def _create_schema_file(self):
-        with open(self.path_to_schema, mode='w') as file:
-            file.write('{}')
 
     @property
     def path_to_schema(self):
@@ -87,11 +90,10 @@ class Service(BASE):
         :param dict new_schema:
         :return:
         """
-        path_to_write = tempfile.mkstemp()
-        with open(str(path_to_write[1]), mode='w') as temporary_file:
+        with tempfile.NamedTemporaryFile(mode='w+') as temporary_file:
             temporary_file.write(json.dumps(new_schema))
-
-        os.rename(path_to_write[1], self.path_to_schema)
+            temporary_file.seek(0)
+            shutil.copy(temporary_file.name, self.path_to_schema)
 
     def remove_schema_file(self, dangerous_delete=False):
         """
@@ -120,7 +122,25 @@ class Service(BASE):
     class ServiceSchema(Schema):
         id = fields.Str()
         name = fields.Str()
+
+        @post_dump
+        def resolve_urls(self, serialized_service):
+            serialized_service['url'] = url_for(
+                'get_service_data', service_id=serialized_service['id'],
+                _external=True
+            )
+
+    class DetailedServiceSchema(ServiceSchema):
+        description = fields.Str()
         schema = fields.Dict()
+
+        @post_load
+        def make_service(self, data):
+            return Service(
+                data['name'],
+                getattr(data, 'description', 'No Description'),
+                getattr(data, 'schema', {})
+            )
 
 
 class Job(BASE):

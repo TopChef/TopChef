@@ -36,7 +36,10 @@ class GUID(TypeDecorator):
 services = Table(
     'services', METADATA,
     Column('service_id', GUID, primary_key=True, nullable=False),
-    Column('name', String(30), nullable=False)
+    Column('name', String(30), nullable=False),
+    Column('description', String(1000), nullable=False,
+           default='No description'
+           )
 )
 
 jobs = Table(

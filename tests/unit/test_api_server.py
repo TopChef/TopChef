@@ -14,17 +14,15 @@ except KeyError:
     DATABASE_URI = 'sqlite://'
 
 
-@pytest.yield_fixture(scope='module')
+@pytest.fixture(scope='module')
 def database():
 
     engine = create_engine(DATABASE_URI)
     config._engine = engine
 
     METADATA.create_all(bind=engine)
-
     server.SESSION_FACTORY = sessionmaker(bind=engine)
 
-    yield
 
 @contextmanager
 def app_client(endpoint):
@@ -39,7 +37,7 @@ def app_client(endpoint):
 
 
 @pytest.mark.parametrize('endpoint', ['/', '/services'])
-def test_getter(database, endpoint):
+def test_get_request(database, endpoint):
     with app_client(endpoint) as client:
         response = client.get(
             endpoint, headers={'Content-Type': 'application/json'}
