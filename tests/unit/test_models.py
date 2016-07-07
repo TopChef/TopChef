@@ -39,7 +39,7 @@ class TestService(object):
         assert service.job_registration_schema == SERVICE_SCHEMA
         assert os.path.isfile(service.path_to_schema)
 
-    def test_constructor_no_schema(self):
+    def test_constructor_no_schema(self, service):
         minimum_param_service = Service(SERVICE_NAME)
 
         assert minimum_param_service.name == SERVICE_NAME

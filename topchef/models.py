@@ -94,6 +94,7 @@ class Service(BASE):
             temporary_file.write(json.dumps(new_schema))
             temporary_file.seek(0)
             shutil.copy(temporary_file.name, self.path_to_schema)
+        pass
 
     def remove_schema_file(self, dangerous_delete=False):
         """
