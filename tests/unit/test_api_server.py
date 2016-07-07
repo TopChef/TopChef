@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from topchef.config import config
 from topchef.database import METADATA
+import topchef.api_server as server
+from sqlalchemy.orm import sessionmaker
 
 try:
     DATABASE_URI = os.environ['DATABASE_URI']
@@ -19,6 +21,8 @@ def database():
     config._engine = engine
 
     METADATA.create_all(bind=engine)
+
+    server.SESSION_FACTORY = sessionmaker(bind=engine)
 
     yield
 

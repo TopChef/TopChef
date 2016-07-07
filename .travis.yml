@@ -1,11 +1,5 @@
 sudo: false
 
-services:
-  - postgresql
-
-env:
-  - DATABASE_URI=postgres://postgres:@localhost:5432/test_db
-
 language: python
 
 cache: pip
