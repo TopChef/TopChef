@@ -83,7 +83,6 @@ class TestComparisons(object):
 
         assert service1 == service2
 
-
     def test_ne(self, twin_services):
         service1 = twin_services[0]
         service2 = twin_services[1]
@@ -112,6 +111,7 @@ class TestServiceSchema(object):
         assert service_dict.data
         assert service_dict.data['url']
         assert not service_dict.errors
+
 
 class TestDetailedServiceSchema(object):
     data_to_load = {

@@ -3,11 +3,12 @@
 Very very very basic application
 """
 from .config import config
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, url_for
 from datetime import datetime
 from .models import Service
 from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config.update(config.parameter_dict)
@@ -66,7 +67,36 @@ def get_services():
 @app.route('/services', methods=["POST"])
 @check_json
 def register_service():
-    return jsonify({'data': 'good post'})
+    session = SESSION_FACTORY()
+
+    new_service, errors = Service.DetailedServiceSchema().load(request.json)
+
+    if errors:
+        response = jsonify({
+            'errors': {
+                'message':'Invalid request, serializer produced errors.',
+                'serializer_errors': errors
+            }
+        })
+        response.status_code = 400
+        return response
+
+    session.add(new_service)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        response = jsonify({'errors': 'A job with that ID already exists'})
+        response.status_code = 400
+        return response
+
+    response = jsonify(
+        {'data': 'Service %s successfully registered'} % new_service
+    )
+    response.headers['Location'] = url_for(
+        'get_service_data', service_id=new_service.id, _external=True
+    )
 
 
 @app.route('/services/<service_id>', methods=["GET"])
