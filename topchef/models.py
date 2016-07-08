@@ -9,6 +9,7 @@ import json
 import tempfile
 import shutil
 import logging
+from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
 from marshmallow_jsonschema import JSONSchema
@@ -41,13 +42,21 @@ class Service(BASE):
     id = __table__.c.service_id
     name = __table__.c.name
     description = __table__.c.description
+    last_checked_in = __table__.c.last_checked_in
+    heartbeat_timeout = __table__.c.heartbeat_timeout_seconds
+    _is_service_available = __table__.c.is_service_available
 
     jobs = relationship('Job', backref="parent_service")
 
-    def __init__(self, name, description='No Description', schema=None):
+    def __init__(
+            self, name, description='No Description', schema=None,
+            heartbeat_timeout=30):
         self.id = uuid.uuid1()
         self.name = name
         self.description = description
+        self.heartbeat_timeout = heartbeat_timeout
+
+        self.last_checked_in = datetime.utcnow()
 
         if schema is None:
             self.job_registration_schema = {'type': 'object'}
@@ -65,6 +74,32 @@ class Service(BASE):
             self.__class__.__name__, self.id, self.name, self.description,
             self.job_registration_schema
         )
+
+    @classmethod
+    def from_session(cls, session, service_id):
+        service = session.query(cls).filter_by(id=service_id).first()
+        if service is None:
+            raise UnableToFindItemError(
+                'The service with id %s does not exist' % service_id
+            )
+        else:
+            return service
+
+    def heartbeat(self):
+        self.last_checked_in = datetime.utcnow()
+
+    @property
+    def has_timed_out(self, date=datetime.utcnow()):
+        return (date - self.last_checked_in) > \
+               timedelta(seconds=self.heartbeat_timeout)
+
+    @property
+    def is_available(self):
+        return self._is_service_available and not self.has_timed_out
+
+    @is_available.setter
+    def is_available(self, new_value):
+        self._is_service_available = new_value
 
     @property
     def path_to_schema(self):
@@ -124,6 +159,7 @@ class Service(BASE):
     class ServiceSchema(Schema):
         id = fields.Str()
         name = fields.Str(required=True)
+        has_timed_out = fields.Boolean(default=False)
 
         @post_dump
         def resolve_urls(self, serialized_service):
@@ -153,6 +189,7 @@ class Service(BASE):
                 description=description,
                 schema=schema
             )
+
 
 
 class Job(BASE):

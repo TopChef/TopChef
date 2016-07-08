@@ -1,8 +1,9 @@
 from sqlalchemy import String, ForeignKey, DateTime
-from sqlalchemy import MetaData, Table, Column
+from sqlalchemy import MetaData, Table, Column, Integer, Boolean
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgres import UUID
 import uuid
+from datetime import datetime
 
 METADATA = MetaData()
 
@@ -42,7 +43,11 @@ services = Table(
     Column('name', String(30), nullable=False),
     Column('description', String(1000), nullable=False,
            default='No description'
-           )
+           ),
+    Column('last_checked_in', DateTime, nullable=False,
+           default=datetime.utcnow()),
+    Column('heartbeat_timeout_seconds', Integer, nullable=False, default=30),
+    Column('is_service_available', Boolean, nullable=False)
 )
 
 jobs = Table(

@@ -117,7 +117,7 @@ class TestDetailedServiceSchema(object):
     data_to_load = {
         'name': 'TheService',
         'description': "A test service loaded in through Marshmallow",
-        "schema": {"type": "object"}
+        "schema": {"type": "object"},
     }
 
     def test_make_service_all_args(self):
