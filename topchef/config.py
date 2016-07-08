@@ -28,7 +28,7 @@ class Config(Iterable):
     SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
     # DATABASE
-    DATABASE_URI = 'sqlite:////var/tmp/db.sqlite3'
+    DATABASE_URI = 'sqlite:///%s/db.sqlite3' % BASE_DIRECTORY
 
 
     # ROOT USER

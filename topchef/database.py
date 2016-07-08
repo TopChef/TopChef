@@ -12,7 +12,7 @@ class GUID(TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':
-            return dialect.type_descriptor(UUID)
+            return dialect.type_descriptor(UUID())
         else:
             return dialect.type_descriptor(CHAR(32))
 
@@ -23,15 +23,18 @@ class GUID(TypeDecorator):
             return str(value)
         else:
             if not isinstance(value, uuid.UUID):
-                return str(uuid.UUID(value))
+                return "%.32x" % uuid.UUID(value).int
             else:
-                return value
+                return "%.32x" % value.int
 
     def process_result_value(self, value, dialect):
         if value is None:
             return value
         else:
             return uuid.UUID(value)
+
+    def copy(self, *args, **kwargs):
+        return GUID(*args, **kwargs)
 
 services = Table(
     'services', METADATA,

@@ -123,7 +123,7 @@ class Service(BASE):
 
     class ServiceSchema(Schema):
         id = fields.Str()
-        name = fields.Str()
+        name = fields.Str(required=True)
 
         @post_dump
         def resolve_urls(self, serialized_service):
@@ -133,15 +133,25 @@ class Service(BASE):
             )
 
     class DetailedServiceSchema(ServiceSchema):
-        description = fields.Str()
+        description = fields.Str(required=True)
         schema = fields.Dict()
 
         @post_load
         def make_service(self, data):
+            try:
+                description = data['description']
+            except IndexError:
+                description = 'No description'
+
+            try:
+                schema = data['schema']
+            except IndexError:
+                schema = {'type': 'object'}
+
             return Service(
                 data['name'],
-                getattr(data, 'description', 'No Description'),
-                getattr(data, 'schema', {'type': 'object'})
+                description=description,
+                schema=schema
             )
 
 

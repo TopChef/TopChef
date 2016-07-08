@@ -92,16 +92,30 @@ def register_service():
         return response
 
     response = jsonify(
-        {'data': 'Service %s successfully registered'} % new_service
+        {'data': 'Service %s successfully registered' % new_service}
     )
     response.headers['Location'] = url_for(
         'get_service_data', service_id=new_service.id, _external=True
     )
+    return response
 
 
 @app.route('/services/<service_id>', methods=["GET"])
 def get_service_data(service_id):
-    return jsonify({'data': {'service_id': service_id}})
+    session = SESSION_FACTORY()
+
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if service is None:
+        response = jsonify({
+            'errors': 'service with id=%s does not exist' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    data, _ = service.DetailedServiceSchema().dump(service)
+
+    return jsonify({'data': data})
 
 
 @app.route('/services/<service_id>', methods=["PATCH"])
