@@ -3,9 +3,10 @@
 Very very very basic application
 """
 from .config import config
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from datetime import datetime
 from .models import Service
+from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__)
@@ -15,7 +16,29 @@ SESSION_FACTORY = sessionmaker(bind=config.database_engine)
 
 
 @app.route('/')
-def hel1lo_world():
+def hello_world():
+    """
+    Confirms that the API is working, and returns some metadata for the API
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 / GET
+        Content-Type: application/json
+
+        {
+            "meta": {
+                "author": "Michal Kononenko",
+                "email": "michalkononenko@gmail.com",
+                "source_repository":
+                    "https://www.github.com/MichalKononenko/TopChef",
+                "version": "0.1dev"
+            }
+        }
+
+    :statuscode 200: The request was successful
+    """
     return jsonify({
         'meta': {
             'source_repository': config.SOURCE_REPOSITORY,
@@ -41,8 +64,9 @@ def get_services():
 
 
 @app.route('/services', methods=["POST"])
+@check_json
 def register_service():
-    return jsonify({'meta': 'here is where services get registered'})
+    return jsonify({'data': 'good post'})
 
 
 @app.route('/services/<service_id>', methods=["GET"])
