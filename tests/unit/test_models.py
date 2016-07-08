@@ -6,6 +6,7 @@ import os
 from uuid import UUID
 from topchef.models import Service
 from topchef.config import config
+from .test_api_server import app_client
 from uuid import uuid4
 
 SERVICE_NAME = 'TestService'
@@ -100,3 +101,30 @@ def test_repr(service):
 
 def test_is_directory_available(service):
     assert service.is_directory_available
+
+
+class TestServiceSchema(object):
+
+    def test_post_dump(self, service):
+        with app_client('/'):
+            service_dict = service.ServiceSchema().dump(service)
+
+        assert service_dict.data
+        assert service_dict.data['url']
+        assert not service_dict.errors
+
+class TestDetailedServiceSchema(object):
+    data_to_load = {
+        'name': 'TheService',
+        'description': "A test service loaded in through Marshmallow",
+        "schema": {"type": "object"}
+    }
+
+    def test_make_service_all_args(self):
+        with app_client('/'):
+            loader_result = Service.DetailedServiceSchema().load(
+                self.data_to_load
+            )
+
+        assert isinstance(loader_result.data, Service)
+        assert not loader_result.errors
