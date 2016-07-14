@@ -191,7 +191,6 @@ class Service(BASE):
             )
 
 
-
 class Job(BASE):
     """
     Base class for a compute job
@@ -199,3 +198,14 @@ class Job(BASE):
     __table__ = database.jobs
 
     id = __table__.c.job_id
+    date_submitted = __table__.c.date_submitted
+    status = __table__.c.status
+
+
+    class JobSchema(Schema):
+        id = fields.Integer()
+        date_submitted = fields.DateTime()
+        status = fields.Str()
+
+    class DetailedJobSchema(JobSchema):
+        result = fields.Dict()

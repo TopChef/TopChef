@@ -56,5 +56,7 @@ jobs = Table(
     Column('service_id', GUID, ForeignKey('services.service_id'),
            nullable=False
            ),
-    Column('date_submitted', DateTime, nullable=False)
+    Column('date_submitted', DateTime, nullable=False,
+           default=datetime.utcnow()),
+    Column('status', String(30))
 )
