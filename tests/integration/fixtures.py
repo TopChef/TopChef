@@ -1,6 +1,7 @@
 """
 Contains test fixtures for integration tests
 """
+import os
 import pytest
 from sqlalchemy.orm import Session
 from topchef.config import config
@@ -28,6 +29,9 @@ SERVER_PORT = 32141
 @pytest.yield_fixture
 def database():
     engine = config.database_engine
+
+    if not os.path.isdir(config.SCHEMA_DIRECTORY):
+        os.mkdir(config.SCHEMA_DIRECTORY)
 
     yield Session(bind=engine, expire_on_commit=False)
 
