@@ -57,6 +57,7 @@ class Service(BASE):
         self.heartbeat_timeout = heartbeat_timeout
 
         self.last_checked_in = datetime.utcnow()
+        self.is_available = True
 
         if schema is None:
             self.job_registration_schema = {'type': 'object'}
