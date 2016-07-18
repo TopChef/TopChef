@@ -1,5 +1,6 @@
-import pytest
+import json
 import os
+import pytest
 from topchef.api_server import app
 from contextlib import contextmanager
 from sqlalchemy import create_engine
@@ -44,3 +45,25 @@ def test_get_request(database, endpoint):
         )
 
     assert response.status_code == 200
+
+
+def test_post_service(database):
+    endpoint = '/services'
+    with app_client(endpoint) as client:
+        response = client.post(
+            endpoint, headers={'Content-Type': 'application/json'},
+            data=json.dumps({
+                "name": "TestService",
+                "description": "Some test data",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            })
+        )
+
+    assert response.status_code == 201
