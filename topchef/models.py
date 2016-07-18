@@ -9,6 +9,7 @@ import json
 import tempfile
 import shutil
 import logging
+import jsonschema
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
@@ -201,6 +202,16 @@ class Job(BASE):
     date_submitted = __table__.c.date_submitted
     status = __table__.c.status
 
+    def __init__(self, parent_service, job_parameters):
+        self.parent_service = parent_service
+
+        jsonschema.validate(
+            job_parameters,
+            self.parent_service.job_registration_schema
+        )
+        self.id = uuid.uuid1()
+        self.date_submitted = datetime.utcnow()
+        self.status = "REGISTERED"
 
     class JobSchema(Schema):
         id = fields.Integer()
