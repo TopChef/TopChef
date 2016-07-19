@@ -15,8 +15,20 @@ except KeyError:
     DATABASE_URI = 'sqlite://'
 
 
-@pytest.fixture(scope='module')
-def database():
+@pytest.yield_fixture
+def schema_directory():
+
+    if not os.path.isdir(config.SCHEMA_DIRECTORY):
+        os.mkdir(config.SCHEMA_DIRECTORY)
+
+    yield
+
+    if not os.listdir(config.SCHEMA_DIRECTORY):
+        os.removedirs(config.SCHEMA_DIRECTORY)
+
+
+@pytest.fixture()
+def database(schema_directory):
 
     engine = create_engine(DATABASE_URI)
     config._engine = engine
