@@ -5,7 +5,7 @@ Very very very basic application
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
-from .models import Service, UnableToFindItemError
+from .models import Service, Job, UnableToFindItemError
 from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -146,9 +146,25 @@ def heartbeat(service_id):
         service_id, datetime.now().isoformat()
     )})
 
+
 @app.route('/services/<service_id>/jobs', methods=["GET"])
 def get_jobs_for_service(service_id):
-    pass
+    session = SESSION_FACTORY()
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    response = jsonify({
+        'data': Job.JobSchema(many=True).dump(service.jobs)
+    })
+
+    response.status_code = 200
+    return response
 
 
 @app.route('/services/<service_id>/jobs', methods=["POST"])
