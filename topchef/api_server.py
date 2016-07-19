@@ -172,7 +172,7 @@ def get_jobs_for_service(service_id):
         return response
 
     response = jsonify({
-        'data': Job.JobSchema(many=True).dump(service.jobs)
+        'data': Job.JobSchema(many=True).dump(service.jobs).data
     })
 
     response.status_code = 200
