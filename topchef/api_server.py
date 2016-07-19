@@ -2,6 +2,8 @@
 """
 Very very very basic application
 """
+import logging
+from uuid import uuid1
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
@@ -14,6 +16,8 @@ app = Flask(__name__)
 app.config.update(config.parameter_dict)
 
 SESSION_FACTORY = sessionmaker(bind=config.database_engine)
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
 
 @app.route('/')
@@ -85,9 +89,16 @@ def register_service():
 
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s; message: %s', case_number, error)
         session.rollback()
-        response = jsonify({'errors': 'A job with that ID already exists'})
+        response = jsonify({
+            'errors': {
+                'message': 'Integrity error thrown when trying to commit',
+                'case_number': case_number
+            }
+        })
         response.status_code = 400
         return response
 
@@ -97,6 +108,7 @@ def register_service():
     response.headers['Location'] = url_for(
         'get_service_data', service_id=new_service.id, _external=True
     )
+    response.status_code = 201
     return response
 
 
