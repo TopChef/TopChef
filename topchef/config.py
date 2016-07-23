@@ -27,15 +27,12 @@ class Config(Iterable):
     BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
+    LOGFILE = '/var/tmp/topchef.log'
+
     # DATABASE
     DATABASE_URI = 'sqlite:///%s/db.sqlite3' % BASE_DIRECTORY
 
-
-    # ROOT USER
-    ROOT_USERNAME = 'root'
-    ROOT_EMAIL = 'mkononen@uwaterloo.ca'
-
-    def __init__(self):
+    def __init__(self, environment=os.environ):
 
         Parameter = namedtuple('Parameter', ['key', 'from_env', 'from_file'])
 
@@ -43,7 +40,8 @@ class Config(Iterable):
             Parameter(
                 key=attribute,
                 from_file=self.__class__.__dict__[attribute],
-                from_env=self._safe_get_from_environment(attribute)
+                from_env=self._safe_get_from_environment(
+                    attribute, environment=environment)
             )
             for attribute in self
         }
@@ -66,16 +64,35 @@ class Config(Iterable):
 
         self._engine = create_engine(self.DATABASE_URI)
 
-    def _safe_get_from_environment(self, parameter):
+        if self.LOGFILE:
+            hdlr = logging.FileHandler(self.LOGFILE)
+            formatter = logging.Formatter(
+                '%(asctime)s %(levelname)s %(message)s')
+            hdlr.setFormatter(formatter)
+            LOG.addHandler(hdlr)
+            LOG.setLevel(logging.DEBUG)
+
+
+    def _safe_get_from_environment(self, parameter, environment=os.environ):
         try:
-            value_from_environment = os.environ[parameter]
+            value_from_environment = environment[parameter]
         except KeyError:
             value_from_config = self.__class__.__dict__[parameter]
             LOG.info(
-                'parameter %s not defined in os.environ, using value of '
+                'parameter %s not defined in environment, using value of '
                 '%s', parameter, value_from_config
             )
-            value_from_environment = None
+            value_from_environment = value_from_config
+
+        if parameter.upper() == 'DEBUG' \
+            and isinstance(value_from_environment, str):
+            if value_from_environment.upper() == "TRUE":
+                return True
+            elif value_from_environment.upper() == "FALSE":
+                return False
+
+        if parameter.upper() == "PORT":
+            return int(value_from_environment)
 
         return value_from_environment
 

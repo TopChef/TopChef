@@ -8,4 +8,4 @@ setup(name='topchef',
       author='Michal Kononenko',
       author_email='mkononen@uwaterloo.ca',
       packages=['topchef']
-) 
+)
