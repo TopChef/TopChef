@@ -44,11 +44,7 @@ def service(schema_directory):
         SERVICE_NAME, description=SERVICE_DESCRIPTION, schema=SERVICE_SCHEMA
     )
 
-    service_file = test_service.path_to_schema
-
     yield test_service
-
-    os.remove(service_file)
 
 
 class TestService(object):
@@ -58,7 +54,6 @@ class TestService(object):
         assert isinstance(service.id, UUID)
         assert service.description == SERVICE_DESCRIPTION
         assert service.job_registration_schema == SERVICE_SCHEMA
-        assert os.path.isfile(service.path_to_schema)
 
     def test_constructor_no_schema(self, schema_directory):
         minimum_param_service = Service(SERVICE_NAME)
@@ -68,20 +63,13 @@ class TestService(object):
         assert minimum_param_service.job_registration_schema == {
             'type': 'object'
         }
-        assert os.path.isfile(minimum_param_service.path_to_schema)
 
 
 @pytest.yield_fixture
 def twin_services(schema_directory):
     services = (Service('Service1'), Service('Service2'))
 
-    created_schema_files = {serv.path_to_schema for serv in services}
-
     yield services
-
-    for path in created_schema_files:
-        os.remove(path)
-
 
 class TestComparisons(object):
 

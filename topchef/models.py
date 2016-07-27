@@ -111,29 +111,6 @@ class Service(BASE):
     def is_directory_available(self):
         return os.path.isdir(os.path.split(self.path_to_schema)[0])
 
-    @property
-    def job_registration_schema(self):
-        """
-        This schema must be fulfilled in order to allow a job to be registered.
-        The getter returns the schema from this service's associated file
-        """
-        with open(self.path_to_schema, mode='r') as schema_file:
-            schema = json.loads(''.join([line for line in schema_file]))
-        return JSONSchema().load(schema).data
-
-    @job_registration_schema.setter
-    def job_registration_schema(self, new_schema):
-        """
-        The setter for this method
-        :param dict new_schema:
-        :return:
-        """
-        with tempfile.NamedTemporaryFile(mode='w+') as temporary_file:
-            temporary_file.write(json.dumps(new_schema))
-            temporary_file.seek(0)
-            shutil.copy(temporary_file.name, self.path_to_schema)
-        pass
-
     def remove_schema_file(self, dangerous_delete=False):
         """
         If a schema file is present, and the conditions for deletion are met,
