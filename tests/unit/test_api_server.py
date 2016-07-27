@@ -1,5 +1,6 @@
-import pytest
+import json
 import os
+import pytest
 from topchef.api_server import app
 from contextlib import contextmanager
 from sqlalchemy import create_engine
@@ -14,8 +15,20 @@ except KeyError:
     DATABASE_URI = 'sqlite://'
 
 
-@pytest.fixture(scope='module')
-def database():
+@pytest.yield_fixture
+def schema_directory():
+
+    if not os.path.isdir(config.SCHEMA_DIRECTORY):
+        os.mkdir(config.SCHEMA_DIRECTORY)
+
+    yield
+
+    if not os.listdir(config.SCHEMA_DIRECTORY):
+        os.removedirs(config.SCHEMA_DIRECTORY)
+
+
+@pytest.fixture()
+def database(schema_directory):
 
     engine = create_engine(DATABASE_URI)
     config._engine = engine
@@ -44,3 +57,25 @@ def test_get_request(database, endpoint):
         )
 
     assert response.status_code == 200
+
+
+def test_post_service(database):
+    endpoint = '/services'
+    with app_client(endpoint) as client:
+        response = client.post(
+            endpoint, headers={'Content-Type': 'application/json'},
+            data=json.dumps({
+                "name": "TestService",
+                "description": "Some test data",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            })
+        )
+
+    assert response.status_code == 201

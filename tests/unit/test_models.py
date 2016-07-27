@@ -3,8 +3,9 @@ Contains tests for :mod:`topchef.models`
 """
 import pytest
 import os
+import jsonschema
 from uuid import UUID
-from topchef.models import Service
+from topchef.models import Service, Job
 from topchef.config import config
 from .test_api_server import app_client
 from uuid import uuid4
@@ -13,7 +14,16 @@ SERVICE_NAME = 'TestService'
 SERVICE_DESCRIPTION = 'A service made from the ``service`` test fixture ' \
                       'used for unit testing'
 
-SERVICE_SCHEMA = {'type': 'object'}
+SERVICE_SCHEMA = {
+    'type': 'object',
+    "properties": {
+        "value": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+        }
+    }
+}
 
 
 @pytest.yield_fixture
@@ -128,3 +138,23 @@ class TestDetailedServiceSchema(object):
 
         assert isinstance(loader_result.data, Service)
         assert not loader_result.errors
+
+VALID_JOB_SCHEMA = {'value': 1}
+
+
+@pytest.fixture
+def job(service):
+    test_job = Job(service, VALID_JOB_SCHEMA)
+
+    return test_job
+
+
+class TestJobConstructor(object):
+
+    def test_constructor(self, job):
+        assert job.status == "REGISTERED"
+        assert isinstance(job.id, UUID)
+
+    def test_constructor_bad_schema(self, service):
+        with pytest.raises(jsonschema.ValidationError):
+            Job(service, {'value': -1})

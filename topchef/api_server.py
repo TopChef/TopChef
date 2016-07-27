@@ -1,10 +1,12 @@
 """
 Very very very basic application
 """
+import logging
+from uuid import uuid1
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
-from .models import Service, UnableToFindItemError
+from .models import Service, Job, UnableToFindItemError
 from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +15,8 @@ app = Flask(__name__)
 app.config.update(config.parameter_dict)
 
 SESSION_FACTORY = sessionmaker(bind=config.database_engine)
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
 
 @app.route('/')
@@ -84,9 +88,16 @@ def register_service():
 
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s; message: %s', case_number, error)
         session.rollback()
-        response = jsonify({'errors': 'A job with that ID already exists'})
+        response = jsonify({
+            'errors': {
+                'message': 'Integrity error thrown when trying to commit',
+                'case_number': case_number
+            }
+        })
         response.status_code = 400
         return response
 
@@ -96,6 +107,7 @@ def register_service():
     response.headers['Location'] = url_for(
         'get_service_data', service_id=new_service.id, _external=True
     )
+    response.status_code = 201
     return response
 
 
@@ -145,9 +157,25 @@ def heartbeat(service_id):
         service_id, datetime.now().isoformat()
     )})
 
+
 @app.route('/services/<service_id>/jobs', methods=["GET"])
 def get_jobs_for_service(service_id):
-    pass
+    session = SESSION_FACTORY()
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    response = jsonify({
+        'data': Job.JobSchema(many=True).dump(service.jobs).data
+    })
+
+    response.status_code = 200
+    return response
 
 
 @app.route('/services/<service_id>/jobs', methods=["POST"])
