@@ -8,7 +8,6 @@ import uuid
 import logging
 import json
 import jsonschema
-import tempfile
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
@@ -142,22 +141,27 @@ class Service(BASE):
             os.remove(self.path_to_schema)
 
     @property
-    def registration_schema(self):
+    def job_registration_schema(self):
         registration_schema_path = os.path.join(
-            self.file_manager[self], self.file_manager.REGISTRATION_SCHEMA_NAME
+            self.file_manager[self],
+            '%s.json' % self.file_manager.REGISTRATION_SCHEMA_NAME
         )
 
         with open(registration_schema_path, mode='r') as schema_file:
-            schema = json.loads(''.join([line for line in schema_file]))
+            file_data = ''.join([line for line in schema_file])
 
-        return JSONSchema().load(schema).data
+        return JSONSchema().loads(file_data).data
 
-    @registration_schema.setter
-    def registration_schema(self, schema_to_write):
-        errors, data = JSONSchema().dumps(schema_to_write)
-        if errors: raise ValueError('The supplied schema is not a JSON Schema')
+    @job_registration_schema.setter
+    def job_registration_schema(self, schema_to_write):
+        schema_path = os.path.join(
+            self.file_manager[self],
+            '%s.json' % self.file_manager.REGISTRATION_SCHEMA_NAME
+        )
 
-        self.file_manager.write(data)
+        JSONSchema().validate(schema_to_write)
+
+        self.file_manager.write(json.dumps(schema_to_write), schema_path)
 
     @property
     def job_result_schema(self):
@@ -195,10 +199,9 @@ class Service(BASE):
                 _external=True
             )
 
-
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
-        job_registration_schema = fields.Dict()
+        job_registration_schema = fields.Dict(required=True)
 
         @post_load
         def make_service(self, data):

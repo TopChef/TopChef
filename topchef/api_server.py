@@ -3,6 +3,7 @@ Very very very basic application
 """
 import logging
 from uuid import uuid1
+from marshmallow_jsonschema import JSONSchema
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
@@ -55,11 +56,30 @@ def hello_world():
 
 @app.route('/services', methods=["GET"])
 def get_services():
+    """
+    Returns a list of services that have been registered with this API
+
+    **Example Response**
+
+    ..sourcecode:: http
+
+        HTTP/1.1 /services GET
+        Content-Type: application/json
+
+        {
+            "data": {
+            }
+        }
+    """
     session = SESSION_FACTORY()
     service_list = session.query(Service).all()
 
     response = jsonify({
-        'data': Service.ServiceSchema(many=True).dump(service_list).data
+        'data': Service.ServiceSchema(many=True).dump(service_list).data,
+        'meta': {
+            "POST_schema":
+                JSONSchema().dump(Service.DetailedServiceSchema()).data
+        }
     })
 
     response.status_code = 200
