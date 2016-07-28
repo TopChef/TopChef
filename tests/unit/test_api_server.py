@@ -67,7 +67,7 @@ def test_post_service(database):
             data=json.dumps({
                 "name": "TestService",
                 "description": "Some test data",
-                "schema": {
+                "job_registration_schema": {
                     "type": "object",
                     "properties": {
                         "value": {

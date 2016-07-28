@@ -214,7 +214,8 @@ class Service(BASE):
             return Service(
                 data['name'],
                 description=description,
-                job_registration_schema=schema
+                job_registration_schema=schema,
+                organizer=FILE_MANAGER
             )
 
 

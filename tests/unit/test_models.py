@@ -9,6 +9,7 @@ from uuid import UUID
 from topchef.schema_directory_organizer import SchemaDirectoryOrganizer
 from topchef import models
 from topchef.config import config
+from topchef.api_server import app
 from .test_api_server import app_client
 
 
@@ -110,6 +111,17 @@ def test_repr(service):
         service.description, service.job_registration_schema
     )
 
+
+@pytest.yield_fixture
+def app_test_client(service):
+    context=app.test_request_context()
+    context.push()
+
+    yield app.test_client()
+
+    context.pop()
+
+
 class TestServiceSchema(object):
 
     def test_post_dump(self, service):
@@ -128,11 +140,10 @@ class TestDetailedServiceSchema(object):
         "job_registration_schema": {"type": "object"},
     }
 
-    def test_make_service_all_args(self, schema_directory_organizer):
-        with app_client('/'):
-            loader_result = models.Service.DetailedServiceSchema().load(
-                self.data_to_load
-            )
+    def test_make_service_all_args(self, app_test_client):
+        loader_result = models.Service.DetailedServiceSchema().load(
+            self.data_to_load
+        )
 
         assert isinstance(loader_result.data, models.Service)
         assert not loader_result.errors
