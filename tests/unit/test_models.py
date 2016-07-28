@@ -39,6 +39,9 @@ def schema_directory_organizer(monkeypatch):
     organizer = SchemaDirectoryOrganizer(SCHEMA_DIRECTORY)
 
     monkeypatch.setattr('topchef.models.FILE_MANAGER', organizer)
+    monkeypatch.setattr(
+        'topchef.config.Config.SCHEMA_DIRECTORY', SCHEMA_DIRECTORY
+    )
 
     yield organizer
 
@@ -153,7 +156,8 @@ VALID_JOB_SCHEMA = {'value': 1}
 
 @pytest.fixture
 def job(service):
-    test_job = models.Job(service, VALID_JOB_SCHEMA)
+    test_job = models.Job(service, VALID_JOB_SCHEMA,
+                          file_manager=service.file_manager)
 
     return test_job
 

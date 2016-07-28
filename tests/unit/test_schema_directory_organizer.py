@@ -12,9 +12,11 @@ PATH = os.path.join(config.BASE_DIRECTORY, 'schema_testing')
 SERVICE_NAME = 'TestService'
 
 @pytest.yield_fixture()
-def schema_directory():
+def schema_directory(monkeypatch):
     if not os.path.isdir(PATH):
         os.mkdir(PATH)
+
+    monkeypatch.setattr('topchef.config.Config.SCHEMA_DIRECTORY', PATH)
 
     yield
 
@@ -58,10 +60,10 @@ def test_getitem_for_service(manager_with_service):
 def manager_with_job(manager_with_service):
     manager = manager_with_service[0]
 
-    job = Job(manager_with_service[1], {'value': True})
+    job = Job(manager_with_service[1], {'value': True}, file_manager=manager)
 
     yield manager, manager_with_service[1], job
-
+   
 
 def test_getitem_for_job(manager_with_job):
     manager, service, job = manager_with_job

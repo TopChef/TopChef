@@ -242,7 +242,7 @@ class Job(BASE):
 
     def __init__(self, parent_service, job_parameters,
                  attached_session=Session(bind=config.database_engine),
-                 file_manager=SchemaDirectoryOrganizer(config.SCHEMA_DIRECTORY)
+                 file_manager=FILE_MANAGER
                  ):
         self.parent_service = parent_service
 
@@ -256,6 +256,7 @@ class Job(BASE):
         self.status = "REGISTERED"
         self.file_manager = file_manager
         self.session = attached_session
+        self.parameters = job_parameters
 
     def __next__(self):
         job = self.session.query(self.__class__).filter(
@@ -279,6 +280,28 @@ class Job(BASE):
 
         self.status = new_dictionary['status']
         self.result = new_dictionary['result']
+
+    @property
+    def parameters(self):
+        schema_path = self.file_manager[self]
+
+        if not os.path.isfile(schema_path):
+            with open(schema_path, mode='w') as file:
+                file.write(json.dumps({}))
+
+        with open(schema_path, mode='r') as file:
+            data = ''.join([line for line in file])
+
+        return json.loads(data)
+
+    @parameters.setter
+    def parameters(self, new_schema):
+        schema_path = self.file_manager[self]
+
+        JSONSchema().validate(new_schema)
+
+        with open(schema_path, mode='w') as schema_file:
+            schema_file.write(json.dumps(new_schema))
 
     @property
     def result_schema(self):
@@ -305,7 +328,15 @@ class Job(BASE):
         id = fields.Integer()
         date_submitted = fields.DateTime()
         status = fields.Str()
-        parameters = fields.Dict()
+        parameters = fields.Dict(required=True)
+
 
     class DetailedJobSchema(JobSchema):
         result = fields.Dict(required=False)
+
+    def __repr__(self):
+        return '%s(parent_service=%s, ' \
+               'job_parameters=%s, attached_session=%s, file_manager=%s)' % (
+            self.__class__.__name__, self.parent_service, self.parameters,
+            self.session, self.file_manager
+        )

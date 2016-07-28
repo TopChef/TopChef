@@ -7,7 +7,7 @@ from marshmallow_jsonschema import JSONSchema
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
-from .models import Service, Job, UnableToFindItemError
+from .models import Service, Job, UnableToFindItemError, FILE_MANAGER
 from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -136,6 +136,7 @@ def get_service_data(service_id):
     session = SESSION_FACTORY()
 
     service = session.query(Service).filter_by(id=service_id).first()
+    service.file_manager = FILE_MANAGER
 
     if service is None:
         response = jsonify({
@@ -190,6 +191,8 @@ def get_jobs_for_service(service_id):
         response.status_code = 404
         return response
 
+    service.file_manager = FILE_MANAGER
+
     response = jsonify({
         'data': Job.JobSchema(many=True).dump(service.jobs).data
     })
@@ -210,6 +213,8 @@ def request_job(service_id):
         })
         response.status_code = 404
         return response
+
+    service.file_manager = FILE_MANAGER
 
     job_data, errors = Job.JobSchema().load(request.json)
 
@@ -239,6 +244,34 @@ def request_job(service_id):
         })
         response.status_code = 400
         return response
+
+    response = jsonify({
+        'data': 'Job %s successfully created' % job.__repr__()
+    })
+    response.headers['Location'] = url_for(
+        'get_job', job_id=job.id, _external=True
+    )
+    response.status_code = 201
+    return response
+
+
+@app.route('/jobs/<job_id>', methods=['GET'])
+def get_job(job_id):
+    session = SESSION_FACTORY()
+    job = session.query(Job).filter_by(id=job_id).first()
+
+    if not job:
+        response = jsonify({
+            'errors': 'A job with id %s was not found' % job_id
+        })
+        response.status_code = 404
+        return response
+
+    job.file_manager = FILE_MANAGER
+
+    response = jsonify({'data': job.DetailedJobSchema().dump(job).data})
+    response.status_code = 200
+    return response
 
 
 @app.route('/services/<service_id>/jobs/<job_id>', methods=["PUT"])
