@@ -195,6 +195,7 @@ class Service(BASE):
                 _external=True
             )
 
+
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
         job_registration_schema = fields.Dict()
@@ -208,14 +209,20 @@ class Service(BASE):
 
             try:
                 schema = data['job_registration_schema']
-            except IndexError:
+            except KeyError:
                 schema = {'type': 'object'}
+
+            try:
+                result_schema = data['job_result_schema']
+            except KeyError:
+                result_schema = {'type': 'object'}
 
             return Service(
                 data['name'],
                 description=description,
                 job_registration_schema=schema,
-                organizer=FILE_MANAGER
+                organizer=FILE_MANAGER,
+                job_result_schema=result_schema
             )
 
 
@@ -259,6 +266,17 @@ class Job(BASE):
 
         return job
 
+    def update(self, new_dictionary):
+        """
+        Update job data with new data
+        :param dict new_dictionary:
+        :return:
+        """
+        self.DetailedJobSchema().validate(new_dictionary)
+
+        self.status = new_dictionary['status']
+        self.result = new_dictionary['result']
+
     @property
     def result_schema(self):
         return self.parent_service.job_result_schema
@@ -284,6 +302,7 @@ class Job(BASE):
         id = fields.Integer()
         date_submitted = fields.DateTime()
         status = fields.Str()
+        parameters = fields.Dict()
 
     class DetailedJobSchema(JobSchema):
-        result = fields.Dict()
+        result = fields.Dict(required=False)

@@ -179,10 +179,87 @@ def get_jobs_for_service(service_id):
 
 
 @app.route('/services/<service_id>/jobs', methods=["POST"])
-def request_job():
-    pass
+@check_json
+def request_job(service_id):
+    session = SESSION_FACTORY()
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    job_data, errors = Job.JobSchema().load(request.json)
+
+    if errors:
+        response = jsonify({
+            'errors': 'Schema loading produced errors %s' % errors
+        })
+        response.status_code = 400
+        return response
+
+    job = Job(service, job_data['parameters'])
+
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response
 
 
-@app.route('/services/<service_id>/jobs', methods=["PATCH"])
-def post_job_results():
-    pass
+@app.route('/services/<service_id>/jobs/<job_id>', methods=["PUT"])
+@check_json
+def update_job_results(service_id, job_id):
+    session = SESSION_FACTORY()
+
+    service=session.query(Service).filter_by(id=service_id).first()
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    job = session.query(Job).filter_by(id=job_id).first()
+    if not job:
+        response = jsonify({
+            'errors': 'A job with id %s was not found' % job_id
+        })
+        response.status_code = 404
+        return response
+
+    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+
+    job.update(new_job_data)
+
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response
