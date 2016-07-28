@@ -4,11 +4,13 @@ Contains tests for :mod:`topchef.models`
 import pytest
 import os
 import jsonschema
+import shutil
 from uuid import UUID
-from topchef.models import Service, Job
+from topchef.schema_directory_organizer import SchemaDirectoryOrganizer
+from topchef import models
 from topchef.config import config
 from .test_api_server import app_client
-from uuid import uuid4
+
 
 SERVICE_NAME = 'TestService'
 SERVICE_DESCRIPTION = 'A service made from the ``service`` test fixture ' \
@@ -25,23 +27,30 @@ SERVICE_SCHEMA = {
     }
 }
 
-
-@pytest.yield_fixture
-def schema_directory():
-    if not os.path.isdir(config.SCHEMA_DIRECTORY):
-        os.mkdir(config.SCHEMA_DIRECTORY)
-
-    yield
-
-    if not os.listdir(config.SCHEMA_DIRECTORY):
-        os.removedirs(config.SCHEMA_DIRECTORY)
+SCHEMA_DIRECTORY = os.path.join(config.BASE_DIRECTORY, 'testing_schemas')
 
 
 @pytest.yield_fixture
-def service(schema_directory):
+def schema_directory_organizer(monkeypatch):
+    if not os.path.isdir(SCHEMA_DIRECTORY):
+        os.mkdir(SCHEMA_DIRECTORY)
 
-    test_service = Service(
-        SERVICE_NAME, description=SERVICE_DESCRIPTION, schema=SERVICE_SCHEMA
+    organizer = SchemaDirectoryOrganizer(SCHEMA_DIRECTORY)
+
+    monkeypatch.setattr('topchef.models.FILE_MANAGER', organizer)
+
+    yield organizer
+
+    shutil.rmtree(SCHEMA_DIRECTORY)
+
+
+@pytest.yield_fixture
+def service(schema_directory_organizer):
+
+    test_service = models.Service(
+        SERVICE_NAME, description=SERVICE_DESCRIPTION,
+        job_registration_schema=SERVICE_SCHEMA,
+        organizer=schema_directory_organizer
     )
 
     yield test_service
@@ -55,8 +64,10 @@ class TestService(object):
         assert service.description == SERVICE_DESCRIPTION
         assert service.job_registration_schema == SERVICE_SCHEMA
 
-    def test_constructor_no_schema(self, schema_directory):
-        minimum_param_service = Service(SERVICE_NAME)
+    def test_constructor_no_schema(self, schema_directory_organizer):
+        minimum_param_service = models.Service(
+            SERVICE_NAME, organizer=schema_directory_organizer
+        )
 
         assert minimum_param_service.name == SERVICE_NAME
         assert minimum_param_service.description
@@ -66,10 +77,14 @@ class TestService(object):
 
 
 @pytest.yield_fixture
-def twin_services(schema_directory):
-    services = (Service('Service1'), Service('Service2'))
+def twin_services(schema_directory_organizer):
+    services = (
+        models.Service('Service1', organizer=schema_directory_organizer),
+        models.Service('Service2', organizer=schema_directory_organizer)
+    )
 
     yield services
+
 
 class TestComparisons(object):
 
@@ -95,11 +110,6 @@ def test_repr(service):
         service.description, service.job_registration_schema
     )
 
-
-def test_is_directory_available(service):
-    assert service.is_directory_available
-
-
 class TestServiceSchema(object):
 
     def test_post_dump(self, service):
@@ -115,16 +125,16 @@ class TestDetailedServiceSchema(object):
     data_to_load = {
         'name': 'TheService',
         'description': "A test service loaded in through Marshmallow",
-        "schema": {"type": "object"},
+        "job_registration_schema": {"type": "object"},
     }
 
-    def test_make_service_all_args(self):
+    def test_make_service_all_args(self, schema_directory_organizer):
         with app_client('/'):
-            loader_result = Service.DetailedServiceSchema().load(
+            loader_result = models.Service.DetailedServiceSchema().load(
                 self.data_to_load
             )
 
-        assert isinstance(loader_result.data, Service)
+        assert isinstance(loader_result.data, models.Service)
         assert not loader_result.errors
 
 VALID_JOB_SCHEMA = {'value': 1}
@@ -132,7 +142,7 @@ VALID_JOB_SCHEMA = {'value': 1}
 
 @pytest.fixture
 def job(service):
-    test_job = Job(service, VALID_JOB_SCHEMA)
+    test_job = models.Job(service, VALID_JOB_SCHEMA)
 
     return test_job
 
@@ -145,4 +155,4 @@ class TestJobConstructor(object):
 
     def test_constructor_bad_schema(self, service):
         with pytest.raises(jsonschema.ValidationError):
-            Job(service, {'value': -1})
+            models.Job(service, {'value': -1})

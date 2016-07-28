@@ -2,10 +2,17 @@
 Contains utilities to manage the schema directory
 """
 import os
+import shutil
+import tempfile
+import json
 from uuid import uuid1, UUID
+from . import models
 
 
 class SchemaDirectoryOrganizer(object):
+    REGISTRATION_SCHEMA_NAME = 'job_registration_schema'
+    RESULT_SCHEMA_NAME = 'job_result_schema'
+
     def __init__(self, schema_directory_path):
         self.root_path = schema_directory_path
 
@@ -21,14 +28,36 @@ class SchemaDirectoryOrganizer(object):
 
         os.mkdir(service_directory)
 
-        job_schema_filename = os.path.join(
-            service_directory, 'job_registration_schema.json'
-        )
+    def __getitem__(self, model):
+        if isinstance(model, models.Service):
+            return os.path.join(
+                self.root_path, str(model.id)
+            )
+        elif isinstance(model, models.Job):
+            return os.path.join(
+                self.root_path, str(model.parent_service.id),
+                '%s.json' % str(model.id)
+            )
+        else:
+            raise ValueError(
+                'The model class %s is not a Service or Job',
+                model.__repr__()
+            )
 
-        data_to_write = str(service.job_registration_schema)
+    def write(self, data_to_write, target_path):
 
-        with open(job_schema_filename, mode='w') as schema_file:
-            schema_file.write(data_to_write)
+        _, temporary_filename = tempfile.mkstemp(suffix='.json')
+
+        with open(temporary_filename, mode='w') as temporary_file:
+            temporary_file.write(data_to_write)
+
+        if os.path.isfile(target_path):
+            os.remove(target_path)
+
+        os.rename(temporary_file.name, target_path)
+
+        if os.path.isfile(temporary_filename):
+            os.remove(temporary_filename)
 
     @staticmethod
     def _is_guid(dirname):

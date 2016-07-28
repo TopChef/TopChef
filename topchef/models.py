@@ -5,11 +5,10 @@ in the database.
 """
 import os
 import uuid
-import json
-import tempfile
-import shutil
 import logging
+import json
 import jsonschema
+import tempfile
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
@@ -19,11 +18,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 from . import database
 from .config import config
-
+from .schema_directory_organizer import SchemaDirectoryOrganizer
 
 LOG = logging.getLogger(__name__)
 
 BASE = declarative_base(metadata=database.METADATA)
+
+FILE_MANAGER = SchemaDirectoryOrganizer(config.SCHEMA_DIRECTORY)
 
 
 class UnableToFindItemError(Exception):
@@ -50,20 +51,32 @@ class Service(BASE):
     jobs = relationship('Job', backref="parent_service")
 
     def __init__(
-            self, name, description='No Description', schema=None,
-            heartbeat_timeout=30):
+            self, name, description='No Description',
+            job_registration_schema=None,
+            job_result_schema=None,
+            heartbeat_timeout=30,
+            organizer=FILE_MANAGER
+    ):
         self.id = uuid.uuid1()
         self.name = name
         self.description = description
         self.heartbeat_timeout = heartbeat_timeout
+        self.file_manager = organizer
 
         self.last_checked_in = datetime.utcnow()
         self.is_available = True
 
-        if schema is None:
+        self.file_manager.register_service(self)
+
+        if job_registration_schema is None:
             self.job_registration_schema = {'type': 'object'}
         else:
-            self.job_registration_schema = schema
+            self.job_registration_schema = job_registration_schema
+
+        if job_result_schema is None:
+            self.job_result_schema = {'type': 'object'}
+        else:
+            self.job_result_schema = job_result_schema
 
     def __eq__(self, other):
         return self.id == other.id
@@ -87,6 +100,7 @@ class Service(BASE):
         else:
             return service
 
+
     def heartbeat(self):
         self.last_checked_in = datetime.utcnow()
 
@@ -102,14 +116,6 @@ class Service(BASE):
     @is_available.setter
     def is_available(self, new_value):
         self._is_service_available = new_value
-
-    @property
-    def path_to_schema(self):
-        return os.path.join(config.SCHEMA_DIRECTORY, '%s.json' % self.id)
-
-    @property
-    def is_directory_available(self):
-        return os.path.isdir(os.path.split(self.path_to_schema)[0])
 
     def remove_schema_file(self, dangerous_delete=False):
         """
@@ -135,6 +141,48 @@ class Service(BASE):
         if conditions_for_deletion or dangerous_delete:
             os.remove(self.path_to_schema)
 
+    @property
+    def registration_schema(self):
+        registration_schema_path = os.path.join(
+            self.file_manager[self], self.file_manager.REGISTRATION_SCHEMA_NAME
+        )
+
+        with open(registration_schema_path, mode='r') as schema_file:
+            schema = json.loads(''.join([line for line in schema_file]))
+
+        return JSONSchema().load(schema).data
+
+    @registration_schema.setter
+    def registration_schema(self, schema_to_write):
+        errors, data = JSONSchema().dumps(schema_to_write)
+        if errors: raise ValueError('The supplied schema is not a JSON Schema')
+
+        self.file_manager.write(data)
+
+    @property
+    def job_result_schema(self):
+        schema_path = os.path.join(
+            self.file_manager[self], self.file_manager.RESULT_SCHEMA_NAME
+        )
+
+        with open(schema_path, mode='r') as schema_file:
+            schema = json.loads(''.join([line for line in schema_file]))
+
+        return JSONSchema().load(schema).data
+
+    @job_result_schema.setter
+    def job_result_schema(self, schema_to_write):
+        data, errors = JSONSchema().dumps(schema_to_write)
+
+        if errors: raise ValueError('The supplied schema is not a JSON Schema')
+
+        schema_path = os.path.join(
+            self.file_manager[self],
+            '%s.json' % self.file_manager.RESULT_SCHEMA_NAME
+        )
+
+        self.file_manager.write(data, schema_path)
+
     class ServiceSchema(Schema):
         id = fields.Str()
         name = fields.Str(required=True)
@@ -149,7 +197,7 @@ class Service(BASE):
 
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
-        schema = fields.Dict()
+        job_registration_schema = fields.Dict()
 
         @post_load
         def make_service(self, data):
@@ -159,14 +207,14 @@ class Service(BASE):
                 description = 'No description'
 
             try:
-                schema = data['schema']
+                schema = data['job_registration_schema']
             except IndexError:
                 schema = {'type': 'object'}
 
             return Service(
                 data['name'],
                 description=description,
-                schema=schema
+                job_registration_schema=schema
             )
 
 
@@ -182,7 +230,9 @@ class Job(BASE):
     result = __table__.c.result
 
     def __init__(self, parent_service, job_parameters,
-                 attached_session=Session(bind=config.database_engine)):
+                 attached_session=Session(bind=config.database_engine),
+                 file_manager=SchemaDirectoryOrganizer(config.SCHEMA_DIRECTORY)
+                 ):
         self.parent_service = parent_service
 
         jsonschema.validate(
@@ -193,6 +243,7 @@ class Job(BASE):
         self.id = uuid.uuid1()
         self.date_submitted = datetime.utcnow()
         self.status = "REGISTERED"
+        self.file_manager = file_manager
         self.session = attached_session
 
     def __next__(self):
@@ -206,6 +257,24 @@ class Job(BASE):
             raise StopIteration
 
         return job
+
+    @property
+    def result_schema(self):
+        return self.parent_service.job_result_schema
+
+    @property
+    def result(self):
+        with open(self.file_manager[self]) as result_file:
+            file_data = result_file.read()
+
+        return JSONSchema().loads(file_data).data
+
+    @result.setter
+    def result(self, job_result):
+        jsonschema.validate(job_result, self.parent_service.job_result_schema)
+        self.file_manager.write(
+            json.dumps(job_result), self.file_manager[self]
+        )
 
     def __iter__(self):
         return self
