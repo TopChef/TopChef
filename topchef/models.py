@@ -9,13 +9,14 @@ import json
 import tempfile
 import shutil
 import logging
+import jsonschema
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
 from marshmallow_jsonschema import JSONSchema
-from sqlalchemy import inspect
+from sqlalchemy import inspect, desc
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Session, relationship
 from . import database
 from .config import config
 
@@ -57,6 +58,7 @@ class Service(BASE):
         self.heartbeat_timeout = heartbeat_timeout
 
         self.last_checked_in = datetime.utcnow()
+        self.is_available = True
 
         if schema is None:
             self.job_registration_schema = {'type': 'object'}
@@ -191,7 +193,6 @@ class Service(BASE):
             )
 
 
-
 class Job(BASE):
     """
     Base class for a compute job
@@ -199,3 +200,43 @@ class Job(BASE):
     __table__ = database.jobs
 
     id = __table__.c.job_id
+    date_submitted = __table__.c.date_submitted
+    status = __table__.c.status
+    result = __table__.c.result
+
+    def __init__(self, parent_service, job_parameters,
+                 attached_session=Session(bind=config.database_engine)):
+        self.parent_service = parent_service
+
+        jsonschema.validate(
+            job_parameters,
+            self.parent_service.job_registration_schema
+        )
+
+        self.id = uuid.uuid1()
+        self.date_submitted = datetime.utcnow()
+        self.status = "REGISTERED"
+        self.session = attached_session
+
+    def __next__(self):
+        job = self.session.query(self.__class__).filter(
+            self.__class__.date_submitted > self.date_submitted
+        ).order_by(
+            desc(self.__class__.date_submitted)
+        ).first()
+
+        if job is None:
+            raise StopIteration
+
+        return job
+
+    def __iter__(self):
+        return self
+
+    class JobSchema(Schema):
+        id = fields.Integer()
+        date_submitted = fields.DateTime()
+        status = fields.Str()
+
+    class DetailedJobSchema(JobSchema):
+        result = fields.Dict()
