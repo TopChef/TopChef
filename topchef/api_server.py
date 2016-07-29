@@ -3,10 +3,11 @@ Very very very basic application
 """
 import logging
 from uuid import uuid1
+from marshmallow_jsonschema import JSONSchema
 from .config import config
 from flask import Flask, jsonify, request, url_for
 from datetime import datetime
-from .models import Service, Job, UnableToFindItemError
+from .models import Service, Job, UnableToFindItemError, FILE_MANAGER
 from .decorators import check_json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
@@ -55,11 +56,30 @@ def hello_world():
 
 @app.route('/services', methods=["GET"])
 def get_services():
+    """
+    Returns a list of services that have been registered with this API
+
+    **Example Response**
+
+    ..sourcecode:: http
+
+        HTTP/1.1 /services GET
+        Content-Type: application/json
+
+        {
+            "data": {
+            }
+        }
+    """
     session = SESSION_FACTORY()
     service_list = session.query(Service).all()
 
     response = jsonify({
-        'data': Service.ServiceSchema(many=True).dump(service_list).data
+        'data': Service.ServiceSchema(many=True).dump(service_list).data,
+        'meta': {
+            "POST_schema":
+                JSONSchema().dump(Service.DetailedServiceSchema()).data
+        }
     })
 
     response.status_code = 200
@@ -116,6 +136,7 @@ def get_service_data(service_id):
     session = SESSION_FACTORY()
 
     service = session.query(Service).filter_by(id=service_id).first()
+    service.file_manager = FILE_MANAGER
 
     if service is None:
         response = jsonify({
@@ -144,6 +165,9 @@ def heartbeat(service_id):
 
     service.heartbeat()
 
+    session.add(service)
+    session.commit()
+
     if not request.json:
         response = jsonify({
             'data': 'service %s checked in at %s' % (
@@ -170,6 +194,8 @@ def get_jobs_for_service(service_id):
         response.status_code = 404
         return response
 
+    service.file_manager = FILE_MANAGER
+
     response = jsonify({
         'data': Job.JobSchema(many=True).dump(service.jobs).data
     })
@@ -179,10 +205,117 @@ def get_jobs_for_service(service_id):
 
 
 @app.route('/services/<service_id>/jobs', methods=["POST"])
-def request_job():
-    pass
+@check_json
+def request_job(service_id):
+    session = SESSION_FACTORY()
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    service.file_manager = FILE_MANAGER
+
+    job_data, errors = Job.JobSchema().load(request.json)
+
+    if errors:
+        response = jsonify({
+            'errors': 'Schema loading produced errors %s' % errors
+        })
+        response.status_code = 400
+        return response
+
+    job = Job(service, job_data['parameters'])
+
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response
+
+    response = jsonify({
+        'data': 'Job %s successfully created' % job.__repr__()
+    })
+    response.headers['Location'] = url_for(
+        'get_job', job_id=job.id, _external=True
+    )
+    response.status_code = 201
+    return response
 
 
-@app.route('/services/<service_id>/jobs', methods=["PATCH"])
-def post_job_results():
-    pass
+@app.route('/jobs/<job_id>', methods=['GET'])
+def get_job(job_id):
+    session = SESSION_FACTORY()
+    job = session.query(Job).filter_by(id=job_id).first()
+
+    if not job:
+        response = jsonify({
+            'errors': 'A job with id %s was not found' % job_id
+        })
+        response.status_code = 404
+        return response
+
+    job.file_manager = FILE_MANAGER
+
+    response = jsonify({'data': job.DetailedJobSchema().dump(job).data})
+    response.status_code = 200
+    return response
+
+
+@app.route('/services/<service_id>/jobs/<job_id>', methods=["PUT"])
+@check_json
+def update_job_results(service_id, job_id):
+    session = SESSION_FACTORY()
+
+    service=session.query(Service).filter_by(id=service_id).first()
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    job = session.query(Job).filter_by(id=job_id).first()
+    if not job:
+        response = jsonify({
+            'errors': 'A job with id %s was not found' % job_id
+        })
+        response.status_code = 404
+        return response
+
+    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+
+    job.update(new_job_data)
+
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response

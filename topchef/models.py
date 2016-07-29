@@ -4,11 +4,12 @@ have JSON representations written in marshmallow, and a single representation
 in the database.
 """
 import os
-import uuid
-import json
 import tempfile
-import shutil
+import uuid
 import logging
+import json
+from uuid import UUID
+
 import jsonschema
 from datetime import datetime, timedelta
 from flask import url_for
@@ -20,10 +21,76 @@ from sqlalchemy.orm import Session, relationship
 from . import database
 from .config import config
 
-
 LOG = logging.getLogger(__name__)
 
 BASE = declarative_base(metadata=database.METADATA)
+
+
+class SchemaDirectoryOrganizer(object):
+    REGISTRATION_SCHEMA_NAME = 'job_registration_schema'
+    RESULT_SCHEMA_NAME = 'job_result_schema'
+
+    def __init__(self, schema_directory_path):
+        self.root_path = schema_directory_path
+
+    @property
+    def services(self):
+        return [
+            service_id for service_id in os.listdir(self.root_path)
+                if self._is_guid(service_id)
+            ]
+
+    def register_service(self, service):
+        service_directory = os.path.join(self.root_path, str(service.id))
+
+        os.mkdir(service_directory)
+
+    def __getitem__(self, model):
+        if isinstance(model, Service):
+            return os.path.join(
+                self.root_path, str(model.id)
+            )
+        elif isinstance(model, Job):
+            return os.path.join(
+                self.root_path, str(model.parent_service.id),
+                '%s.json' % str(model.id)
+            )
+        else:
+            raise ValueError(
+                'The model class %s is not a Service or Job',
+                model.__repr__()
+            )
+
+    def write(self, data_to_write, target_path):
+
+        _, temporary_filename = tempfile.mkstemp(suffix='.json')
+
+        with open(temporary_filename, mode='w') as temporary_file:
+            temporary_file.write(data_to_write)
+
+        if os.path.isfile(target_path):
+            os.remove(target_path)
+
+        os.rename(temporary_file.name, target_path)
+
+        if os.path.isfile(temporary_filename):
+            os.remove(temporary_filename)
+
+    @staticmethod
+    def _is_guid(dirname):
+        try:
+            UUID(dirname)
+            return True
+        except ValueError:
+            return False
+
+    def __repr__(self):
+        return '%s(schema_directory_path=%s)' % (
+            self.__class__.__name__, self.root_path
+        )
+
+
+FILE_MANAGER = SchemaDirectoryOrganizer(config.SCHEMA_DIRECTORY)
 
 
 class UnableToFindItemError(Exception):
@@ -50,20 +117,32 @@ class Service(BASE):
     jobs = relationship('Job', backref="parent_service")
 
     def __init__(
-            self, name, description='No Description', schema=None,
-            heartbeat_timeout=30):
+            self, name, description='No Description',
+            job_registration_schema=None,
+            job_result_schema=None,
+            heartbeat_timeout=30,
+            organizer=FILE_MANAGER
+    ):
         self.id = uuid.uuid1()
         self.name = name
         self.description = description
         self.heartbeat_timeout = heartbeat_timeout
+        self.file_manager = organizer
 
         self.last_checked_in = datetime.utcnow()
         self.is_available = True
 
-        if schema is None:
+        self.file_manager.register_service(self)
+
+        if job_registration_schema is None:
             self.job_registration_schema = {'type': 'object'}
         else:
-            self.job_registration_schema = schema
+            self.job_registration_schema = job_registration_schema
+
+        if job_result_schema is None:
+            self.job_result_schema = {'type': 'object'}
+        else:
+            self.job_result_schema = job_result_schema
 
     def __eq__(self, other):
         return self.id == other.id
@@ -87,13 +166,16 @@ class Service(BASE):
         else:
             return service
 
+
     def heartbeat(self):
         self.last_checked_in = datetime.utcnow()
 
     @property
-    def has_timed_out(self, date=datetime.utcnow()):
-        return (date - self.last_checked_in) > \
-               timedelta(seconds=self.heartbeat_timeout)
+    def has_timed_out(self, date=None):
+        if date is None:
+            date = datetime.utcnow()
+        return (date - self.last_checked_in) >= \
+            timedelta(seconds=self.heartbeat_timeout)
 
     @property
     def is_available(self):
@@ -102,37 +184,6 @@ class Service(BASE):
     @is_available.setter
     def is_available(self, new_value):
         self._is_service_available = new_value
-
-    @property
-    def path_to_schema(self):
-        return os.path.join(config.SCHEMA_DIRECTORY, '%s.json' % self.id)
-
-    @property
-    def is_directory_available(self):
-        return os.path.isdir(os.path.split(self.path_to_schema)[0])
-
-    @property
-    def job_registration_schema(self):
-        """
-        This schema must be fulfilled in order to allow a job to be registered.
-        The getter returns the schema from this service's associated file
-        """
-        with open(self.path_to_schema, mode='r') as schema_file:
-            schema = json.loads(''.join([line for line in schema_file]))
-        return JSONSchema().load(schema).data
-
-    @job_registration_schema.setter
-    def job_registration_schema(self, new_schema):
-        """
-        The setter for this method
-        :param dict new_schema:
-        :return:
-        """
-        with tempfile.NamedTemporaryFile(mode='w+') as temporary_file:
-            temporary_file.write(json.dumps(new_schema))
-            temporary_file.seek(0)
-            shutil.copy(temporary_file.name, self.path_to_schema)
-        pass
 
     def remove_schema_file(self, dangerous_delete=False):
         """
@@ -158,6 +209,53 @@ class Service(BASE):
         if conditions_for_deletion or dangerous_delete:
             os.remove(self.path_to_schema)
 
+    @property
+    def job_registration_schema(self):
+        registration_schema_path = os.path.join(
+            self.file_manager[self],
+            '%s.json' % self.file_manager.REGISTRATION_SCHEMA_NAME
+        )
+
+        with open(registration_schema_path, mode='r') as schema_file:
+            file_data = ''.join([line for line in schema_file])
+
+        return JSONSchema().loads(file_data).data
+
+    @job_registration_schema.setter
+    def job_registration_schema(self, schema_to_write):
+        schema_path = os.path.join(
+            self.file_manager[self],
+            '%s.json' % self.file_manager.REGISTRATION_SCHEMA_NAME
+        )
+
+        JSONSchema().validate(schema_to_write)
+
+        self.file_manager.write(json.dumps(schema_to_write), schema_path)
+
+    @property
+    def job_result_schema(self):
+        schema_path = os.path.join(
+            self.file_manager[self], self.file_manager.RESULT_SCHEMA_NAME
+        )
+
+        with open(schema_path, mode='r') as schema_file:
+            schema = json.loads(''.join([line for line in schema_file]))
+
+        return JSONSchema().load(schema).data
+
+    @job_result_schema.setter
+    def job_result_schema(self, schema_to_write):
+        data, errors = JSONSchema().dumps(schema_to_write)
+
+        if errors: raise ValueError('The supplied schema is not a JSON Schema')
+
+        schema_path = os.path.join(
+            self.file_manager[self],
+            '%s.json' % self.file_manager.RESULT_SCHEMA_NAME
+        )
+
+        self.file_manager.write(data, schema_path)
+
     class ServiceSchema(Schema):
         id = fields.Str()
         name = fields.Str(required=True)
@@ -172,7 +270,7 @@ class Service(BASE):
 
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
-        schema = fields.Dict()
+        job_registration_schema = fields.Dict(required=True)
 
         @post_load
         def make_service(self, data):
@@ -182,14 +280,21 @@ class Service(BASE):
                 description = 'No description'
 
             try:
-                schema = data['schema']
-            except IndexError:
+                schema = data['job_registration_schema']
+            except KeyError:
                 schema = {'type': 'object'}
+
+            try:
+                result_schema = data['job_result_schema']
+            except KeyError:
+                result_schema = {'type': 'object'}
 
             return Service(
                 data['name'],
                 description=description,
-                schema=schema
+                job_registration_schema=schema,
+                organizer=FILE_MANAGER,
+                job_result_schema=result_schema
             )
 
 
@@ -205,7 +310,9 @@ class Job(BASE):
     result = __table__.c.result
 
     def __init__(self, parent_service, job_parameters,
-                 attached_session=Session(bind=config.database_engine)):
+                 attached_session=Session(bind=config.database_engine),
+                 file_manager=FILE_MANAGER
+                 ):
         self.parent_service = parent_service
 
         jsonschema.validate(
@@ -216,7 +323,9 @@ class Job(BASE):
         self.id = uuid.uuid1()
         self.date_submitted = datetime.utcnow()
         self.status = "REGISTERED"
+        self.file_manager = file_manager
         self.session = attached_session
+        self.parameters = job_parameters
 
     def __next__(self):
         job = self.session.query(self.__class__).filter(
@@ -230,6 +339,57 @@ class Job(BASE):
 
         return job
 
+    def update(self, new_dictionary):
+        """
+        Update job data with new data
+        :param dict new_dictionary:
+        :return:
+        """
+        self.DetailedJobSchema().validate(new_dictionary)
+
+        self.status = new_dictionary['status']
+        self.result = new_dictionary['result']
+
+    @property
+    def parameters(self):
+        schema_path = self.file_manager[self]
+
+        if not os.path.isfile(schema_path):
+            with open(schema_path, mode='w') as file:
+                file.write(json.dumps({}))
+
+        with open(schema_path, mode='r') as file:
+            data = ''.join([line for line in file])
+
+        return json.loads(data)
+
+    @parameters.setter
+    def parameters(self, new_schema):
+        schema_path = self.file_manager[self]
+
+        JSONSchema().validate(new_schema)
+
+        with open(schema_path, mode='w') as schema_file:
+            schema_file.write(json.dumps(new_schema))
+
+    @property
+    def result_schema(self):
+        return self.parent_service.job_result_schema
+
+    @property
+    def result(self):
+        with open(self.file_manager[self]) as result_file:
+            file_data = result_file.read()
+
+        return JSONSchema().loads(file_data).data
+
+    @result.setter
+    def result(self, job_result):
+        jsonschema.validate(job_result, self.parent_service.job_result_schema)
+        self.file_manager.write(
+            json.dumps(job_result), self.file_manager[self]
+        )
+
     def __iter__(self):
         return self
 
@@ -237,6 +397,15 @@ class Job(BASE):
         id = fields.Integer()
         date_submitted = fields.DateTime()
         status = fields.Str()
+        parameters = fields.Dict(required=True)
+
 
     class DetailedJobSchema(JobSchema):
-        result = fields.Dict()
+        result = fields.Dict(required=False)
+
+    def __repr__(self):
+        return '%s(parent_service=%s, ' \
+               'job_parameters=%s, attached_session=%s, file_manager=%s)' % (
+            self.__class__.__name__, self.parent_service, self.parameters,
+            self.session, self.file_manager
+        )
