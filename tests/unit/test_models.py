@@ -6,7 +6,7 @@ import os
 import jsonschema
 import shutil
 from uuid import UUID
-from topchef.schema_directory_organizer import SchemaDirectoryOrganizer
+from topchef.models import SchemaDirectoryOrganizer
 from topchef import models
 from topchef.config import config
 from topchef.api_server import app

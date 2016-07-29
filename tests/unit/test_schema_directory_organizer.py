@@ -3,9 +3,10 @@
 """
 import os
 import shutil
+
+import topchef.models
 from topchef.config import config
 from topchef.models import Service, Job
-import topchef.schema_directory_organizer as organizer
 import pytest
 
 PATH = os.path.join(config.BASE_DIRECTORY, 'schema_testing')
@@ -25,15 +26,15 @@ def schema_directory(monkeypatch):
 
 @pytest.yield_fixture()
 def empty_manager(schema_directory):
-    manager = organizer.SchemaDirectoryOrganizer(PATH)
+    manager = topchef.models.SchemaDirectoryOrganizer(PATH)
 
     yield manager
 
 
 def test_organizer_constructor(schema_directory):
-    manager = organizer.SchemaDirectoryOrganizer(PATH)
+    manager = topchef.models.SchemaDirectoryOrganizer(PATH)
 
-    assert isinstance(manager, organizer.SchemaDirectoryOrganizer)
+    assert isinstance(manager, topchef.models.SchemaDirectoryOrganizer)
     assert manager.root_path == PATH
 
 
