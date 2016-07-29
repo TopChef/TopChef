@@ -104,9 +104,11 @@ class Service(BASE):
         self.last_checked_in = datetime.utcnow()
 
     @property
-    def has_timed_out(self, date=datetime.utcnow()):
-        return (date - self.last_checked_in) > \
-               timedelta(seconds=self.heartbeat_timeout)
+    def has_timed_out(self, date=None):
+        if date is None:
+            date = datetime.utcnow()
+        return (date - self.last_checked_in) >= \
+            timedelta(seconds=self.heartbeat_timeout)
 
     @property
     def is_available(self):

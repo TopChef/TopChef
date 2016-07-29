@@ -165,6 +165,9 @@ def heartbeat(service_id):
 
     service.heartbeat()
 
+    session.add(service)
+    session.commit()
+
     if not request.json:
         response = jsonify({
             'data': 'service %s checked in at %s' % (

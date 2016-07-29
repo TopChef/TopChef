@@ -63,7 +63,7 @@ def manager_with_job(manager_with_service):
     job = Job(manager_with_service[1], {'value': True}, file_manager=manager)
 
     yield manager, manager_with_service[1], job
-   
+
 
 def test_getitem_for_job(manager_with_job):
     manager, service, job = manager_with_job
