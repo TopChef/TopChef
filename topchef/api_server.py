@@ -2,7 +2,7 @@
 Very very very basic application
 """
 import logging
-from uuid import uuid1
+from uuid import uuid1, UUID
 from marshmallow_jsonschema import JSONSchema
 from .config import config
 from flask import Flask, jsonify, request, url_for
@@ -126,7 +126,7 @@ def register_service():
             'data': {
                 'message': 'Service %s successfully registered' % new_service,
                 'service_details': 
-                    new_service.DetailedServiceSchema().dump(new_service)
+                    new_service.DetailedServiceSchema().dump(new_service).data
             }
         }
     )
@@ -139,6 +139,14 @@ def register_service():
 
 @app.route('/services/<service_id>', methods=["GET"])
 def get_service_data(service_id):
+    try:
+        service_id = UUID(service_id)
+    except ValueError:
+        response = jsonify({'errors': "The service id %s is not a UUID. "
+        "No service with this id exists" % service_id})
+        response.status_code = 404
+        return response
+    
     session = SESSION_FACTORY()
 
     service = session.query(Service).filter_by(id=service_id).first()
@@ -213,6 +221,44 @@ def get_jobs_for_service(service_id):
 @app.route('/services/<service_id>/jobs', methods=["POST"])
 @check_json
 def request_job(service_id):
+    """
+    Request a job from a particular service to run on the system
+
+    **Example Response**
+    
+    .. sourcecode:: http
+      
+        {
+          "data": {
+            "message": "Service Service(id=312789728539838762115097976762654683637, name=TestService, description=Some test data, schema={'type': 'object', 'properties': {u'value': {u'minimum': 1, u'type': u'integer', u'maximum': 10}}}) successfully registered",
+            "service_details": [
+              {
+                "description": "Some test data",
+                "has_timed_out": false,
+                "id": "eb511c46-6577-11e6-a72a-3c970e7271f5",
+                "job_registration_schema": {
+                  "properties": {
+                    "value": {
+                      "maximum": 10,
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                },
+                "name": "TestService",
+                "url": "http://localhost:5000/services/eb511c46-6577-11e6-a72a-3c970e7271f5"
+              },
+            ]
+          }
+        }
+
+    :statuscode 201: The job was created successfully
+    :statuscode 400: An error occurred with the job created
+    :statuscode 404: The service for which the job is to be requested 
+        was not found
+    """
+    
     session = SESSION_FACTORY()
     service = session.query(Service).filter_by(id=service_id).first()
 
@@ -337,3 +383,16 @@ def update_job_results(service_id, job_id):
         })
         response.status_code = 400
         return response
+
+    response = jsonify({
+        'data': {
+            'message': 'Job %s updated successfully' % job,
+            'job_schema': job.DetailedJobSchema().dump(job).data()
+            }
+        }
+    )
+    response.status_code = 200
+    response.headers['Location'] = url_for(
+        '.get_job', job_id=job.id, _external=True
+    )
+    return response
