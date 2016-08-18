@@ -122,7 +122,13 @@ def register_service():
         return response
 
     response = jsonify(
-        {'data': 'Service %s successfully registered' % new_service}
+        {
+            'data': {
+                'message': 'Service %s successfully registered' % new_service,
+                'service_details': 
+                    new_service.DetailedServiceSchema().dump(new_service)
+            }
+        }
     )
     response.headers['Location'] = url_for(
         'get_service_data', service_id=new_service.id, _external=True
