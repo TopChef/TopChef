@@ -14,7 +14,13 @@ notifications:
 
 install:
   - pip install -r requirements.txt
+  - pip install psycopg2 # Postgres driver
+
+before_script:
+
+  - psql -c 'create database test_db;' -U postgres
 
 script:
+  - python setup.py install
   - py.test
 
