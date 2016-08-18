@@ -257,6 +257,18 @@ def request_job(service_id):
     response.status_code = 201
     return response
 
+@app.route('/jobs', methods=["GET"])
+def get_jobs():
+    session = SESSION_FACTORY()
+    job_list = session.query(Job).all()
+
+    for job in job_list:
+        job.file_manager = FILE_MANAGER
+
+    response = jsonify({'data': Job.JobSchema(many=True).dump(job_list).data})
+    response.status_code = 200
+
+    return response
 
 @app.route('/jobs/<job_id>', methods=['GET'])
 def get_job(job_id):

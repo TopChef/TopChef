@@ -49,7 +49,7 @@ def app_client(endpoint):
     request_context.pop()
 
 
-@pytest.mark.parametrize('endpoint', ['/', '/services'])
+@pytest.mark.parametrize('endpoint', ['/', '/services', '/jobs'])
 def test_get_request(database, endpoint):
     with app_client(endpoint) as client:
         response = client.get(
