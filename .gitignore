@@ -66,3 +66,6 @@ target/
 
 #SQLite databases
 *.sqlite
+
+#JSON Schema files that shouldn't be in VCS
+schemas

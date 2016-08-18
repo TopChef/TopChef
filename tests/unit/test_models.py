@@ -30,12 +30,19 @@ SERVICE_SCHEMA = {
 
 SCHEMA_DIRECTORY = os.path.join(config.BASE_DIRECTORY, 'testing_schemas')
 
-
 @pytest.yield_fixture
-def schema_directory_organizer(monkeypatch):
+def schema_directory(monkeypatch):
     if not os.path.isdir(SCHEMA_DIRECTORY):
         os.mkdir(SCHEMA_DIRECTORY)
 
+    monkeypatch.setattr('topchef.config.Config.SCHEMA_DIRECTORY', SCHEMA_DIRECTORY)
+
+    yield
+
+    shutil.rmtree(SCHEMA_DIRECTORY)
+
+@pytest.yield_fixture
+def schema_directory_organizer(schema_directory, monkeypatch):    
     organizer = SchemaDirectoryOrganizer(SCHEMA_DIRECTORY)
 
     monkeypatch.setattr('topchef.models.FILE_MANAGER', organizer)
@@ -44,9 +51,6 @@ def schema_directory_organizer(monkeypatch):
     )
 
     yield organizer
-
-    shutil.rmtree(SCHEMA_DIRECTORY)
-
 
 @pytest.yield_fixture
 def service(schema_directory_organizer):
@@ -59,9 +63,84 @@ def service(schema_directory_organizer):
 
     yield test_service
 
+@pytest.fixture
+def job(service):
+    test_job = models.Job(service, VALID_JOB_SCHEMA,
+                          file_manager=service.file_manager)
+
+    return test_job
+
+class TestSchemaDirectoryOrganizer(object):
+
+    def test_constructor(self):
+        directory_path = os.path.join('this', 'is', 'a', 'test')
+        organizer = SchemaDirectoryOrganizer(directory_path)
+
+        assert organizer.root_path == directory_path
+
+    class TestRegister(object):
+        def test_register_service(self, schema_directory_organizer, service):
+            shutil.rmtree(
+                os.path.join(schema_directory_organizer.root_path, str(service.id))
+            )
+            schema_directory_organizer.register(service)
+            
+            assert os.path.isdir(
+                os.path.join(
+                    schema_directory_organizer.root_path, str(service.id)
+                )
+            )
+        
+        def test_register_job(self, service, job, schema_directory_organizer):
+            shutil.rmtree(
+                os.path.join(
+                    schema_directory_organizer.root_path, 
+                    str(job.parent_service.id),
+                    str(job.id)
+                )
+            )
+            schema_directory_organizer.register(job)
+
+            assert os.path.isdir(
+                os.path.join(schema_directory_organizer.root_path,
+                    str(service.id), str(job.id)
+                )
+            )
+
+        def test_register_error(self, schema_directory_organizer):
+            model_to_register = 'not a valid model. I am a string'
+
+            assert not isinstance(model_to_register, models.Service)
+            assert not isinstance(model_to_register, models.Job)
+
+            with pytest.raises(ValueError):
+                schema_directory_organizer.register(model_to_register)
+
+    class TestGetItem(object):
+        def test_getitem_service(self, service, schema_directory_organizer):
+            expected_path = os.path.join(
+                    schema_directory_organizer.root_path, str(service.id)
+            )
+            assert expected_path == schema_directory_organizer[service]
+
+        def test_getitem_job(self, job, schema_directory_organizer):
+            expected_path = os.path.join(
+                    schema_directory_organizer.root_path,
+                    str(job.parent_service.id),
+                    str(job.id)
+            )
+            assert expected_path == schema_directory_organizer[job]
+
+        def test_getitem_error(self, schema_directory_organizer):
+            bad_model = 'Not a model class'
+
+            assert not isinstance(bad_model, models.Service)
+            assert not isinstance(bad_model, models.Job)
+
+            with pytest.raises(ValueError):
+                schema_directory_organizer[bad_model]
 
 class TestService(object):
-
     def test_constructor(self, service):
         assert service.name == SERVICE_NAME
         assert isinstance(service.id, UUID)
@@ -152,14 +231,6 @@ class TestDetailedServiceSchema(object):
         assert not loader_result.errors
 
 VALID_JOB_SCHEMA = {'value': 1}
-
-
-@pytest.fixture
-def job(service):
-    test_job = models.Job(service, VALID_JOB_SCHEMA,
-                          file_manager=service.file_manager)
-
-    return test_job
 
 
 class TestJobConstructor(object):
