@@ -309,13 +309,18 @@ def request_job(service_id):
         return response
 
     response = jsonify({
-        'data': 'Job %s successfully created' % job.__repr__()
+        'data': {
+            'message': 'Job %s successfully created' % job.__repr__(),
+            'job_details': job.JobSchema().dump(job).data
+        }
     })
+
     response.headers['Location'] = url_for(
         'get_job', job_id=job.id, _external=True
     )
     response.status_code = 201
     return response
+
 
 @app.route('/jobs', methods=["GET"])
 def get_jobs():
@@ -330,8 +335,18 @@ def get_jobs():
 
     return response
 
+
 @app.route('/jobs/<job_id>', methods=['GET'])
 def get_job(job_id):
+    try:
+        job_id = UUID(job_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'Could not parse job_id=%s as a UUID' % job_id
+        })
+        response.status_code = 404
+        return response
+
     session = SESSION_FACTORY()
     job = session.query(Job).filter_by(id=job_id).first()
 

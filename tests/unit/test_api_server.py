@@ -28,6 +28,8 @@ JOB_REGISTRATION_SCHEMA = {
     }
 }
 
+VALID_JOB_SCHEMA = {'parameters': {'value': 1}}
+
 @pytest.yield_fixture
 def schema_directory():
 
@@ -96,8 +98,6 @@ def posted_service(database):
 
         data = json.loads(response.data.decode('utf-8'))
 
-        print(data)
-
         service_id = UUID(data['data']['service_details']['id'])
 
     return service_id
@@ -126,3 +126,80 @@ class TestService(object):
             )
         
         assert response.status_code == 404
+
+class TestPatchService(object):
+
+    def test_service_patch(self, posted_service):
+        endpoint = '/services/%s' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.patch(endpoint)
+
+        assert response.status_code == 200
+
+
+    def test_service_404(self, posted_service):
+        service_id = 'foo'
+        assert service_id != str(posted_service)
+
+        endpoint = '/services/%s' % service_id
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 404
+
+@pytest.fixture
+def posted_job(database, posted_service):
+    endpoint = '/services/%s/jobs' % str(posted_service)
+
+    with app_client(endpoint) as client:
+        response = client.post(
+            endpoint, headers={'Content-Type': 'application/json'},
+            data=json.dumps(VALID_JOB_SCHEMA)
+        )
+
+        assert response.status_code == 201
+
+        data = json.loads(response.data.decode('utf-8'))
+        
+        job_id = UUID(data['data']['job_details']['id'])
+
+    return job_id
+        
+class TestGetServiceJobs(object):
+    def test_get_jobs(self, posted_service, posted_job):
+        endpoint = 'services/%s/jobs' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+
+    def test_get_job(self, posted_service, posted_job):
+        endpoint = 'jobs/%s' % (str(posted_job))
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+        
+        assert response.status_code == 200
+
+    def test_get_job_404(self, posted_service, posted_job):
+        job_id = 'foo'
+        assert job_id != str(posted_job)
+
+        endpoint = 'jobs/%s' % (job_id)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 404
+
