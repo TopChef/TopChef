@@ -167,6 +167,14 @@ def get_service_data(service_id):
 @app.route('/services/<service_id>', methods=["PATCH"])
 def heartbeat(service_id):
     session = SESSION_FACTORY()
+    try:
+        service_id = UUID(service_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'Unable to parse id %s as a UUID' % (service_id)
+        })
+        response.status_code = 404
+        return response
 
     try:
         service = Service.from_session(session, service_id)
