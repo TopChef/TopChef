@@ -422,7 +422,6 @@ class Job(BASE):
     id = __table__.c.job_id
     date_submitted = __table__.c.date_submitted
     status = __table__.c.status
-    result = __table__.c.result
 
     def __init__(self, parent_service, job_parameters,
                  attached_session=Session(bind=config.database_engine),
@@ -444,7 +443,7 @@ class Job(BASE):
 
         self.session = attached_session
         self.parameters = job_parameters
-        
+
     def __next__(self):
         job = self.session.query(self.__class__).filter(
             self.__class__.date_submitted > self.date_submitted
@@ -505,6 +504,9 @@ class Job(BASE):
             self.file_manager.JOB_RESULT_FILE_NAME
         )
 
+        if not os.path.isfile(schema_path):
+            return None
+
         with open(schema_path) as result_file:
             file_data = result_file.read()
 
@@ -526,11 +528,10 @@ class Job(BASE):
         return self
 
     class JobSchema(Schema):
-        id = fields.Integer()
+        id = fields.Str()
         date_submitted = fields.DateTime()
         status = fields.Str()
         parameters = fields.Dict(required=True)
-
 
     class DetailedJobSchema(JobSchema):
         result = fields.Dict(required=False)
