@@ -1,3 +1,0 @@
-"""
-Initializes the NMRbot directory
-"""
