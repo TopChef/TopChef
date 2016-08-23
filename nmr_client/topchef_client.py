@@ -70,16 +70,7 @@ class _TopChefResource:
 			raise ValueError('The string %s is not valid JSON')
 		
 		return parsed_json
-
-
-class TopChefClient(_TopChefResource):
-	"""
-	Contains methods concerning the operation of the entire TopChef service
-	as a whole.
-	"""
-	JOBS_ENDPOINT = '/jobs'
-			
-
+	
 	def is_server_alive(self):
 		"""
 		Pings the server over HTTP to check if the server is alive
@@ -95,6 +86,15 @@ class TopChefClient(_TopChefResource):
 			return True
 		else:
 			return False
+
+
+class TopChefClient(_TopChefResource):
+	"""
+	Contains methods concerning the operation of the entire TopChef service
+	as a whole.
+	"""
+	JOBS_ENDPOINT = '/jobs'
+			
 			
 	def get_job_ids(self):
 		url = self.net.URL('%s%s' % (self.api_host, self.JOBS_ENDPOINT))

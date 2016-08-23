@@ -203,21 +203,34 @@ class TestParseJson(TestTopChefResource):
 		
 		self.assertEqual(expected_dict, self.resource.parse_json(json_to_parse))		
 
-class TestTopChefClient(TestModule):
-	def setUp(self):
-		TestModule.setUp(self)
-		
-		self.client = TopChefClient(
-			self.address, net_client=self.net, io_manipulator=self.io
-		)
-		
-		
-class TestIsServerAlive(TestTopChefClient):
-	
+
+class TestIsServerAlive(TestTopChefResource):
+	"""
+	Contains unit tests for :meth:`_TopChefResource.is_server_alive`
+	"""	
 	def test_is_alive_true(self):
+		"""
+		Tests that a response code of 200 will ensure that the
+		method returns a True value
+		"""
 		self.net.mock_response_code = 200
-		self.assertTrue(self.client.is_server_alive())
+		self.assertTrue(self.resource.is_server_alive())
+		self._make_connection_assertions()
 		
+	def test_is_alive_false(self):
+		"""
+		Tests that a non-200 response code will make the method
+		return False
+		"""
+		self.net.mock_response_code = 404
+		self.assertFalse(self.resource.is_server_alive())
+		self._make_connection_assertions()
+		
+	def _make_connection_assertions(self):
+		"""
+		Performs a series of assertions to ensure that the library used the java.net
+		API correctly
+		"""
 		self.assertEqual(self.net.mock_details['URL']['number_of_calls'], 1)
 		self.assertEqual(self.net.mock_details['openConnection']['number_of_calls'], 1)
 		
@@ -227,10 +240,14 @@ class TestIsServerAlive(TestTopChefClient):
 		self.assertEqual(self.net.mock_details['connect']['number_of_calls'], 1)
 		self.assertEqual(self.net.mock_details['getResponseCode']['number_of_calls'], 1)
 	
-	def test_is_alive_false(self):
-		self.net.mock_response_code = 404
-		self.assertFalse(self.client.is_server_alive())
-
+class TestTopChefClient(TestModule):
+	def setUp(self):
+		TestModule.setUp(self)
+		
+		self.client = TopChefClient(
+			self.address, net_client=self.net, io_manipulator=self.io
+		)
+		
 class TestGetJobIDs(TestTopChefClient):
 	def setUp(self):
 		TestTopChefClient.setUp(self)
