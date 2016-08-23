@@ -5,7 +5,8 @@ LIBRARY_PATH = '/opt/topspin/exp/stan/nmr/py/user'
 sys.path.append(LIBRARY_PATH)
 
 import unittest
-from topchef_client import TopChefClient
+from topchef_client import TopChefClient, TopChefJob, NetworkError
+from topchef_client import _TopChefResource
 from unit_test_runner import UnitTestRunner
 
 True = "1"
@@ -41,32 +42,32 @@ class MockNetClient:
 		self.mock_response_code = 200
 		self.mock_method = "GET"
 		
-	def _increment(self, attribute):
-		attribute = attribute + 1
+	def _increment(self, method):
+		self.mock_details[method]['number_of_calls'] = self.mock_details[method]['number_of_calls'] + 1
 		
 	def URL(self, address):
-		self._increment(self.mock_details['URL']['number_of_calls'])
+		self._increment('URL')
 		self.mock_details['URL']['address'].append(address)
 		return self
 	
 	def openConnection(self):
-		self._increment(self.mock_details['openConnection']['number_of_calls'])
+		self._increment('openConnection')
 		return self
 		
 	def getInputStream(self):
-		self._increment(self.mock_details['getInputStream']['number_of_calls'])
+		self._increment('getInputStream')
 		return self
 		
 	def getResponseCode(self):
-		self._increment(self.mock_details['getResponseCode']['number_of_calls'])
+		self._increment('getResponseCode')
 		return self.mock_response_code
 		
 	def setRequestMethod(self, new_method):
-		self._increment(self.mock_details['setRequestMethod']['number_of_calls'])
+		self._increment('setRequestMethod')
 		self.mock_method = new_method
 		
 	def connect(self):
-		self._increment(self.mock_details['connect']['number_of_calls'])
+		self._increment('connect')
 		
 	
 class MockIOLibrary:
@@ -74,9 +75,19 @@ class MockIOLibrary:
 	Contains methods for stubbing out the java.io library for unit
 	testing the client
 	"""
+	pass
 	
 
-class TestTopChefClient(unittest.TestCase):
+class TestModule(unittest.TestCase):
+	"""
+	Base class for all tests of :mod:`topchef_client`. Responsible
+	for loading in all the required mock libraries, and providing values
+	to be used across all test cases.
+	
+	It also implements an assertTrue and assertFalse method to use my
+	pseudo-booleans throughout the test module. Jython 2.2 does not implement
+	Booleans because reasons.
+	"""
 	def setUp(self):
 		self.address = 'http://127.0.0.1'
 		self.net = MockNetClient()
@@ -87,32 +98,42 @@ class TestTopChefClient(unittest.TestCase):
 	
 	def assertFalse(self, value):
 		self.assertEqual(value, False)
-	
-class TestTopChefClientConstructor(TestTopChefClient):
+		
+class TestTopChefResourceConstructor(TestModule):
+	"""
+	Contains unit tests for :meth:`_TopChefResource.__init__`
+	"""
 	def test_constructor_default_args(self):
-		client = TopChefClient(self.address)
+		fixture = _TopChefResource(self.address)
 		
-		self.assertEqual(client.api_host, self.address)
-		
+		self.assertEqual(fixture.api_host, self.address)
+	
 	def test_constructor_optional_args(self):
-		client = TopChefClient(self.address, net_client=self.net,
+		fixture = _TopChefResource(self.address, net_client=self.net,
 			io_manipulator=self.io
 		)
 		
-		self.assertEqual(client.net, self.net)
-		self.assertEqual(client.io, self.io)
+		self.assertEqual(fixture.net, self.net)
+		self.assertEqual(fixture.io, self.io)
 
-class TestTopChefClientWithFixture(TestTopChefClient):
+class TestTopChefResource(TestModule):
+	"""
+	Base class for all tests on :class:`_TopChefResource`. This test sets
+	up a _Resource with some basic parameters
+	"""
 	def setUp(self):
-		TestTopChefClient.setUp(self)
-		
-		self.client = TopChefClient(
-			self.address, net_client=self.net, io_manipulator=self.io
+		TestModule.setUp(self)
+		self.resource = _TopChefResource(self.address, net_client=self.net,
+			io_manipulator=self.io
 		)
-		
-class TestTopChefParseJson(TestTopChefClientWithFixture):
+
+class TestParseJson(TestTopChefResource):
+	"""
+	Contains tests for :meth:`_TopChefResource.parse_json`. Tests that the JSON
+	parser works according to specifications
+	"""
 	def setUp(self):
-		TestTopChefClientWithFixture.setUp(self)
+		TestTopChefResource.setUp(self)
 		
 		self.json_string = '{"this": "is", "valid": "json", "number": 1, "boolean": true}'
 		self.expected_dict = {"this": "is", "valid": "json", "number": 1, "boolean": True}
@@ -125,37 +146,43 @@ class TestTopChefParseJson(TestTopChefClientWithFixture):
 		"""
 		Tests that the parser is able to parse JSON correctly
 		"""
-		parsed_dict = self.client.parse_json(self.json_string)
+		parsed_dict = self.resource.parse_json(self.json_string)
 		
 		self.assertEqual(self.expected_dict, parsed_dict)
 		
 	def test_parse_bad_syntax_json(self):
 		"""
 		Tests that the parser throws an appropriate exception if badly-formatted
-		JSON is passed into it
+		JSON is passed into it, but the JSON string still begins and ends with {}.
+		This string resembles JSON, but it isn't quite right.
 		"""		
 		def _parsing_thunk(client, json):
 			client.parse_json(json)
 	
 		self.assertRaises(
-			ValueError, _parsing_thunk, self.client, self.bad_syntax_json
+			ValueError, _parsing_thunk, self.resource, self.bad_syntax_json
 		)
 		
 	def test_parse_bad_json(self):
 		"""
-		Tests that the client throws an exception if bad JSON is passed into it
+		Tests that the client throws an exception if a string is passed
+		that is a valid Python string, but does not evaluate to a dictionary.
+		It is assumed that all JSON contains a key-value mapping as part of its
+		top structure.
 		"""
 		def _parsing_thunk(client, json):
 			client.parse_json(json)
 	
 		self.assertRaises(
-			ValueError, _parsing_thunk, self.client, self.bad_json
+			ValueError, _parsing_thunk, self.resource, self.bad_json
 		)
 		
 	def test_parse_code_injection(self):
 		"""
 		Tests that the JSON parser mitigates a basic lambda-based code injection
-		attack, where malicious code is placed in a thunk and then executed
+		attack, where malicious code is placed in a thunk and then executed upon
+		the eval. The method should treat this kind of code as any regular string.
+		It should throw a ValueError.
 		"""
 		json_to_parse = '(lambda: {"Malicious": "code"})()'
 		
@@ -163,36 +190,98 @@ class TestTopChefParseJson(TestTopChefClientWithFixture):
 			client.parse_json(json)
 			
 		self.assertRaises(
-			ValueError, _parsing_thunk, self.client, json_to_parse
+			ValueError, _parsing_thunk, self.resource, json_to_parse
 		)
 		
 	def test_parse_string_lambda(self):
 		"""
-		Tests that the word "lambda" is allowed if it's in a string
+		Tests that the word "lambda" is allowed if it's in a string. This tests
+		that the lambda was escaped correctly.
 		"""
 		json_to_parse = '{"string": "lambda is a nice word"}'
 		expected_dict = {'string': 'lambda is a nice word'}
 		
-		self.assertEqual(expected_dict, self.client.parse_json(json_to_parse))
+		self.assertEqual(expected_dict, self.resource.parse_json(json_to_parse))		
+
+class TestTopChefClient(TestModule):
+	def setUp(self):
+		TestModule.setUp(self)
 		
-class TestIsServerAlive(TestTopChefClientWithFixture):
+		self.client = TopChefClient(
+			self.address, net_client=self.net, io_manipulator=self.io
+		)
+		
+		
+class TestIsServerAlive(TestTopChefClient):
 	
 	def test_is_alive_true(self):
 		self.net.mock_response_code = 200
 		self.assertTrue(self.client.is_server_alive())
+		
+		self.assertEqual(self.net.mock_details['URL']['number_of_calls'], 1)
+		self.assertEqual(self.net.mock_details['openConnection']['number_of_calls'], 1)
+		
+		self.assertEqual(self.net.mock_details['setRequestMethod']['number_of_calls'], 1)
+		self.assertEqual(self.net.mock_method, "GET")
+		
+		self.assertEqual(self.net.mock_details['connect']['number_of_calls'], 1)
+		self.assertEqual(self.net.mock_details['getResponseCode']['number_of_calls'], 1)
 	
 	def test_is_alive_false(self):
 		self.net.mock_response_code = 404
 		self.assertFalse(self.client.is_server_alive())
 
+class TestGetJobIDs(TestTopChefClient):
+	def setUp(self):
+		TestTopChefClient.setUp(self)
+		self.job_ids = [
+			'1d305560-6960-11e6-8591-001018737a6d', 
+			'37bdb0be-6963-11e6-9860-001018737a6d'
+		]
+	
+	def test_get_job_ids(self):
+		job_ids = self.client.get_job_ids()
+		
+		self.assertEqual(self.net.mock_details['URL']['number_of_calls'], 1)
+		self.assertEqual(
+			self.net.mock_details['URL']['adresses'][0],
+			'%s/jobs' % (self.client.api_host)
+		)
+		self.assertEqual(
+			self.net.mock_method, 
+			"GET"
+		)
+		
+	def test_get_job_ids_conn_error(self):
+		self.net.mock_response_code = 500
+			
+		def _error_thunk(client):
+			client.get_job_ids()
+				
+		self.assertRaises(NetworkError, _error_thunk, self.client)
+			
+class TestGetJobByID(TestTopChefClient):
+	def setUp(self):
+		TestTopChefClient.setUp(self)
+		self.job_id = '1d305560-6960-11e6-8591-001018737a6d'
+		self.job_class = TopChefJob
+	
+	def test_get_job_by_id(self):
+		
+		job = self.client.get_job_by_id(self.job_id)
+		
+		self.assertEqual(job.id, self.job_id)
+		self.assertEqual(job.__class__, self.job_class)
+
 blade_runner = UnitTestRunner([
-	TestTopChefClientConstructor('test_constructor_default_args'),
-	TestTopChefClientConstructor('test_constructor_optional_args'),
-	TestTopChefParseJson('test_parse_json'),
-	TestTopChefParseJson('test_parse_bad_syntax_json'),
-	TestTopChefParseJson('test_parse_bad_json'),
-	TestTopChefParseJson('test_parse_code_injection'),
-	TestTopChefParseJson('test_parse_string_lambda'),
+	TestTopChefResourceConstructor('test_constructor_default_args'),
+	TestTopChefResourceConstructor('test_constructor_optional_args'),
+	
+	TestParseJson('test_parse_json'),
+	TestParseJson('test_parse_bad_syntax_json'),
+	TestParseJson('test_parse_bad_json'),
+	TestParseJson('test_parse_code_injection'),
+	TestParseJson('test_parse_string_lambda'),
 	TestIsServerAlive('test_is_alive_true'),
 	TestIsServerAlive('test_is_alive_false')
 ])
