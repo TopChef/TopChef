@@ -37,9 +37,11 @@ class TopChefClient:
 		"""
 		true = "1"
 		false = "0"
-				
+		
+		sanitized_string = json_string.replace('lambda', '" + "lambda" + "')
+		
 		try:
-			parsed_json = eval(json_string)
+			parsed_json = eval(sanitized_string)
 		except SyntaxError, NameError:
 			raise ValueError('The string %s is not valid JSON')
 		
