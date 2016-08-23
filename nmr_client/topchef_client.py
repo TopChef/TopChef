@@ -86,7 +86,27 @@ class _TopChefResource:
 			return True
 		else:
 			return False
-
+			
+	def _read_json_from_connection(self, connection):
+		"""
+		Read the input stream from a connection
+		
+		:param connection: The connection to the required web resource
+		"""
+		connection_stream = connection.getInputStream()
+		stream_reader = self.io.InputStreamReader(connection_stream)
+		stream_buffer = self.io.BufferedReader(stream_reader)
+		
+		input_line = stream_buffer.readLine()
+		data = []
+		
+		while input_line is not None:
+			data.append(str(input_line))
+			input_line = stream_buffer.readLine()
+			
+		connection_stream.close()
+			
+		return self.parse_json(''.join(data))
 
 class TopChefClient(_TopChefResource):
 	"""
@@ -107,7 +127,12 @@ class TopChefClient(_TopChefResource):
 		if (status_code != 200):
 			raise NetworkError('Unable to get a 200 OK response from %s' % url)
 		
+		job_list = self._read_json_from_connection(connection)['data']
 		
+		
+		job_ids = [job['id'] for job in job_list]
+		
+		return job_ids
 		
 	def get_job_by_id(self, job_id):
 		pass

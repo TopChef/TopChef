@@ -37,11 +37,14 @@ class MockNetClient:
 			},
 			'connect': {
 				'number_of_calls': 0
+			},
+			'close': {
+				'number_of_calls': 0
 			}
 		}
 		self.mock_response_code = 200
 		self.mock_method = "GET"
-		
+				
 	def _increment(self, method):
 		self.mock_details[method]['number_of_calls'] = self.mock_details[method]['number_of_calls'] + 1
 		
@@ -69,14 +72,79 @@ class MockNetClient:
 	def connect(self):
 		self._increment('connect')
 		
+	def close(self):
+		self._increment('close')
+		
 	
 class MockIOLibrary:
 	"""
 	Contains methods for stubbing out the java.io library for unit
 	testing the client
 	"""
-	pass
+	def __init__(self):
+		self.mock_details = {
+			'InputStreamReader': {
+				'number_of_calls' : 0,
+				'last_called_with': None
+			},
+			'BufferedReader': {
+				'number_of_calls': 0,
+				'last_called_with': None
+			}
+		}
+		
+		self.readlist = [None]
+		self.read_index = -1
 	
+	def _reset_read_index(self):
+		self.read_index = -1
+		
+	def _set_read_list(self, new_readlist, newline_character='\n'):
+		"""
+		Pass in a new list of strings to read by readLine
+		
+		:param new_readlist: The new list of strings or single string
+			to be read sequentially by this reader. If the new_readlist
+			is a string, the string will be split by ``newline_character``.
+			If ``new_readlist`` or the string resulting from splitting
+			``new_readlist`` does not end with ``None``, then ``None``will be
+			appended to ``new_readlist``.
+		:param newline_character: If ``new_readlist`` is a string, then this
+			is the character that will be used to split each line. By default, this
+			is the line feed character ``\n``, due to the obvious superiority of
+			UNIX line endings to any other OS :).
+		"""
+		self._reset_read_index()
+		
+		if isinstance(new_readlist, ''.__class__):
+			new_readlist = new_readlist.split(newline_character)
+		
+		if new_readlist[len(new_readlist) - 1] is not None:
+			new_readlist.append(None)
+		
+		assert new_readlist[len(new_readlist) - 1] is None
+		
+		self.readlist = new_readlist
+			
+	def _increment(self, method):
+		self.mock_details[method]['number_of_calls'] = \
+			self.mock_details[method]['number_of_calls'] + 1
+		
+	def InputStreamReader(self, stream):
+		self._increment('InputStreamReader')
+		self.mock_details['InputStreamReader']['last_called_with'] = stream
+		
+		return self
+		
+	def BufferedReader(self, stream):
+		self._increment('BufferedReader')
+		self.mock_details['BufferedReader']['last_called_with'] = stream
+		
+		return self
+	
+	def readLine(self):
+		self.read_index = self.read_index + 1
+		return self.readlist[self.read_index]
 
 class TestModule(unittest.TestCase):
 	"""
@@ -239,6 +307,48 @@ class TestIsServerAlive(TestTopChefResource):
 		
 		self.assertEqual(self.net.mock_details['connect']['number_of_calls'], 1)
 		self.assertEqual(self.net.mock_details['getResponseCode']['number_of_calls'], 1)
+		
+class TestReadJsonFromConnection(TestTopChefResource):
+	"""
+	Contains unit tests for :meth:`_TopChefResource._read_json_from_connection`
+	"""
+	def setUp(self):
+		TestTopChefResource.setUp(self)
+		self.expected_output = {'data': 'hello'}
+		self.input_stream = ['{', '"data": "hello"', '}', None]
+		
+		self.io._set_read_list(self.input_stream)
+		
+	def test_read_json(self):
+		"""
+		Tests that the method is able to successfully read the mock input stream
+		"""
+		self.assertEqual(
+			self.expected_output, 
+			self.resource._read_json_from_connection(self.net)
+		)
+				
+		self.assertEqual(
+			self.net.mock_details['getInputStream']['number_of_calls'], 1
+		)
+		
+		self.assertEqual(
+			self.io.mock_details['InputStreamReader']['number_of_calls'], 1
+		)
+		self.assertEqual(
+			self.io.mock_details['InputStreamReader']['last_called_with'], 
+			self.net
+		)
+		
+		self.assertEqual(
+			self.io.mock_details['BufferedReader']['number_of_calls'], 1
+		)
+		self.assertEqual(
+			self.io.mock_details['BufferedReader']['last_called_with'],
+			self.io
+		)
+		
+		self.assertEqual(self.net.mock_details['close']['number_of_calls'], 1)
 	
 class TestTopChefClient(TestModule):
 	def setUp(self):
@@ -255,13 +365,17 @@ class TestGetJobIDs(TestTopChefClient):
 			'1d305560-6960-11e6-8591-001018737a6d', 
 			'37bdb0be-6963-11e6-9860-001018737a6d'
 		]
+		
+		self.json_from_api = {'data': [{'id': job_id} for job_id in self.job_ids]}
+		
+		self.io._set_read_list(str(self.json_from_api))
 	
 	def test_get_job_ids(self):
 		job_ids = self.client.get_job_ids()
 		
 		self.assertEqual(self.net.mock_details['URL']['number_of_calls'], 1)
 		self.assertEqual(
-			self.net.mock_details['URL']['adresses'][0],
+			self.net.mock_details['URL']['address'][0],
 			'%s/jobs' % (self.client.api_host)
 		)
 		self.assertEqual(
@@ -299,8 +413,14 @@ blade_runner = UnitTestRunner([
 	TestParseJson('test_parse_bad_json'),
 	TestParseJson('test_parse_code_injection'),
 	TestParseJson('test_parse_string_lambda'),
+	
 	TestIsServerAlive('test_is_alive_true'),
-	TestIsServerAlive('test_is_alive_false')
+	TestIsServerAlive('test_is_alive_false'),
+	
+	TestReadJsonFromConnection('test_read_json'),
+	
+	TestGetJobIDs('test_get_job_ids'),
+	TestGetJobIDs('test_get_job_ids_conn_error')
 ])
 
 blade_runner.run_with_callback(MSG)
