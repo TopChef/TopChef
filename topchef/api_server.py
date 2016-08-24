@@ -25,14 +25,7 @@ LOG.setLevel(logging.DEBUG)
 def hello_world():
     """
     Returns metadata relating to the API, the maintainer, and the version
-
-    **Example Request**
-
-    .. sourcecode:: http
-
-        GET / HTTP/1.1
-        Content-Type: application/json
-
+    
     **Example Response**
 
     .. sourcecode:: http
@@ -70,15 +63,29 @@ def get_services():
 
     **Example Response**
 
-    ..sourcecode:: http
+    .. sourcecode:: http
 
         HTTP/1.1 /services GET
         Content-Type: application/json
 
         {
-            "data": {
+            "data": [{
+                "has_timed_out": true,
+                "id": "d1b691f6-68c9-11e6-93a9-3c970e7271f5",
+                "name": "TestService",
+                "url": "http://localhost:5000/services/d1b691f6-68c9-11e6-93a9-3c970e7271f5"
+            }],
+            "meta": {
+                "POST_schema": {
+                    "$ref": "http://localhost:5000/services#/meta/POST_schema"
+                }
             }
         }
+
+    The value POST_schema describes the JSON Schema that must be satisfied
+    in order to allow registration of a service.
+
+    :statuscode 200: Services were returned succesfully
     """
     session = SESSION_FACTORY()
     service_list = session.query(Service).all()
@@ -99,6 +106,51 @@ def get_services():
 @app.route('/services', methods=["POST"])
 @check_json
 def register_service():
+    """
+    Register a new service with the API
+
+    **Example Request**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 /services POST
+        Content-Type: application/json
+
+        {
+            "name": "TestService",
+            "description": "Some test data",
+            "job_registration_schema": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                    }
+                }
+            }
+        }
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 201 CREATED
+        Content-Type:application/json
+        Location: http://localhost:5000/services/8643f414-6959-11e6-b090-843a\
+                4b768af4 
+
+        {
+          "data": "Service Service(id=178469385849810706677982978614863760116\
+                  , name=TestService, description=Some test data, \
+                  schema={'type': 'object', 'properties': {'value': \
+                  {'type': 'integer', 'minimum': 1, 'maximum': 10}}}) \
+                  successfully registered"
+        }
+
+    :statuscode 201: The service was created successfully
+    :statuscode 400: The service could not be registered due to a bad request
+    """
     session = SESSION_FACTORY()
 
     new_service, errors = Service.DetailedServiceSchema().load(request.json)
