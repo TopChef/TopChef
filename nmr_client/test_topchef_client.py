@@ -448,6 +448,17 @@ class TestWriteJsonToConnection(TestTopChefResource):
 		self.assertEqual(
 			self.net.mock_details['setDoOutput']['value'], JAVA_TRUE
 		)
+		
+	def test_write_json_custom_method(self):
+		request_method = "PUT"
+		
+		self.resource._write_json_to_connection(
+			self.json_to_write, self.net, method=request_method
+		)
+		
+		self.assertEqual(
+			self.net.mock_method, request_method
+		)
 
 class TestLoopback(TestTopChefResource):
 	def mock_read(self, connection):
@@ -524,6 +535,27 @@ class TestGetJobByID(TestTopChefClient):
 		self.assertEqual(job.id, self.job_id)
 		self.assertEqual(job.__class__, self.job_class)
 
+	def test_get_job_by_id_404(self):
+		self.net.mock_response_code = 404
+		
+		def _response_thunk(client, job_id):
+			client.get_job_by_id(job_id)
+		
+		self.assertRaises(
+			NetworkError, _response_thunk, self.client, self.job_id
+		)
+		
+	def test_get_job_by_id_generic_error(self):
+		self.net.mock_response_code = 500
+		
+		def _response_thunk(client, job_id):
+			client.get_job_by_id(job_id)
+		
+		self.assertRaises(
+			NetworkError, _response_thunk, self.client, self.job_id	
+		)
+		
+
 blade_runner = UnitTestRunner([
 	TestTopChefResourceConstructor('test_constructor_default_args'),
 	TestTopChefResourceConstructor('test_constructor_optional_args'),
@@ -541,11 +573,16 @@ blade_runner = UnitTestRunner([
 	
 	TestReadJsonFromConnection('test_read_json'),
 	TestWriteJsonToConnection('test_write_json'),
+	TestWriteJsonToConnection('test_write_json_custom_method'),
 	
 	TestLoopback('test_loopback'),
 	
 	TestGetJobIDs('test_get_job_ids'),
-	TestGetJobIDs('test_get_job_ids_conn_error')
+	TestGetJobIDs('test_get_job_ids_conn_error'),
+	
+	TestGetJobByID('test_get_job_by_id'),
+	TestGetJobByID('test_get_job_by_id_404'),
+	TestGetJobByID('test_get_job_by_id_generic_error')
 ])
 
 blade_runner.run_with_callback(MSG)
