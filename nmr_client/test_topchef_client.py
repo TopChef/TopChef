@@ -1,5 +1,6 @@
 import sys
 
+
 LIBRARY_PATH = '/opt/topspin/exp/stan/nmr/py/user'
 
 sys.path.append(LIBRARY_PATH)
@@ -8,6 +9,9 @@ import unittest
 from topchef_client import TopChefClient, TopChefJob, NetworkError
 from topchef_client import _TopChefResource
 from unit_test_runner import UnitTestRunner
+
+import java.lang.Boolean.TRUE as JAVA_TRUE
+import java.lang.Boolean.FALSE as JAVA_FALSE
 
 True = "1"
 False = "0"
@@ -40,6 +44,21 @@ class MockNetClient:
 			},
 			'close': {
 				'number_of_calls': 0
+			},
+			'setRequestProperty': {
+				'number_of_calls': 0,
+				'request_props': {}
+			},
+			'getOutputStream': {
+				'number_of_calls': 0
+			},
+			'write': {
+				'number_of_calls': 0,
+				'written_text': ''
+			},
+			'setDoOutput': {
+				'number_of_calls': 0,
+				'value': ''
 			}
 		}
 		self.mock_response_code = 200
@@ -60,7 +79,11 @@ class MockNetClient:
 	def getInputStream(self):
 		self._increment('getInputStream')
 		return self
-		
+	
+	def getOutputStream(self):
+		self._increment('getOutputStream')
+		return self
+	
 	def getResponseCode(self):
 		self._increment('getResponseCode')
 		return self.mock_response_code
@@ -68,13 +91,25 @@ class MockNetClient:
 	def setRequestMethod(self, new_method):
 		self._increment('setRequestMethod')
 		self.mock_method = new_method
-		
+	
+	def setRequestProperty(self, key, value):
+		self._increment('setRequestProperty')
+		self.mock_details['setRequestProperty']['request_props'][key] = value
+	
 	def connect(self):
 		self._increment('connect')
 		
 	def close(self):
 		self._increment('close')
 		
+	def write(self, text_to_write):
+		self._increment('write')
+		self.mock_details['write']['written_text'] = text_to_write
+		
+	def setDoOutput(self, value):
+		self._increment('setDoOutput')
+		self.mock_details['setDoOutput']['value'] = value
+	
 	
 class MockIOLibrary:
 	"""
@@ -271,6 +306,19 @@ class TestParseJson(TestTopChefResource):
 		
 		self.assertEqual(expected_dict, self.resource.parse_json(json_to_parse))		
 
+class TestWriteJson(TestTopChefResource):
+	"""
+	Contains unit tests for :meth:`_TopChefResource.write_json`
+	"""
+	def setUp(self):
+		TestTopChefResource.setUp(self)
+		self.expected_result = '{"boolean": true, "number": 1, "data": "string"}'
+		self.dict_to_parse = {"data": "string", "number": 1, "boolean": True}
+		
+	def test_write_json(self):
+		self.assertEqual(
+			self.expected_result, self.resource.write_json(self.dict_to_parse)
+		)
 
 class TestIsServerAlive(TestTopChefResource):
 	"""
@@ -349,7 +397,90 @@ class TestReadJsonFromConnection(TestTopChefResource):
 		)
 		
 		self.assertEqual(self.net.mock_details['close']['number_of_calls'], 1)
+
+class TestWriteJsonToConnection(TestTopChefResource):
 	
+	def setUp(self):
+		TestTopChefResource.setUp(self)
+
+		self.json_to_write = {'data': 'hello'}
+		
+		self.mock_server_response = '{"data": "hello"}'
+		self.mock_connection_list = []
+		self.mock_number_of_calls = 0
+		
+		self.resource._read_response_from_connection = \
+			self._mock_response_reader
+	
+	def _mock_response_reader(self, connection):
+		self.mock_connection_list.append(connection)
+		self.mock_number_of_calls = self.mock_number_of_calls + 1
+		
+		return self.mock_server_response	
+	
+	def test_write_json(self):
+		self.resource._write_json_to_connection(
+			self.json_to_write, self.net
+		)
+		
+		self.assertEqual(
+			2, self.net.mock_details['setRequestProperty']['number_of_calls']
+		)
+		self.assertEqual(
+			{'Content-Type': 'application/json', 'Charset': 'utf-8'},
+			self.net.mock_details['setRequestProperty']['request_props']
+		)
+		
+		self.assertEqual(
+			self.net.mock_details['getOutputStream']['number_of_calls'], 1
+		),
+		
+		self.assertEqual(
+			self.net.mock_details['close']['number_of_calls'], 1
+		)
+		self.assertEqual(
+			self.net.mock_details['setRequestMethod']['number_of_calls'], 1
+		)
+		
+		self.assertEqual(
+			self.net.mock_details['setDoOutput']['number_of_calls'], 1
+		)
+		self.assertEqual(
+			self.net.mock_details['setDoOutput']['value'], JAVA_TRUE
+		)
+		
+	def test_write_json_custom_method(self):
+		request_method = "PUT"
+		
+		self.resource._write_json_to_connection(
+			self.json_to_write, self.net, method=request_method
+		)
+		
+		self.assertEqual(
+			self.net.mock_method, request_method
+		)
+
+class TestLoopback(TestTopChefResource):
+	def mock_read(self, connection):
+		return self.test_json
+	
+	def mock_write(self, text, connection):
+		self.mock_write_number_of_calls = self.mock_write_number_of_calls + 1
+		
+	def setUp(self):
+		TestTopChefResource.setUp(self)
+		self.mock_write_number_of_calls = 0
+		self.test_json = {'data': 'string'}
+		
+		self.resource._write_json_to_connection = self.mock_write
+		self.resource._read_json_from_connection = self.mock_read
+	
+	def test_loopback(self):
+		response = self.resource._loopback(self.test_json)
+		
+		self.assertEqual(response, self.test_json)
+		
+
 class TestTopChefClient(TestModule):
 	def setUp(self):
 		TestModule.setUp(self)
@@ -404,6 +535,27 @@ class TestGetJobByID(TestTopChefClient):
 		self.assertEqual(job.id, self.job_id)
 		self.assertEqual(job.__class__, self.job_class)
 
+	def test_get_job_by_id_404(self):
+		self.net.mock_response_code = 404
+		
+		def _response_thunk(client, job_id):
+			client.get_job_by_id(job_id)
+		
+		self.assertRaises(
+			NetworkError, _response_thunk, self.client, self.job_id
+		)
+		
+	def test_get_job_by_id_generic_error(self):
+		self.net.mock_response_code = 500
+		
+		def _response_thunk(client, job_id):
+			client.get_job_by_id(job_id)
+		
+		self.assertRaises(
+			NetworkError, _response_thunk, self.client, self.job_id	
+		)
+		
+
 blade_runner = UnitTestRunner([
 	TestTopChefResourceConstructor('test_constructor_default_args'),
 	TestTopChefResourceConstructor('test_constructor_optional_args'),
@@ -414,13 +566,23 @@ blade_runner = UnitTestRunner([
 	TestParseJson('test_parse_code_injection'),
 	TestParseJson('test_parse_string_lambda'),
 	
+	TestWriteJson('test_write_json'),
+	
 	TestIsServerAlive('test_is_alive_true'),
 	TestIsServerAlive('test_is_alive_false'),
 	
 	TestReadJsonFromConnection('test_read_json'),
+	TestWriteJsonToConnection('test_write_json'),
+	TestWriteJsonToConnection('test_write_json_custom_method'),
+	
+	TestLoopback('test_loopback'),
 	
 	TestGetJobIDs('test_get_job_ids'),
-	TestGetJobIDs('test_get_job_ids_conn_error')
+	TestGetJobIDs('test_get_job_ids_conn_error'),
+	
+	TestGetJobByID('test_get_job_by_id'),
+	TestGetJobByID('test_get_job_by_id_404'),
+	TestGetJobByID('test_get_job_by_id_generic_error')
 ])
 
 blade_runner.run_with_callback(MSG)
