@@ -1,3 +1,6 @@
+"""
+Contains unit tests for :mod:`topchef.api_server`
+"""
 import json
 import os
 import pytest
@@ -41,16 +44,14 @@ def schema_directory():
     if not os.listdir(config.SCHEMA_DIRECTORY):
         os.removedirs(config.SCHEMA_DIRECTORY)
 
-
 @pytest.fixture()
 def database(schema_directory):
-
     engine = create_engine(DATABASE_URI)
+
     config._engine = engine
 
     METADATA.create_all(bind=engine)
     server.SESSION_FACTORY = sessionmaker(bind=engine)
-
 
 @contextmanager
 def app_client(endpoint):
