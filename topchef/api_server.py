@@ -55,6 +55,12 @@ def hello_world():
         'data': {}
     })
 
+@app.route('/echo', methods=["POST"])
+@check_json
+def repeat_json():
+    response = jsonify({'data': request.json})
+    response.status_code = 200
+    return response
 
 @app.route('/services', methods=["GET"])
 def get_services():
