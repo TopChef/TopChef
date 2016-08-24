@@ -283,7 +283,6 @@ class Service(BASE):
         else:
             return service
 
-
     def heartbeat(self):
         self.last_checked_in = datetime.utcnow()
 
@@ -543,3 +542,4 @@ class Job(BASE):
             self.__class__.__name__, self.parent_service, self.parameters,
             self.session, self.file_manager
         )
+

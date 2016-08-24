@@ -1,3 +1,6 @@
+"""
+Contains unit tests for :mod:`topchef.api_server`
+"""
 import json
 import os
 import pytest
@@ -41,16 +44,14 @@ def schema_directory():
     if not os.listdir(config.SCHEMA_DIRECTORY):
         os.removedirs(config.SCHEMA_DIRECTORY)
 
-
 @pytest.fixture()
 def database(schema_directory):
-
     engine = create_engine(DATABASE_URI)
+
     config._engine = engine
 
     METADATA.create_all(bind=engine)
     server.SESSION_FACTORY = sessionmaker(bind=engine)
-
 
 @contextmanager
 def app_client(endpoint):
@@ -73,6 +74,34 @@ def test_get_request(database, endpoint):
 
     assert response.status_code == 200
 
+class TestLoopback(object):
+    endpoint = '/echo'
+    valid_json = json.dumps({'foo': 'string', 'bar': 1, 'baz': True})
+    invalid_json = 'not JSON'
+
+    def test_loopback_valid_json(self):
+        with app_client(self.endpoint) as client:
+            response = client.post(
+                self.endpoint, headers={'Content-Type': 'application/json'},
+                data=self.valid_json
+            )
+
+            assert response.status_code == 200
+
+            dict_from_loop = json.loads(response.data.decode('utf-8'))
+            dict_from_json = json.loads(self.valid_json)
+
+        assert dict_from_loop['data'] == dict_from_json
+
+    def test_loopback_invalid_json(self):
+
+        with app_client(self.endpoint) as client:
+            response = client.post(
+                self.endpoint, headers={'Content-Type': 'application/json'},
+                data=self.invalid_json
+            )
+
+            assert response.status_code == 400
 
 def test_post_service(database):
     endpoint = '/services'
