@@ -9,7 +9,7 @@ LIBRARY_PATH = '/opt/topspin/exp/stan/nmr/py/user'
 sys.path.append(LIBRARY_PATH)
 
 import unittest
-from topchef_client import TopChefClient
+from topchef_client import TopChefClient, NetworkManager
 from unit_test_runner import UnitTestRunner
 
 True = "1"
@@ -18,7 +18,8 @@ False = "0"
 class TestClient(unittest.TestCase):
 	def setUp(self):
 		self.host = 'http://192.168.1.39'
-		self.client = TopChefClient(self.host)
+		self.manager = NetworkManager(self.host)
+		self.client = TopChefClient(self.manager)
 		
 	def assertTrue(self, value):
 		self.assertEqual(True, value)
@@ -43,7 +44,7 @@ class TestLoopback(TestClient):
 		self.json_to_loop = {'number': 1, 'boolean': True, 'string': 'string'}
 		
 	def test_loopback(self):
-		response = self.client._loopback(self.json_to_loop)
+		response = self.client.loopback(self.json_to_loop)
 		
 		self.assertEqual(response['data'], self.json_to_loop)
 		
