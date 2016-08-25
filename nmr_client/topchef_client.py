@@ -30,6 +30,19 @@ class NetworkError(IOError, RuntimeError):
 	"""
 	pass
 
+class ValidationError(ValueError):
+	"""
+	Exception thrown when a JSON object fails to validate against a JSON Schema
+	"""
+	def __init__(self, message, context, *args, **kwargs):
+		ValueError.__init__(self, *args, **kwargs)
+		self.message = message
+		self.context = context
+	
+	def __str__(self):
+		return 'message=%s. context=%s' % (self.message, self.context)
+
+	
 class NetworkManager:
 	"""
 	Utility responsible for parsing JSON, as well as communicating with the
@@ -94,6 +107,22 @@ class NetworkManager:
 			return True
 		else:
 			return False
+			
+	def _read_json_error_stream(self, connection):
+		connection_stream = connection.getErrorStream()
+		stream_reader = self.io.InputStreamReader(connection_stream)
+		stream_buffer = self.io.BufferedReader(stream_reader)
+		
+		input_line = stream_buffer.readLine()
+		data = []
+	
+		while input_line is not None:
+			data.append(str(input_line))
+			input_line = stream_buffer.readLine()
+			
+		connection_stream.close()
+		
+		return self._parse_json(''.join(data))
 			
 	def _read_response_from_connection(self, connection):
 		"""
@@ -208,6 +237,7 @@ class _TopChefResource:
 	Don't use this class directly in production. TopChefClient and related
 	resources will provide a much friendlier user experience.
 	"""	
+	VALIDATION_ENDPOINT = '/validator'
 	SERVICES_ENDPOINT = '/services'
 	JOBS_ENDPOINT = '/jobs'
 
@@ -223,6 +253,35 @@ class _TopChefResource:
 			character streams resulting from HTTP connections
 		"""
 		self.net = network_manager
+		
+	def validate_json_schema(self, object, schema):
+		"""
+		Use the API's JSON Schema validator to validate the dictionary ```object```
+		against the dictionary ```schema```.
+		"""
+		data_to_send = {'object': object, 'schema': schema}
+		
+		connection = self.net._open_connection(self.VALIDATION_ENDPOINT)
+		
+		self.net._write_json_to_connection(data_to_send, connection, method="POST")
+		
+		status_code = connection.getResponseCode()
+		
+		if (status_code == 400):
+			response = self.net._read_json_error_stream(connection)
+			self._handle_validation_error(response)
+		elif (status_code != 200):
+			raise NetworkError(
+				'Unable to connect to validator. Request returned status %d' % (
+				status_code)
+			)
+			
+	def _handle_validation_error(self, response):
+		message = response['errors']['message']
+		context = response['errors']['context']
+		
+		raise ValidationError(message, context)
+		
 	
 class TopChefClient(_TopChefResource):
 	"""
@@ -244,15 +303,35 @@ class TopChefClient(_TopChefResource):
 		service_ids = [service['id'] for service in response['data']]
 		
 		return service_ids
-	
-	
+
+	def get_service_by_id(self, service_id):
+		url = '%s%s' % (self.SERVICES_ENDPOINT, service_id)
+		connection = self.net._open_getter_connection(url)
+		connection.setRequestMethod("GET")
+		
+		status_code = connection.getResponseCode()
+		
+		if (status_code == 404):
+			raise NetworkError(
+				'404 response. The service with id %s does not exist' % 
+				service_id
+			)
+		elif (status_code == 200):
+			return TopChefService(service_id, self.net)
+		else:
+			raise NetworkError(
+				'Unable to get service with id %s. Status code %d' % (
+					service_id, status_code
+				)
+			)
+
 	def get_job_ids(self):
 		connection = self.net._open_getter_connection(self.SERVICES_ENDPOINT)
 		job_list = self.net._read_json_from_connection(connection)['data']		
 		job_ids = [job['id'] for job in job_list]
 		
 		return job_ids
-		
+
 	def get_job_by_id(self, job_id):
 		api_endpoint = '%s/%s' % (self.JOBS_ENDPOINT, job_id)
 		
@@ -283,6 +362,46 @@ class TopChefService(_TopChefResource):
 			self, network_manager
 		)
 		self.id = service_id
+		
+	def _get_service_dictionary(self):
+		endpoint = '%s/%s' % (self.SERVICES_ENDPOINT, self.id)
+		
+		connection = self.net._open_getter_connection(endpoint)
+		response = self.net._read_json_from_connection(connection)['data']
+		
+		return response
+		
+	def request_job(self, job_parameters):
+		"""
+		Check with the server to see if the provided dictionary satisfies the
+		job schema, and then send it to the server.
+		"""
+		endpoint = '%s/%s' % (self.SERVICES_ENDPOINT, self.id)
+		
+		job_details = self._get_service_dictionary()
+		
+		schema_to_validate = job_details['job_registration_schema']
+		
+		self.validate_json_schema(job_parameters, schema_to_validate)
+		
+		connection = self.net._open_connection(endpoint)
+		self.net._write_json_to_connection(
+			job_parameters, connection, method="POST"
+		)
+		
+		status_code = connection.getResponseCode()
+		
+		if (status_code != 201):
+			raise NetworkError(
+				'Status code %s. Unable to request job with parameters %s' % (
+				status_code, job_parameters
+				))
+		else:
+			response = self.net._read_json_from_connection(connection)
+			job_id = response['service_details']['id']
+			
+			return TopChefJob(job_id, self.net)
+					
 			
 class TopChefJob(_TopChefResource):
 	"""

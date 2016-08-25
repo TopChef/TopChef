@@ -7,8 +7,8 @@ sys.path.append(LIBRARY_PATH)
 
 import unittest
 from topchef_client import TopChefClient, TopChefJob, NetworkError
-from topchef_client import _TopChefResource
-from topchef_client import NetworkManager
+from topchef_client import _TopChefResource, ValidationError
+from topchef_client import NetworkManager, TopChefService
 from unit_test_runner import UnitTestRunner
 
 import java.lang.Boolean.TRUE as JAVA_TRUE
@@ -561,6 +561,14 @@ class MockNetworkManager:
 				'number_of_calls': 0,
 				'last_called_with': None
 			},
+			'_write_json_to_connection': {
+				'number_of_calls': 0,
+				'last_called_with': {
+					'connection': None,
+					'data': None,
+					'method': None
+				}
+			},
 			'setRequestMethod': {
 				'number_of_calls': 0,
 				'method': "GET"
@@ -568,11 +576,17 @@ class MockNetworkManager:
 			'getResponseCode': {
 				'number_of_calls': 0,
 				'code': 200
+			},
+			'_read_json_error_stream': {
+				'number_of_calls': 0,
+				'last_called_with': None,
+				'data_to_read': None
 			}
 		}
 		
 	def set_data_to_read(self, new_json):
 		self.mock_details['_read_json_from_connection']['data_to_read'] = new_json
+		self.mock_details['_read_json_error_stream']['data_to_read'] = new_json
 		
 	def _increment(self, attribute):
 		self.mock_details[attribute]['number_of_calls'] = \
@@ -601,9 +615,27 @@ class MockNetworkManager:
 	def getResponseCode(self):
 		self._increment('getResponseCode')
 		return self.mock_details['getResponseCode']['code']
+		
+	def _write_json_to_connection(self, data, connection, method="POST"):
+		method_name = '_write_json_to_connection'
+		self._increment(method_name)
+		
+		lcw = 'last_called_with'
+		
+		self.mock_details[method_name][lcw]['connection'] = connection
+		self.mock_details[method_name][lcw]['data'] = data
+		self.mock_details[method_name][lcw]['method'] = method
 
 	def set_response_code(self, new_code):
 		self.mock_details['getResponseCode']['code'] = new_code
+
+	def _read_json_error_stream(self, connection):
+		self._increment('_read_json_error_stream')
+		self.mock_details['_read_json_error_stream']['last_called_with'] = \
+			connection
+			
+		return self.mock_details['_read_json_error_stream']['data_to_read']
+
 
 class TestTopChefResourceConstructor(TestModule):
 	"""
@@ -627,10 +659,9 @@ class TestTopChefResource(TestModule):
 	"""
 	def setUp(self):
 		TestModule.setUp(self)
-		self.network_manager = _NetworkManager(
-			self.address, net_client=self.net, io_manipulator=self.io
-		)
-		self.resource = _TopChefResource(self.address, self.network_manager)
+		self.net = MockNetworkManager()
+		
+		self.resource = _TopChefResource(self.net)
 		
 class TestTopChefClient(TestModule):
 	def setUp(self):
@@ -639,6 +670,66 @@ class TestTopChefClient(TestModule):
 		self.network_manager = MockNetworkManager()
 		
 		self.client = TopChefClient(self.network_manager)
+
+class TestValidateJSONSchema(TestTopChefResource):
+	def setUp(self):
+		TestTopChefResource.setUp(self)
+		self.schema = {
+			'type':'object',
+			'properties': {
+				'value': {
+					'type': 'integer',
+					'minimum': 0,
+					'maximum': 2
+				}
+			}
+		}
+		self.valid_object = {'value': 1}
+		self.invalid_object = {'value': 3}
+
+	def test_validate_json_schema(self):
+		self.net.set_response_code(200)
+		
+		self.resource.validate_json_schema(self.valid_object, self.schema)
+		
+		self.assertEqual(
+			self.net.mock_details['_open_connection']['number_of_calls'], 1
+		)
+		
+		self.assertEqual(
+			self.net.mock_details['_write_json_to_connection']['number_of_calls'],
+			1
+		)
+		self.assertEqual(
+			self.net.mock_details['getResponseCode']['number_of_calls'], 1
+		)
+		
+	def test_validation_error(self):
+		self.net.set_response_code(400)
+		self.net.set_data_to_read(
+			{'errors': {'message': 'error', 'context': "unit testing"}}
+		)
+		
+		def _thunk(client, object, schema):
+			client.validate_json_schema(object, schema)
+		
+		self.assertRaises(
+			ValidationError, _thunk, self.resource, self.invalid_object, self.schema
+		)
+		self.assertEqual(
+			self.net.mock_details['_read_json_error_stream']['number_of_calls'],
+			1
+		)
+		
+	def test_validation_network_error(self):
+		self.net.set_response_code(500)
+		
+		def _thunk(client, object, schema):
+			client.validate_json_schema(object, schema)
+		
+		self.assertRaises(
+			NetworkError, _thunk, self.resource, self.invalid_object, self.schema
+		)
 
 class TestGetServiceIds(TestTopChefClient):
 	def setUp(self):
@@ -664,7 +755,35 @@ class TestGetServiceIds(TestTopChefClient):
 				['_read_json_from_connection']['number_of_calls'],
 			1
 		)
+
+class TestGetServiceById(TestTopChefClient):
+	def setUp(self):
+		TestTopChefClient.setUp(self)
+		self.service_id = '37bdb0be-6963-11e6-9860-001018737a6d'
 		
+	def test_get_service_by_id(self):
+		self.network_manager.set_response_code(200)
+		
+		service = self.client.get_service_by_id(self.service_id)
+		
+		self.assertEqual(self.service_id, service.id)
+	
+	def test_get_service_by_id_404(self):
+		self.network_manager.set_response_code(404)
+		
+		def _error_thunk(client, service_id):
+			client.get_service_by_id(service_id)
+		
+		self.assertRaises(NetworkError, _error_thunk, self.client, self.service_id)
+		
+	def test_get_service_by_id_500(self):
+		self.network_manager.set_response_code(500)
+		
+		def _error_thunk(client, service_id):
+			client.get_service_by_id(service_id)
+		
+		self.assertRaises(NetworkError, _error_thunk, self.client, self.service_id)
+				
 class TestGetJobIDs(TestTopChefClient):
 	def setUp(self):
 		TestTopChefClient.setUp(self)
@@ -724,6 +843,89 @@ class TestGetJobByID(TestTopChefClient):
 			NetworkError, _response_thunk, self.client, self.job_id	
 		)
 		
+class TestTopChefService(TestModule):
+	def setUp(self):
+		TestModule.setUp(self)
+		self.net = MockNetworkManager()
+		self.service_id = '4e18e952-6afb-11e6-ba6b-001018737a6d'
+		self.service_name = 'UnitTester'
+		self.service_description = 'A unit testing service for fun and profit'
+		self.service = TopChefService(self.service_id, self.net)
+		
+class TestGetServiceDictionary(TestTopChefService):
+	def setUp(self):
+		TestTopChefService.setUp(self)
+		self.job_dict = {
+			'id': self.service_id,
+			'name': self.service_name,
+			'description': self.service_description
+		}
+		TestTopChefService.setUp(self)
+		self.net.set_data_to_read({'data': self.job_dict})
+		
+	def test_get_service_dictionary(self):
+		response = self.service._get_service_dictionary()
+		self.assertEqual(response, self.job_dict)
+		
+		self.assertEqual(
+			self.net.mock_details['_open_getter_connection']['number_of_calls'], 1
+		)
+		self.assertEqual(
+			self.net.mock_details['_open_getter_connection']['url'],
+			'/services/%s' % (self.service_id)
+		)
+		
+		self.assertEqual(
+			self.net.mock_details['_read_json_from_connection']['number_of_calls'],
+			1
+		)
+
+class TestRequestJob(TestTopChefService):
+	def _get_service_dictionary(self):
+		return self.service_dictionary
+		
+	def _validate_schema(self, object, schema):
+		pass
+		
+	def setUp(self):
+		TestTopChefService.setUp(self)
+		self.job_schema = {
+			'type': 'object',
+			'properties': {
+				'value': {
+					'type': 'integer',
+					'minimum': 0,
+					'maximum': 2
+				}
+			}
+		}
+		
+		self.job_form = {'value': 1}
+		self.service_dictionary = {'job_registration_schema': self.job_schema}
+		
+		self.new_job_id = 'f61c6692-6b05-11e6-af73-001018737a6d'
+		
+		self.service._get_service_dictionary = self._get_service_dictionary
+		self.service.validate_json_schema = self._validate_schema
+		
+	def test_request_job_network_error(self):
+		self.net.set_response_code(500)
+		
+		def _thunk(service, params):
+			service.request_job(params)
+		
+		self.assertRaises(NetworkError, _thunk, self.service, self.job_form)
+	
+	def test_request_job(self):
+		self.net.set_response_code(201)
+		self.net.set_data_to_read({
+			'service_details': {'id': self.new_job_id}
+		})
+		
+		job = self.service.request_job(self.job_form)
+		self.assertEqual(self.new_job_id, job.id)
+		self.assertEqual(self.net, job.net)
+		
 
 blade_runner = UnitTestRunner([
 	TestNetworkManagerConstructor('test_constructor_min_args'),
@@ -754,13 +956,26 @@ blade_runner = UnitTestRunner([
 	
 	TestTopChefResourceConstructor('test_constructor_default_args'),
 	
+	TestValidateJSONSchema('test_validate_json_schema'),
+	TestValidateJSONSchema('test_validation_error'),
+	TestValidateJSONSchema('test_validation_network_error'),
+	
 	TestGetServiceIds('test_get_service_ids'),
+	
+	TestGetServiceById('test_get_service_by_id'),
+	TestGetServiceById('test_get_service_by_id_404'),
+	TestGetServiceById('test_get_service_by_id_500'),
 	
 	TestGetJobIDs('test_get_job_ids'),
 	
 	TestGetJobByID('test_get_job_by_id'),
 	TestGetJobByID('test_get_job_by_id_404'),
-	TestGetJobByID('test_get_job_by_id_generic_error')
+	TestGetJobByID('test_get_job_by_id_generic_error'),
+	
+	TestGetServiceDictionary('test_get_service_dictionary'),
+	
+	TestRequestJob('test_request_job'),
+	TestRequestJob('test_request_job_network_error')
 ])
 
 blade_runner.run_with_callback(MSG)

@@ -10,6 +10,7 @@ sys.path.append(LIBRARY_PATH)
 
 import unittest
 from topchef_client import TopChefClient, NetworkManager
+from topchef_client import ValidationError
 from unit_test_runner import UnitTestRunner
 
 True = "1"
@@ -47,11 +48,42 @@ class TestLoopback(TestClient):
 		response = self.client.loopback(self.json_to_loop)
 		
 		self.assertEqual(response['data'], self.json_to_loop)
+
+class TestJSONSchemaValidation(TestClient):
+	def setUp(self):
+		TestClient.setUp(self)
+		self.schema = {
+			'type':'object',
+			'properties': {
+				'value': {
+					'type': 'integer',
+					'minimum': 0,
+					'maximum': 2
+				}
+			}
+		}
+		self.valid_object = {'value': 1}
+		self.invalid_object = {'value': 3}
 		
+	def test_validate_schema(self):
+		self.client.validate_json_schema(self.valid_object, self.schema)
+		
+	def test_invalid_schema(self):
+		def _thunk(client, object, schema):
+			client.validate_json_schema(object, schema)
+		
+		self.assertRaises(
+			ValidationError, _thunk, self.client, self.invalid_object, self.schema
+		)
 
 running_man = UnitTestRunner([
 	TestIsServerAlive('test_is_server_alive'),
+
 	TestGetJobIDs('test_get_job_ids'),
-	TestLoopback('test_loopback')
+	
+	TestLoopback('test_loopback'),
+	
+	TestJSONSchemaValidation('test_validate_schema'),
+	TestJSONSchemaValidation('test_invalid_schema')
 ])
 running_man.run_with_callback(MSG)
