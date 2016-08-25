@@ -3,6 +3,7 @@ Contains the routing map for the API, along with function definitions for the
 endpoints
 """
 import logging
+import jsonschema
 from uuid import uuid1, UUID
 from marshmallow_jsonschema import JSONSchema
 from .config import config
@@ -61,6 +62,77 @@ def repeat_json():
     response = jsonify({'data': request.json})
     response.status_code = 200
     return response
+
+@app.route('/validator', methods=["POST"])
+@check_json
+def validate_json():
+    """
+    With a provided JSON object and JSON Schema, use the validator
+    in this API to check whether the JSON object matches the JSON
+    schema
+
+    **Example Request**
+
+    .. sourcecode:: http
+        
+        POST /validator HTTP/1.1
+        Host: example.com
+        Accept: application/json, text/javascript
+        
+        {
+            'object':
+            {
+                'value': 1
+            },
+            'schema':
+            {
+                "type": "object",
+                "properties": 
+                {
+                    "value": 
+                    {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+
+    **Example Response**
+
+    .. sourcecode:: http
+        
+        HTTP/1.1 200 OK
+
+    :statuscode 200: The object matched the given JSON schema
+    :statuscode 400: The object did not match the JSON schema. Errors are
+        returned in the ``errors`` key in the data
+
+    """
+    schema = request.json['schema']
+    _ , errors = JSONSchema().load(request.json['schema'])
+    
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    object_to_validate = request.json['object']
+   
+    try:
+        jsonschema.validate(object_to_validate, schema)
+    except jsonschema.ValidationError as error:
+        error_message = {
+            'message': error.message,
+            'context': error.context
+        }
+        response = jsonify({'errors': error_message})
+        response.status_code = 400
+        return response
+    else: 
+        response = jsonify({'data': {}})
+        response.status_code = 200
+        return response
+
 
 @app.route('/services', methods=["GET"])
 def get_services():

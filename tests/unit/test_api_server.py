@@ -103,6 +103,47 @@ class TestLoopback(object):
 
             assert response.status_code == 400
 
+class TestJSONSchemaValidator(object):
+    ENDPOINT = '/validator'
+    VALID_JSON = {'value': 1}
+    INVALID_JSON = {'value': 'string'}
+    SCHEMA = {"type": "object", "properties": {"value": {"type": "integer"}}}
+
+    def test_validate_200(self):
+        valid_data = {'object': self.VALID_JSON, 'schema': self.SCHEMA}
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(valid_data)
+            )
+
+        assert response.status_code == 200
+
+    def test_validate_400(self):
+        valid_data = {'object': self.INVALID_JSON, 'schema': self.SCHEMA}
+
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(valid_data)
+            )
+
+        assert response.status_code == 400
+        assert json.loads(response.data.decode('utf-8'))['errors']
+
+    def test_validate_invalid_schema(self):
+        data = {'object': self.VALID_JSON, 'schema': 'string'}
+
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(data)
+            )
+
+        assert response.status_code == 400
+        assert json.loads(response.data.decode('utf-8'))['errors']
+
+
 def test_post_service(database):
     endpoint = '/services'
     with app_client(endpoint) as client:
