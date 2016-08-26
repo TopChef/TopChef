@@ -454,6 +454,8 @@ class Job(BASE):
         if job is None:
             raise StopIteration
 
+        job.session = self.session
+
         return job
 
     def update(self, new_dictionary):

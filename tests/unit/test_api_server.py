@@ -273,3 +273,46 @@ class TestGetServiceJobs(object):
 
         assert response.status_code == 404
 
+@pytest.fixture
+def next_job(database, posted_job, posted_service):
+    endpoint = '/services/%s/jobs' % str(posted_service)
+
+    with app_client(endpoint) as client:
+        response = client.post(
+            endpoint, headers={'Content-Type': 'application/json'},
+            data=json.dumps(VALID_JOB_SCHEMA)
+        )
+
+        assert response.status_code == 201
+
+    data = json.loads(response.data.decode('utf-8'))
+
+    job_id = UUID(data['data']['job_details']['id'])
+
+    return job_id
+
+class TestNextJob(object):
+    
+    def test_next_job_204(self, posted_job):
+        
+        assert isinstance(posted_job, UUID)
+        
+        endpoint = '/jobs/%s/next' % str(posted_job)
+
+        with app_client(endpoint) as client:
+            response = client.get(endpoint,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 204
+    
+    def test_next_job_redirect(self, next_job, posted_job):
+        endpoint = '/jobs/%s/next' % str(posted_job)
+        
+        with app_client(endpoint) as client:
+            response = client.get(endpoint,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 302
+
