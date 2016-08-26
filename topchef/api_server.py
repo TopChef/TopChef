@@ -7,7 +7,7 @@ import jsonschema
 from uuid import uuid1, UUID
 from marshmallow_jsonschema import JSONSchema
 from .config import config
-from flask import Flask, jsonify, request, url_for
+from flask import Flask, jsonify, request, url_for, redirect
 from datetime import datetime
 from .models import Service, Job, UnableToFindItemError, FILE_MANAGER
 from .decorators import check_json
@@ -502,6 +502,47 @@ def get_job(job_id):
     response.status_code = 200
     return response
 
+@app.route('/jobs/<job_id>/next', methods=['GET'])
+def get_next_job(job_id):
+    """
+    If a job has a next job, return a redirect to that job.
+    Otherwise, return a 204 response
+    """
+    session = SESSION_FACTORY()
+    try:
+        job_id = UUID(job_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'id %s could not be coerced to a UUID' % job_id
+        })
+        response.status_code = 404
+        return response
+
+    current_job = session.query(Job).filter_by(id=job_id).first()
+
+    next_job = current_job.next(session)
+    
+    if next_job is None:
+        return ('', 204)
+
+    redirection_url = url_for('get_job', job_id=next_job.id, _external=True)
+
+    response = jsonify(
+        {
+            'data': 
+            {
+                'message': 'Redirecting to URL %s' % redirection_url,
+                'target': redirection_url
+            }
+        }
+    )
+    response.status_code = 302
+    response.headers['Location'] = redirection_url
+
+    redirect(redirection_url, code=302)
+
+    return response
+       
 
 @app.route('/services/<service_id>/jobs/<job_id>', methods=["PUT"])
 @check_json

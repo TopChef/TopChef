@@ -444,15 +444,15 @@ class Job(BASE):
         self.session = attached_session
         self.parameters = job_parameters
 
-    def __next__(self):
-        job = self.session.query(self.__class__).filter(
+    def next(self, session):
+        job = session.query(self.__class__).filter(
             self.__class__.date_submitted > self.date_submitted
         ).order_by(
             desc(self.__class__.date_submitted)
         ).first()
 
         if job is None:
-            raise StopIteration
+            return None
 
         return job
 
@@ -523,9 +523,6 @@ class Job(BASE):
         self.file_manager.write(
             json.dumps(job_result), path_to_write
         )
-
-    def __iter__(self):
-        return self
 
     class JobSchema(Schema):
         id = fields.Str()
