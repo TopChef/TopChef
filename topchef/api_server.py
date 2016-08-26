@@ -519,11 +519,10 @@ def get_next_job(job_id):
         return response
 
     current_job = session.query(Job).filter_by(id=job_id).first()
-    current_job.session = session
 
-    try:
-        next_job = next(current_job)
-    except StopIteration:
+    next_job = current_job.next(session)
+    
+    if next_job is None:
         return ('', 204)
 
     redirection_url = url_for('get_job', job_id=next_job.id, _external=True)
