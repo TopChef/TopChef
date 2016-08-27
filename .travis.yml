@@ -4,13 +4,22 @@ language: python
 
 cache: pip
 
+env:
+  - TEST_DIRECTORY=topchef
+  - TEST_DIRECTORY=topchef_client
+
+services:
+  - postgresql
+
 python:
   - "2.7"
-  - "3.4"
   - "3.5"
 
 notifications:
   email: false
+
+before_install:
+  - cd ./$TEST_DIRECTORY
 
 install:
   - pip install -r requirements.txt
