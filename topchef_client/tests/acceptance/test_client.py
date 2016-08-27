@@ -5,7 +5,7 @@ import fixtures
 ADDRESS = 'localhost'
 SERVICE_ID = 'a5b00b5a-6c8b-11e6-b090-843a4b768af4'
 
-class TestClient(Client):
+class ClientForTesting(Client):
     """
     A simple test client that implements the abstract
     client for contacting the topchef server
@@ -16,7 +16,7 @@ class TestClient(Client):
 class TestClientConstructor(object):
 
     def test_constructor(self):
-        client = TestClient(ADDRESS, SERVICE_ID)
+        client = ClientForTesting(ADDRESS, SERVICE_ID)
 
         assert client.id == SERVICE_ID
         assert client.address == ADDRESS

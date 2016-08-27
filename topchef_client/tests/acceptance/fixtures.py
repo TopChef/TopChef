@@ -2,7 +2,6 @@
 Contains test fixtures for the TopChef Client
 """
 import pytest
-import mock
 
 @pytest.fixture
 def json_schema():

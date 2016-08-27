@@ -20,7 +20,7 @@ class Client(object):
             represents
         """
         self.address = address
-        self.service_id = service_id
+        self.id = service_id
 
     @abc.abstractmethod
     def run(self, parameters):
