@@ -5,9 +5,11 @@ client
 import threading
 import requests
 import abc
+import six
 
+
+@six.add_metaclass(abc.ABCMeta)
 class Client(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, address, service_id):
         """
