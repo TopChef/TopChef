@@ -1,5 +1,5 @@
-# Contains a package for the
-# TopChef client
+#
+# Contains a package for the TopChef client
 
-from topchef_client import Client
+from .client import Client
 
