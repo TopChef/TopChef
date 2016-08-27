@@ -7,5 +7,5 @@ setup(name='topchef',
       description='Python library for running remote computing jobs',
       author='Michal Kononenko',
       author_email='mkononen@uwaterloo.ca',
-      packages=['src']
+      packages=['topchef']
 )
