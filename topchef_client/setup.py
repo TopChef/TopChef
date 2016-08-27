@@ -7,5 +7,5 @@ setup(name='topchef-client',
       description='Python library for interfacing with the TopChef server',
       author='Michal Kononenko',
       author_email='mkononen@uwaterloo.ca',
-      packages=['client']
+      packages=['topchef_client']
 )

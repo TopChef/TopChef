@@ -14,6 +14,11 @@ class TestClient(Client):
         return parameters
 
 class TestClientConstructor(object):
+    
+    def test_is_client_abstract(self):
+        with pytest.assertRaises(TypeError):
+            Client(ADDRESS, SERVICE_ID)
+
 
     def test_constructor(self):
         client = TestClient(ADDRESS, SERVICE_ID)

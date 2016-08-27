@@ -1,0 +1,28 @@
+"""
+Contains a base class for a client capable of working with the TopChef
+client
+"""
+import threading
+import requests
+import abc
+
+class Client(object):
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, address, service_id):
+        """
+        Initialize a client to listen on a server
+        and look for jobs for the next service id
+        
+        :param str address: The hostname of the topchef API on which
+            the client is to listen
+        :param str service_id: The ID of the service that this client
+            represents
+        """
+        self.address = address
+        self.service_id = service_id
+
+    @abc.abstractmethod
+    def run(self, parameters):
+        raise NotImplementedError
+
