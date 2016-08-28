@@ -53,7 +53,8 @@ file.
 ```bash
     python topchef
 ```
-   The ``__main__.py`` file in the ``topchef`` directory will execute
+   The ``__main__.py`` file in the ``topchef`` directory will start a
+   development server at ``localhost:5000``.
 
 ***Installing the Client***
 
