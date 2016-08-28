@@ -1,4 +1,4 @@
-**TopChef**
+*TopChef*
 
 [![Build Status](
     https://travis-ci.org/whitewhim2718/TopChef.svg?branch=master
@@ -8,7 +8,7 @@
     https://badge.waffle.io/whitewhim2718/TopChef.png?label=ready&title=Ready
 )](http://waffle.io/whitewhim2718/TopChef)
 
-***Introduction***
+**Introduction**
 
 TopChef is a job queue designed for online experiment design involving a
 control computer running experimental equipment, and a remote computing
@@ -16,7 +16,7 @@ service. The queueing and recording is handled by an HTTP REST API. The
 service contracts between the server are handled using 
 [JSON Schema](http://json-schema.org/).
 
-***Directory Structure***
+**Directory Structure**
 
 All documentation is generated and kept in the ``docs`` directory. Each 
 client is given a directory. The topchef REST API is kept in the ``topchef``
@@ -27,7 +27,7 @@ directory. Each package has its own ``setup.py`` file, allowing independent
 installation with distutils. Each package also has its own ``requirements.txt``
 file. 
 
-***Installing the Server***
+**Installing the Server**
 
 1. Clone this repository using
 
@@ -55,12 +55,13 @@ file.
 ```
    The ``__main__.py`` file in the ``topchef`` directory will execute
 
-***Installing the Client***
+**Installing the Client**
+
 Installing the client is similar to that of the server, except instead of
 ``cd``'ing into ``topchef``, ``cd`` into ``topchef_client``. Then run 
 ``pip install -r requirements.txt`` and ``python setup.py install``.
 
-***Running the Unit Tests***
+**Running the Unit Tests**
 
 Each package in this repository has a ``tests`` directory. The 
 [py.test](http://doc.pytest.org/en/latest/) library was used to design the
@@ -69,7 +70,7 @@ package directories. The test runner will discover all tests in the ``tests``
 directory and run them. To run all tests from a specific file, pass the
 filename as an argument to ``py.test``.
 
-***Maintainers***
+**Maintainers**
 
 * [Michal Kononenko](https://github.com/MichalKononenko) (@michalkononenko)
 * [Thomas Alexander](https://github.com/whitewhim2718) (@whitewhim2718)
