@@ -3,7 +3,6 @@
 [![Build Status](
     https://travis-ci.org/whitewhim2718/TopChef.svg?branch=master
 )](https://travis-ci.org/whitewhim2718/TopChef)
-
 [![Stories in Ready](
     https://badge.waffle.io/whitewhim2718/TopChef.png?label=ready&title=Ready
 )](http://waffle.io/whitewhim2718/TopChef)
