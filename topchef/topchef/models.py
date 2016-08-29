@@ -283,7 +283,6 @@ class Service(BASE):
         else:
             return service
 
-
     def heartbeat(self):
         self.last_checked_in = datetime.utcnow()
 
@@ -445,15 +444,15 @@ class Job(BASE):
         self.session = attached_session
         self.parameters = job_parameters
 
-    def __next__(self):
-        job = self.session.query(self.__class__).filter(
+    def next(self, session):
+        job = session.query(self.__class__).filter(
             self.__class__.date_submitted > self.date_submitted
         ).order_by(
             desc(self.__class__.date_submitted)
         ).first()
 
         if job is None:
-            raise StopIteration
+            return None
 
         return job
 
@@ -525,9 +524,6 @@ class Job(BASE):
             json.dumps(job_result), path_to_write
         )
 
-    def __iter__(self):
-        return self
-
     class JobSchema(Schema):
         id = fields.Str()
         date_submitted = fields.DateTime()
@@ -543,3 +539,4 @@ class Job(BASE):
             self.__class__.__name__, self.parent_service, self.parameters,
             self.session, self.file_manager
         )
+
