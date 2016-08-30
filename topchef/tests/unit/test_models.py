@@ -254,3 +254,26 @@ class TestJobConstructor(object):
     def test_constructor_bad_schema(self, service):
         with pytest.raises(jsonschema.ValidationError):
             models.Job(service, {'value': -1})
+
+class TestJobSchema(object):
+    VALID_STRING = "WORKING"
+    INVALID_STRING = "The job is WORKING"
+    PARAMETERS={'foo': 'bar'}
+
+    def test_validator_valid_string(self):
+        data_to_load = {'parameters': self.PARAMETERS, 
+            'status': self.VALID_STRING}
+
+        data, errors = models.Job.JobSchema().load(data_to_load)
+
+        assert not errors
+        assert data
+
+    def test_validator_invalid_string(self):
+        data_to_load = {'parameters': self.PARAMETERS, 
+            'status': self.INVALID_STRING}
+
+        data, errors = models.Job.JobSchema().load(data_to_load)
+
+        assert errors 
+

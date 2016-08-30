@@ -1,5 +1,6 @@
 from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy import MetaData, Table, Column, Integer, Boolean
+from sqlalchemy import Enum
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgres import UUID
 import uuid
@@ -58,5 +59,7 @@ jobs = Table(
            ),
     Column('date_submitted', DateTime, nullable=False,
            default=datetime.utcnow()),
-    Column('status', String(30)),
+    Column('status', Enum("REGISTERED", "WORKING", "COMPLETED"), 
+        default="REGISTERED")
 )
+

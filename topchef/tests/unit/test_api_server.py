@@ -273,6 +273,29 @@ class TestGetServiceJobs(object):
 
         assert response.status_code == 404
 
+class TestGetJobQueue(object):
+    def test_get_queue(self, posted_service, posted_job):
+        endpoint = 'services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+        assert json.loads(response.data.decode('utf-8'))
+
+    def test_get_empty_queue(self, posted_service):
+        endpoint = 'services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+        assert json.loads(response.data.decode('utf-8')) == {'data': []}
+
 @pytest.fixture
 def next_job(database, posted_job, posted_service):
     endpoint = '/services/%s/jobs' % str(posted_service)

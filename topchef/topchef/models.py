@@ -3,6 +3,7 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
+import re
 import os
 import shutil
 import tempfile
@@ -15,6 +16,7 @@ import jsonschema
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
+from marshmallow import validates, ValidationError
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect, desc
 from sqlalchemy.ext.declarative import declarative_base
@@ -521,8 +523,18 @@ class Job(BASE):
     class JobSchema(Schema):
         id = fields.Str()
         date_submitted = fields.DateTime()
-        status = fields.Str()
+        status = fields.Str(default="REGISTERED")
         parameters = fields.Dict(required=True)
+
+        _valid_statuses = re.compile('^((REGISTERED)|(WORKING)|(COMPLETED))$')
+
+        @validates('status')
+        def _validate_status(self, value):
+            if self._valid_statuses.match(value) is None:
+                raise ValidationError(
+                    'The status %s is not REGISTERED, WORKING, or COMPLETED' % (
+                        value)
+                )
 
     class DetailedJobSchema(JobSchema):
         result = fields.Dict(required=False)
