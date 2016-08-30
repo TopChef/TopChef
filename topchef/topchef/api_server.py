@@ -460,6 +460,37 @@ def request_job(service_id):
     response.status_code = 201
     return response
 
+@app.route('/services/<service_id>/queue', methods=["GET"])
+def get_service_queue(service_id):
+    session = SESSION_FACTORY()
+
+    try:
+        service_id = UUID(service_id)
+    except ValueError:
+        response = jsonify({
+            'errors': {'Could not parse job_id=%s as a UUID' % service_id}
+        })
+        response.status_code = 404
+        return response
+
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': {'Could not find service with id %s' % str(service_id)
+            }
+        })
+        response.status_code = 404
+        return response
+
+    job_list = [job for job in service.jobs if job.status == "REGISTERED"]
+
+    job_data = Job.JobSchema(many=True).dump(job_list).data
+
+    response = jsonify({'data': job_data})
+    response.status_code = 200
+    return response
+    
 
 @app.route('/jobs', methods=["GET"])
 def get_jobs():
