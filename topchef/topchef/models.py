@@ -386,18 +386,12 @@ class Service(BASE):
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
         job_registration_schema = fields.Dict(required=True)
+        job_result_schema = fields.Dict()
 
         @post_load
         def make_service(self, data):
-            try:
-                description = data['description']
-            except IndexError:
-                description = 'No description'
-
-            try:
-                schema = data['job_registration_schema']
-            except KeyError:
-                schema = {'type': 'object'}
+            description = data['description']
+            schema = data['job_registration_schema']
 
             try:
                 result_schema = data['job_result_schema']

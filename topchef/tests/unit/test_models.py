@@ -222,6 +222,11 @@ class TestDetailedServiceSchema(object):
         "job_registration_schema": {"type": "object"},
     }
 
+    def test_make_service_error_thrown(self, app_test_client):
+        _, errors = models.Service.DetailedServiceSchema().load({})
+
+        assert errors
+
     def test_make_service_all_args(self, app_test_client):
         loader_result = models.Service.DetailedServiceSchema().load(
             self.data_to_load
@@ -229,6 +234,13 @@ class TestDetailedServiceSchema(object):
 
         assert isinstance(loader_result.data, models.Service)
         assert not loader_result.errors
+
+    def test_schema_parameters(self, app_test_client, service):
+        schema = service.DetailedServiceSchema().dump(service).data
+
+        assert schema['description'] 
+        assert schema['job_registration_schema'] 
+        assert schema['job_result_schema'] == {'type': 'object'}
 
 VALID_JOB_SCHEMA = {'value': 1}
 
