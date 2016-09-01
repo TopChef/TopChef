@@ -330,6 +330,28 @@ class TestGetJobQueue(object):
         assert response.status_code == 200
         assert json.loads(response.data.decode('utf-8')) == {'data': []}
 
+class TestPutJob(object):
+    def test_happy_path(self, posted_job):
+        endpoint = '/jobs/%s' % str(posted_job)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+
+        job_details = json.loads(response.data.decode('utf-8'))['data']
+
+        job_details['status'] = "WORKING"
+
+        with app_client(endpoint) as client:
+            response = client.put(
+                endpoint, headers={'Content-Type': 'application/json'},
+                data=json.dumps(job_details))
+
+        assert response.status_code == 200
+
 @pytest.fixture
 def next_job(database, posted_job, posted_service):
     endpoint = '/services/%s/jobs' % str(posted_service)

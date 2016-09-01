@@ -439,6 +439,8 @@ class Job(BASE):
 
         self.session = attached_session
         self.parameters = job_parameters
+        
+        self.result = {}
 
     def next(self, session):
         job = session.query(self.__class__).filter(
