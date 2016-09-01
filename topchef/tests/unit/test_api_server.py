@@ -1,9 +1,11 @@
 """
 Contains unit tests for :mod:`topchef.api_server`
 """
+import mock
 import json
 import os
 import pytest
+from flask import jsonify
 from uuid import UUID
 from topchef.api_server import app
 from contextlib import contextmanager
@@ -272,6 +274,25 @@ class TestGetServiceJobs(object):
             )
 
         assert response.status_code == 404
+
+class TestGetServiceQueue(object):
+    
+    @mock.patch('topchef.api_server.UUID', side_effect=ValueError('Kaboom'))
+    def test_get_service_queue_error(self, mock_error):
+        service_uuid = 'd753ddf0-7053-11e6-b1ce-843a4b768af4'
+        endpoint = '/services/%s/queue' % (service_uuid)
+
+        with app_client(endpoint) as client:
+            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+                response = client.get(
+                    endpoint, headers={'Content-Type': 'application/json'}
+                )
+
+        assert response.status_code == 404
+        assert mock_jsonify.call_args == mock.call(
+            {'errors': 'Could not parse job_id=%s as a UUID' % service_uuid}
+        )
+
 
 class TestGetJobQueue(object):
     def test_get_queue(self, posted_service, posted_job):

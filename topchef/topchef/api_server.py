@@ -468,7 +468,7 @@ def get_service_queue(service_id):
         service_id = UUID(service_id)
     except ValueError:
         response = jsonify({
-            'errors': {'Could not parse job_id=%s as a UUID' % service_id}
+            'errors': 'Could not parse job_id=%s as a UUID' % service_id
         })
         response.status_code = 404
         return response

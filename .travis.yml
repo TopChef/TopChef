@@ -12,6 +12,7 @@ services:
   - postgresql
 
 python:
+  - "2.6" # I need this running on a CentOS 6 junker
   - "2.7"
   - "3.5"
 
