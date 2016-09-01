@@ -293,6 +293,19 @@ class TestGetServiceQueue(object):
             {'errors': 'Could not parse job_id=%s as a UUID' % service_uuid}
         )
 
+    @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
+    def test_no_service(self, mock_first, posted_service):
+        endpoint = '/services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+                response = client.get(endpoint)
+
+        assert response.status_code == 404
+        assert mock_jsonify.call_args == mock.call(
+            {'errors': 'Could not find service with id %s' % str(posted_service)
+            }
+        )
 
 class TestGetJobQueue(object):
     def test_get_queue(self, posted_service, posted_job):
