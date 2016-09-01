@@ -477,8 +477,7 @@ def get_service_queue(service_id):
 
     if not service:
         response = jsonify({
-            'errors': {'Could not find service with id %s' % str(service_id)
-            }
+            'errors': 'Could not find service with id %s' % str(service_id)
         })
         response.status_code = 404
         return response
