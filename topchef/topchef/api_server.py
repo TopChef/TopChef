@@ -547,9 +547,6 @@ def put_job_details(job_id):
     session = SESSION_FACTORY()
 
     job = session.query(Job).filter_by(id=job_id).first()
-    job.file_manager = FILE_MANAGER
-    job.session = session
-    job.parent_service.file_manager = FILE_MANAGER
 
     if not job:
         response = jsonify({
@@ -558,6 +555,10 @@ def put_job_details(job_id):
         response.status_code = 404
         return response
 
+    job.file_manager = FILE_MANAGER
+    job.session = session
+    job.parent_service.file_manager = FILE_MANAGER
+    
     new_job_data, errors = Job.DetailedJobSchema().load(request.json)
     
     if errors:

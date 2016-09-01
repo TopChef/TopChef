@@ -331,17 +331,22 @@ class TestGetJobQueue(object):
         assert json.loads(response.data.decode('utf-8')) == {'data': []}
 
 class TestPutJob(object):
-    def test_happy_path(self, posted_job):
-        endpoint = '/jobs/%s' % str(posted_job)
-
+    @staticmethod
+    def get_job_details(endpoint):
         with app_client(endpoint) as client:
             response = client.get(
                 endpoint, headers={'Content-Type': 'application/json'}
             )
-
         assert response.status_code == 200
 
         job_details = json.loads(response.data.decode('utf-8'))['data']
+
+        return job_details
+
+    def test_happy_path(self, posted_job):
+        endpoint = '/jobs/%s' % str(posted_job)
+
+        job_details = self.get_job_details(endpoint)
 
         job_details['status'] = "WORKING"
 
@@ -351,6 +356,29 @@ class TestPutJob(object):
                 data=json.dumps(job_details))
 
         assert response.status_code == 200
+
+    def test_no_uuid(self, posted_job):
+        endpoint = '/jobs/foo'
+
+        with app_client(endpoint) as client:
+            response = client.put(
+                endpoint, headers={'Content-Type': 'application/json'},
+                data=json.dumps({'irrelevant': 'data'})
+            )
+        assert response.status_code == 404
+
+    @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
+    def test_no_job(self, mock_first, posted_job):
+        endpoint = '/jobs/%s' % str(posted_job)
+
+        with app_client(endpoint) as client:
+            response = client.put(endpoint,
+                headers={'Content-Type': 'application/json'},
+                data=json.dumps({'irrelevant': 'data'})
+            )
+
+        assert response.status_code == 404
+
 
 @pytest.fixture
 def next_job(database, posted_job, posted_service):
