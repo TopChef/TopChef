@@ -532,6 +532,72 @@ def get_job(job_id):
     response.status_code = 200
     return response
 
+@app.route('/jobs/<job_id>', methods=["PUT"])
+@check_json
+def put_job_details(job_id):
+    try:
+        job_id = UUID(job_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'Unable to cast job id %s to a UUID' % str(job_id)
+        })
+        response.status_code = 404
+        return response
+
+    session = SESSION_FACTORY()
+
+    job = session.query(Job).filter_by(id=job_id).first()
+
+    if not job:
+        response = jsonify({
+            'errors': 'Unable to find job with id %s' % str(job_id)
+        })
+        response.status_code = 404
+        return response
+
+    job.file_manager = FILE_MANAGER
+    job.session = session
+    job.parent_service.file_manager = FILE_MANAGER
+    
+    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+    
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    job.update(new_job_data)
+
+    try:
+        session.add(job)
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response
+
+    response = jsonify({
+        'data': {
+            'message': 'Job %s updated successfully' % job,
+            'job_schema': job.DetailedJobSchema().dump(job).data
+            }
+        }
+    )
+    response.status_code = 200
+    response.headers['Location'] = url_for(
+        '.get_job', job_id=job.id, _external=True
+    )
+    return response
+
+
 @app.route('/jobs/<job_id>/next', methods=['GET'])
 def get_next_job(job_id):
     """
