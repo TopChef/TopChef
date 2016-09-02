@@ -3,7 +3,8 @@ FROM debian:latest
 MAINTAINER Michal Kononenko "michalkononenko@gmail.com"
 
 # Set up the Debian machine
-RUN apt-get update && apt-get install -y apache2 \
+RUN apt-get update && apt-get install -y apt-utils \
+    apache2 \
     libapache2-mod-wsgi \
     build-essential \
     python \
@@ -20,12 +21,16 @@ RUN pip install -r /var/www/topchef/requirements.txt
 # Copy in an apache configuration file
 COPY ./apache/topchef.conf /etc/apache2/sites-available/topchef.conf
 
+# Copy the WSGI file
 COPY ./apache/topchef.wsgi /var/www/topchef/topchef.wsgi
 
 RUN a2dissite 000-default.conf
 RUN a2ensite topchef.conf
 
+RUN service apache2 start
+
 EXPOSE 80
 
 WORKDIR /var/www/topchef
 
+CMD ["apachectl", "-d", "/var/www/topchef", "-f", "/etc/apache2/sites-available/topchef.conf", "info", "-DFOREGROUND"]
