@@ -588,7 +588,7 @@ def put_job_details(job_id):
 
     response = jsonify({
         'data': {
-            'message': 'Job %s updated successfully' % job,
+            'message': 'Job %s updated successfully' % str(job_id),
             'job_schema': job.DetailedJobSchema().dump(job).data
             }
         }
