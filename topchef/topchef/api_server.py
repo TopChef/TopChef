@@ -567,9 +567,11 @@ def put_job_details(job_id):
         return response
 
     job.update(new_job_data)
+    
+    session.add(job)
 
     try:
-        session.add(job)
+        session.commit()
     except IntegrityError as error:
         case_number = uuid1()
         LOG.error('case_number: %s, message: %s' % case_number, error)
