@@ -567,9 +567,11 @@ def put_job_details(job_id):
         return response
 
     job.update(new_job_data)
+    
+    session.add(job)
 
     try:
-        session.add(job)
+        session.commit()
     except IntegrityError as error:
         case_number = uuid1()
         LOG.error('case_number: %s, message: %s' % case_number, error)
@@ -586,7 +588,7 @@ def put_job_details(job_id):
 
     response = jsonify({
         'data': {
-            'message': 'Job %s updated successfully' % job,
+            'message': 'Job %s updated successfully' % str(job_id),
             'job_schema': job.DetailedJobSchema().dump(job).data
             }
         }

@@ -464,6 +464,7 @@ class Job(BASE):
 
         self.status = new_dictionary['status']
         self.result = new_dictionary['result']
+        self.parameters = new_dictionary['parameters']
 
     @property
     def parameters(self):
@@ -508,7 +509,7 @@ class Job(BASE):
         with open(schema_path) as result_file:
             file_data = result_file.read()
 
-        return JSONSchema().loads(file_data).data
+        return json.loads(file_data)
 
     @result.setter
     def result(self, job_result):
