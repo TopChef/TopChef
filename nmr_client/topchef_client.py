@@ -18,6 +18,8 @@ import java.io
 import java.lang.Boolean.TRUE as JAVA_TRUE
 import java.lang.Boolean.FALSE as JAVA_FALSE
 
+import time
+
 dict = {}.__class__ # Horrible hack to get the class from which dictionaries
 										# derive
 True = "1"
@@ -42,6 +44,17 @@ class ValidationError(ValueError):
 	def __str__(self):
 		return 'message=%s. context=%s' % (self.message, self.context)
 
+class JobNotReady(Exception):
+	"""
+	Thrown if the job results are not yet ready
+	"""
+	pass
+	
+class TimeoutError(NetworkError):
+	"""
+	Thrown if the request to get job results times out
+	"""
+	pass
 	
 class NetworkManager:
 	"""
@@ -63,6 +76,7 @@ class NetworkManager:
 		"""
 		true = True
 		false = False
+		null = None
 		
 		sanitized_string = json_string.replace('lambda', '" + "lambda" + "')
 		
@@ -88,6 +102,8 @@ class NetworkManager:
 			'"1"', 'true'
 		).replace(
 			'"0"', 'false'
+		).replace(
+			'None', 'null'
 		)
 		
 		return json_string
@@ -305,10 +321,9 @@ class TopChefClient(_TopChefResource):
 		return service_ids
 
 	def get_service_by_id(self, service_id):
-		url = '%s%s' % (self.SERVICES_ENDPOINT, service_id)
+		url = '%s/%s' % (self.SERVICES_ENDPOINT, service_id)
 		connection = self.net._open_getter_connection(url)
-		connection.setRequestMethod("GET")
-		
+				
 		status_code = connection.getResponseCode()
 		
 		if (status_code == 404):
@@ -371,12 +386,17 @@ class TopChefService(_TopChefResource):
 		
 		return response
 		
+	def has_timed_out(self):
+		dict = self._get_service_dictionary()
+		return dict['has_timed_out']
+			
+		
 	def request_job(self, job_parameters):
 		"""
 		Check with the server to see if the provided dictionary satisfies the
 		job schema, and then send it to the server.
 		"""
-		endpoint = '%s/%s' % (self.SERVICES_ENDPOINT, self.id)
+		endpoint = '%s/%s/jobs' % (self.SERVICES_ENDPOINT, self.id)
 		
 		job_details = self._get_service_dictionary()
 		
@@ -384,9 +404,11 @@ class TopChefService(_TopChefResource):
 		
 		self.validate_json_schema(job_parameters, schema_to_validate)
 		
+		data_to_write = {'parameters': job_parameters}
+		
 		connection = self.net._open_connection(endpoint)
 		self.net._write_json_to_connection(
-			job_parameters, connection, method="POST"
+			data_to_write, connection, method="POST"
 		)
 		
 		status_code = connection.getResponseCode()
@@ -398,9 +420,34 @@ class TopChefService(_TopChefResource):
 				))
 		else:
 			response = self.net._read_json_from_connection(connection)
-			job_id = response['service_details']['id']
+			job_id = response['data']['job_details']['id']
 			
 			return TopChefJob(job_id, self.net)
+			
+	def get_job_result_schema(self):
+		job_details = self._get_service_dictionary()
+		return job_details['job_result_schema']
+			
+	def get_result_for_job(self, job, polling_interval=10, timeout=30):
+		"""
+		Return the result for a particular job, waiting until the job is
+		complete. Prior to returning the result, validate the result against the
+		job result schema for the service. If it does not match, throw a
+		ValidationError.
+		
+		:param TopChefJob job: The job for which the result is to be obtained
+		:param int polling interval: The amount of time in seconds 
+			that the client should wait before trying to ask for the job results
+		:param int timeout: The amount of time in seconds that the client should
+			wait for the job results. It is best to give more time for the client to
+			get the results than is necessary. If the timeout has expired, a TimeoutError
+			will be thrown.
+			
+		"""
+		job.wait_until_result(polling_interval=polling_interval, timeout=timeout)
+		result = job.get_result()
+		self.validate_json_schema(result, self.get_job_result_schema())
+		return result
 					
 			
 class TopChefJob(_TopChefResource):
@@ -412,3 +459,47 @@ class TopChefJob(_TopChefResource):
 			self, network_manager
 		)
 		self.id = job_id
+	
+	def _get_job_dict(self):
+		endpoint = '%s/%s' % (self.JOBS_ENDPOINT, self.id)
+		
+		connection = self.net._open_getter_connection(endpoint)
+		
+		response = self.net._read_json_from_connection(connection)
+		
+		return response['data']
+
+	def is_result_available(self):
+		details = self._get_job_dict()
+		
+		if details['status'] == 'COMPLETED':
+			return True
+		else:
+			return False
+		
+	def get_result(self):
+		details = self._get_job_dict()
+		
+		if details['status'] != 'COMPLETED':
+			raise JobNotReady('The job %s was not yet completed' % self.id)
+		
+		return details['result']
+		
+	def wait_until_result(self, polling_interval=10, timeout=30):
+		"""
+		Wait until a job result is available.
+		"""
+		starting_time = time.time()
+		
+		has_timed_out = (time.time() - starting_time) > timeout
+	
+		while not has_timed_out and (self.is_result_available() == False):
+			has_timed_out = (time.time() - starting_time) > timeout
+			time.sleep(polling_interval)
+			continue
+			
+		if (self.is_result_available() == True):
+			return self.get_result()
+		else:
+			raise TimeoutError('The request for job %s has timed out' % self.id)
+		
