@@ -33,4 +33,10 @@ EXPOSE 80
 
 WORKDIR /var/www/topchef
 
-CMD ["apachectl", "-d", "/var/www/topchef", "-f", "/etc/apache2/sites-available/topchef.conf", "info", "-DFOREGROUND"]
+CMD [
+        "apachectl", 
+        "-d", "/var/www/topchef", 
+        "-f", "/etc/apache2/apache2.conf", 
+        "-e", "info", 
+        "-DFOREGROUND"
+    ]
