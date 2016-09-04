@@ -62,6 +62,16 @@ WORKDIR /var/www/topchef
 RUN a2dissite 000-default.conf
 RUN a2ensite topchef.conf
 
+# Now that the source repository has been copied, remove the 
+# cloned Git repository
+RUN rm -r /opt/source
+
+# Git and Python headers aren't required anymore either
+RUN apt-get remove -y --purge python-dev \
+    python-pip \
+    git \
+ && apt-get clean \
+ && apt-get autoremove -y
 
 ENTRYPOINT /usr/sbin/apache2ctl -D FOREGROUND
 
