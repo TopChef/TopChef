@@ -43,8 +43,9 @@ def schema_directory():
 
     yield
 
-    if not os.listdir(config.SCHEMA_DIRECTORY):
-        os.removedirs(config.SCHEMA_DIRECTORY)
+    if os.path.isdir(config.SCHEMA_DIRECTORY):
+        if not os.listdir(config.SCHEMA_DIRECTORY):
+            os.removedirs(config.SCHEMA_DIRECTORY)
 
 @pytest.fixture()
 def database(schema_directory):
