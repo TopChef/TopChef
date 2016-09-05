@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from topchef import config, METADATA
+from topchef import configuration, METADATA
 
-METADATA.create_all(bind=config.database_engine)
+METADATA.create_all(bind=configuration.database_engine)
 
