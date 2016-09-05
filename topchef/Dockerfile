@@ -6,23 +6,23 @@ FROM debian:latest
 # Define API metadata
 MAINTAINER Michal Kononenko "@MichalKononenko"
 
-ENV VERSION="1.0-rc1"
-ENV DESCRIPTION="Asynchronous job queue for running services"
+ENV VERSION "1.0-rc1"
+ENV DESCRIPTION "Asynchronous job queue for running services"
 
-ENV SOURCE_REPOSITORY="https://github.com/TopChef/TopChef.git" 
+ENV SOURCE_REPOSITORY "https://github.com/TopChef/TopChef.git" 
 
-ENV HOSTNAME = "0.0.0.0"
-ENV PORT = "80"
-ENV THREADS = 20
-ENV DEBUG = "FALSE"
+ENV HOSTNAME "0.0.0.0"
+ENV PORT "80"
+ENV THREADS "20"
+ENV DEBUG "FALSE"
 
 
-ENV BASE_DIRECTORY = "/var/www/topchef"
-ENV SCHEMA_DIRECTORY = "/var/www/topchef/schemas"
+ENV BASE_DIRECTORY "/var/www/topchef"
+ENV SCHEMA_DIRECTORY "/var/www/topchef/schemas"
 
-ENV LOGFILE = "/var/www/topchef/topchef.log"
+ENV LOGFILE "/var/www/topchef/topchef.log"
 
-ENV DATABASE_URI = "sqlite:////var/www/topchef/db.sqlite3"
+ENV DATABASE_URI "sqlite:////var/www/topchef/db.sqlite3"
 
 EXPOSE 80
 
@@ -42,10 +42,9 @@ RUN apt-get install -y apt-utils \
  && rm -rf /var/lib/apt/lists
 
 #Clone the repo into this directory
+COPY . /opt/source
 
-RUN git clone ${SOURCE_REPOSITORY} /opt/source
-
-WORKDIR /opt/source/topchef/
+WORKDIR /opt/source
 
 RUN pip install -r requirements.txt
 
@@ -57,7 +56,11 @@ COPY ./apache/topchef.conf /etc/apache2/sites-available/topchef.conf
 # Copy the WSGI file
 COPY ./apache/topchef.wsgi /var/www/topchef/topchef.wsgi
 
+RUN python ./apache/create_db.py
+
 WORKDIR /var/www/topchef
+
+RUN mkdir /var/www/topchef/schemas
 
 RUN a2dissite 000-default.conf
 RUN a2ensite topchef.conf
