@@ -14,7 +14,7 @@ ENV SOURCE_REPOSITORY "https://github.com/TopChef/TopChef.git"
 ENV HOSTNAME "0.0.0.0"
 ENV PORT "80"
 ENV THREADS "20"
-ENV DEBUG "FALSE"
+ENV DEBUG "TRUE"
 
 
 ENV BASE_DIRECTORY "/var/www/topchef"
@@ -23,8 +23,6 @@ ENV SCHEMA_DIRECTORY "/var/www/topchef/schemas"
 ENV LOGFILE "/var/www/topchef/topchef.log"
 
 ENV DATABASE_URI "sqlite:////var/www/topchef/db.sqlite3"
-
-EXPOSE 80
 
 # Set up the Debian machine
 RUN apt-get update
@@ -65,16 +63,31 @@ RUN mkdir /var/www/topchef/schemas
 RUN a2dissite 000-default.conf
 RUN a2ensite topchef.conf
 
+
 # Now that the source repository has been copied, remove the 
 # cloned Git repository
 RUN rm -r /opt/source
 
 # Git and Python headers aren't required anymore either
 RUN apt-get remove -y --purge python-dev \
-    python-pip \
     git \
  && apt-get clean \
  && apt-get autoremove -y
+
+# Change some file permissions
+RUN chown root:www-data /var/www/topchef
+RUN chmod 775 /var/www/topchef
+
+RUN chown www-data:www-data /var/www/topchef/schemas
+RUN chmod 775 /var/www/topchef/schemas
+
+RUN chown root:www-data /var/www/topchef/db.sqlite3
+RUN chmod 664 /var/www/topchef/db.sqlite3
+
+RUN chown root:www-data /var/www/topchef/topchef.log
+RUN chmod 664 /var/www/topchef/topchef.log
+
+EXPOSE 80
 
 ENTRYPOINT /usr/sbin/apache2ctl -D FOREGROUND
 
