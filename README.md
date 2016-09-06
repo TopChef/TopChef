@@ -4,6 +4,10 @@
     https://travis-ci.org/TopChef/TopChef.svg?branch=master
 )](https://travis-ci.org/TopChef/TopChef)
 
+[![Stories in Ready](
+    https://badge.waffle.io/TopChef/TopChef.png?label=ready&title=Ready
+)](http://waffle.io/TopChef/TopChef)
+
 ***Introduction***
 
 TopChef is a job queue designed for online experiment design involving a
