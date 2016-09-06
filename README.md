@@ -8,6 +8,11 @@
     https://badge.waffle.io/TopChef/TopChef.png?label=ready&title=Ready
 )](http://waffle.io/TopChef/TopChef)
 
+[![Requirements Status](
+https://requires.io/github/TopChef/TopChef/requirements.svg?branch=master
+)](
+https://requires.io/github/TopChef/TopChef/requirements/?branch=master)
+
 ***Introduction***
 
 TopChef is a job queue designed for online experiment design involving a
