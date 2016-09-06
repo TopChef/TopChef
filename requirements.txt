@@ -6,7 +6,6 @@ docutils==0.12
 Flask==0.10.1
 freezegun==0.3.7
 funcsigs==1.0.2
-functools32==3.2.3.post2
 imagesize==0.7.1
 itsdangerous==0.24
 Jinja2==2.8
