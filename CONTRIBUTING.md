@@ -38,7 +38,10 @@ on your branch.
 When you are done with your branch, please send us a PR. If you didn't
 include the issue number in your branch name, please include it manually
 in the PR title. An example of a good title for a PR is ``Fixes #85``. 
-Waffle will then add an ``In Review`` label to the issue.
+Waffle will then add an ``In Review`` label to the issue. 
+
+The title of the PR must be ``Fixes #<number>`` where ``<number>`` is the 
+number of the issue that the PR is fixing.
 
 There is a Pull Request Form that will be displayed. If you are not referencing
 any particular issue, please give us a description of what your code
