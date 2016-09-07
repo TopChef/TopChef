@@ -26,8 +26,11 @@ ENV DATABASE_URI "sqlite:////var/www/topchef/db.sqlite3"
 
 # Download the Debian dependencies for installing the
 # topchef package.
-RUN apt-get update --fix-missing
-RUN apt-get -y upgrade
+
+# Clean and update all the packages
+RUN apt-get clean
+ && apt-get update --fix-missing
+ && apt-get -y upgrade
 
 RUN apt-get install -y apt-utils \
     apache2 \
