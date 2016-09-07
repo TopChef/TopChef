@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
 
+.. autoflask:: topchef.api_server:app
+    :undoc-static:
 
 Indices and tables
 ==================

@@ -1,6 +1,11 @@
+"""
+Contains unit tests for :mod:`topchef.api_server`
+"""
+import mock
 import json
 import os
 import pytest
+from flask import jsonify
 from uuid import UUID
 from topchef.api_server import app
 from contextlib import contextmanager
@@ -38,19 +43,18 @@ def schema_directory():
 
     yield
 
-    if not os.listdir(config.SCHEMA_DIRECTORY):
-        os.removedirs(config.SCHEMA_DIRECTORY)
-
+    if os.path.isdir(config.SCHEMA_DIRECTORY):
+        if not os.listdir(config.SCHEMA_DIRECTORY):
+            os.removedirs(config.SCHEMA_DIRECTORY)
 
 @pytest.fixture()
 def database(schema_directory):
-
     engine = create_engine(DATABASE_URI)
+
     config._engine = engine
 
     METADATA.create_all(bind=engine)
     server.SESSION_FACTORY = sessionmaker(bind=engine)
-
 
 @contextmanager
 def app_client(endpoint):
@@ -72,6 +76,75 @@ def test_get_request(database, endpoint):
         )
 
     assert response.status_code == 200
+
+class TestLoopback(object):
+    endpoint = '/echo'
+    valid_json = json.dumps({'foo': 'string', 'bar': 1, 'baz': True})
+    invalid_json = 'not JSON'
+
+    def test_loopback_valid_json(self):
+        with app_client(self.endpoint) as client:
+            response = client.post(
+                self.endpoint, headers={'Content-Type': 'application/json'},
+                data=self.valid_json
+            )
+
+            assert response.status_code == 200
+
+            dict_from_loop = json.loads(response.data.decode('utf-8'))
+            dict_from_json = json.loads(self.valid_json)
+
+        assert dict_from_loop['data'] == dict_from_json
+
+    def test_loopback_invalid_json(self):
+
+        with app_client(self.endpoint) as client:
+            response = client.post(
+                self.endpoint, headers={'Content-Type': 'application/json'},
+                data=self.invalid_json
+            )
+
+            assert response.status_code == 400
+
+class TestJSONSchemaValidator(object):
+    ENDPOINT = '/validator'
+    VALID_JSON = {'value': 1}
+    INVALID_JSON = {'value': 'string'}
+    SCHEMA = {"type": "object", "properties": {"value": {"type": "integer"}}}
+
+    def test_validate_200(self):
+        valid_data = {'object': self.VALID_JSON, 'schema': self.SCHEMA}
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(valid_data)
+            )
+
+        assert response.status_code == 200
+
+    def test_validate_400(self):
+        valid_data = {'object': self.INVALID_JSON, 'schema': self.SCHEMA}
+
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(valid_data)
+            )
+
+        assert response.status_code == 400
+        assert json.loads(response.data.decode('utf-8'))['errors']
+
+    def test_validate_invalid_schema(self):
+        data = {'object': self.VALID_JSON, 'schema': 'string'}
+
+        with app_client(self.ENDPOINT) as client:
+            response = client.post(
+                self.ENDPOINT, headers={'Content-Type': 'application/json'},
+                data=json.dumps(data)
+            )
+
+        assert response.status_code == 400
+        assert json.loads(response.data.decode('utf-8'))['errors']
 
 
 def test_post_service(database):
@@ -202,4 +275,152 @@ class TestGetServiceJobs(object):
             )
 
         assert response.status_code == 404
+
+class TestGetServiceQueue(object):
+    
+    @mock.patch('topchef.api_server.UUID', side_effect=ValueError('Kaboom'))
+    def test_get_service_queue_error(self, mock_error):
+        service_uuid = 'd753ddf0-7053-11e6-b1ce-843a4b768af4'
+        endpoint = '/services/%s/queue' % (service_uuid)
+
+        with app_client(endpoint) as client:
+            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+                response = client.get(
+                    endpoint, headers={'Content-Type': 'application/json'}
+                )
+
+        assert response.status_code == 404
+        assert mock_jsonify.call_args == mock.call(
+            {'errors': 'Could not parse job_id=%s as a UUID' % service_uuid}
+        )
+
+    @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
+    def test_no_service(self, mock_first, posted_service):
+        endpoint = '/services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+                response = client.get(endpoint)
+
+        assert response.status_code == 404
+        assert mock_jsonify.call_args == mock.call(
+            {'errors': 'Could not find service with id %s' % str(posted_service)
+            }
+        )
+
+class TestGetJobQueue(object):
+    def test_get_queue(self, posted_service, posted_job):
+        endpoint = 'services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+        assert json.loads(response.data.decode('utf-8'))
+
+    def test_get_empty_queue(self, posted_service):
+        endpoint = 'services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 200
+        assert json.loads(response.data.decode('utf-8')) == {'data': []}
+
+class TestPutJob(object):
+    @staticmethod
+    def get_job_details(endpoint):
+        with app_client(endpoint) as client:
+            response = client.get(
+                endpoint, headers={'Content-Type': 'application/json'}
+            )
+        assert response.status_code == 200
+
+        job_details = json.loads(response.data.decode('utf-8'))['data']
+
+        return job_details
+
+    def test_happy_path(self, posted_job):
+        endpoint = '/jobs/%s' % str(posted_job)
+
+        job_details = self.get_job_details(endpoint)
+
+        job_details['status'] = "WORKING"
+
+        with app_client(endpoint) as client:
+            response = client.put(
+                endpoint, headers={'Content-Type': 'application/json'},
+                data=json.dumps(job_details))
+
+        assert response.status_code == 200
+
+    def test_no_uuid(self, posted_job):
+        endpoint = '/jobs/foo'
+
+        with app_client(endpoint) as client:
+            response = client.put(
+                endpoint, headers={'Content-Type': 'application/json'},
+                data=json.dumps({'irrelevant': 'data'})
+            )
+        assert response.status_code == 404
+
+    @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
+    def test_no_job(self, mock_first, posted_job):
+        endpoint = '/jobs/%s' % str(posted_job)
+
+        with app_client(endpoint) as client:
+            response = client.put(endpoint,
+                headers={'Content-Type': 'application/json'},
+                data=json.dumps({'irrelevant': 'data'})
+            )
+
+        assert response.status_code == 404
+
+
+@pytest.fixture
+def next_job(database, posted_job, posted_service):
+    endpoint = '/services/%s/jobs' % str(posted_service)
+
+    with app_client(endpoint) as client:
+        response = client.post(
+            endpoint, headers={'Content-Type': 'application/json'},
+            data=json.dumps(VALID_JOB_SCHEMA)
+        )
+
+        assert response.status_code == 201
+
+    data = json.loads(response.data.decode('utf-8'))
+
+    job_id = UUID(data['data']['job_details']['id'])
+
+    return job_id
+
+class TestNextJob(object):
+    
+    def test_next_job_204(self, posted_job):
+        
+        assert isinstance(posted_job, UUID)
+        
+        endpoint = '/jobs/%s/next' % str(posted_job)
+
+        with app_client(endpoint) as client:
+            response = client.get(endpoint,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 204
+    
+    def test_next_job_redirect(self, next_job, posted_job):
+        endpoint = '/jobs/%s/next' % str(posted_job)
+        
+        with app_client(endpoint) as client:
+            response = client.get(endpoint,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        assert response.status_code == 302
 
