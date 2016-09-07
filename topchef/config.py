@@ -27,7 +27,7 @@ class Config(Iterable):
     BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
-    LOGFILE = '/var/tmp/topchef.log'
+    LOGFILE = os.path.join(BASE_DIRECTORY, 'topchef.log')
 
     # DATABASE
     DATABASE_URI = 'sqlite:///%s/db.sqlite3' % BASE_DIRECTORY
@@ -72,7 +72,6 @@ class Config(Iterable):
             LOG.addHandler(hdlr)
             LOG.setLevel(logging.DEBUG)
 
-
     def _safe_get_from_environment(self, parameter, environment=os.environ):
         try:
             value_from_environment = environment[parameter]
@@ -84,17 +83,9 @@ class Config(Iterable):
             )
             value_from_environment = value_from_config
 
-        if parameter.upper() == 'DEBUG' \
-            and isinstance(value_from_environment, str):
-            if value_from_environment.upper() == "TRUE":
-                return True
-            elif value_from_environment.upper() == "FALSE":
-                return False
+        new_value = self.type_convert(value_from_environment)
 
-        if parameter.upper() == "PORT":
-            return int(value_from_environment)
-
-        return value_from_environment
+        return new_value
 
     def __iter__(self):
         for attribute in self.__class__.__dict__:
@@ -108,5 +99,18 @@ class Config(Iterable):
     @property
     def database_engine(self):
         return self._engine
+
+    @staticmethod
+    def type_convert(value_from_environment):
+        try:
+            new_value = int(value_from_environment)
+        except ValueError:
+            if value_from_environment.upper() == 'TRUE':
+                new_value = True
+            elif value_from_environment.upper() == 'FALSE':
+                new_value = False
+            else:
+                new_value = value_from_environment
+        return new_value
 
 config = Config()
