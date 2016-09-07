@@ -28,8 +28,8 @@ ENV DATABASE_URI "sqlite:////var/www/topchef/db.sqlite3"
 # topchef package.
 
 # Clean and update all the packages
-RUN apt-get clean
- && apt-get update --fix-missing
+RUN apt-get clean \
+ && apt-get update --fix-missing \
  && apt-get -y upgrade
 
 RUN apt-get install -y apt-utils \
