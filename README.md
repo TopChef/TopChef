@@ -1,11 +1,21 @@
 **TopChef**
 
 [![Build Status](
-    https://travis-ci.org/whitewhim2718/TopChef.svg?branch=master
-)](https://travis-ci.org/whitewhim2718/TopChef)
+    https://travis-ci.org/TopChef/TopChef.svg?branch=master
+)](https://travis-ci.org/TopChef/TopChef)
+
+[![Documentation Status](
+    https://readthedocs.org/projects/topchef/badge/?version=latest)](
+    http://topchef.readthedocs.io/en/latest/?badge=latest)
+
 [![Stories in Ready](
-    https://badge.waffle.io/whitewhim2718/TopChef.png?label=ready&title=Ready
-)](http://waffle.io/whitewhim2718/TopChef)
+    https://badge.waffle.io/TopChef/TopChef.png?label=ready&title=Ready
+)](http://waffle.io/TopChef/TopChef)
+
+[![Requirements Status](
+https://requires.io/github/TopChef/TopChef/requirements.svg?branch=master
+)](
+https://requires.io/github/TopChef/TopChef/requirements/?branch=master)
 
 ***Introduction***
 
@@ -14,6 +24,15 @@ control computer running experimental equipment, and a remote computing
 service. The queueing and recording is handled by an HTTP REST API. The
 service contracts between the server are handled using 
 [JSON Schema](http://json-schema.org/).
+
+***Project Management***
+This project is being managed on [Waffle IO](https://waffle.io/TopChef/TopChef).
+
+The following figure shows throughput on the project
+
+[![Throughput Graph](
+    https://graphs.waffle.io/TopChef/TopChef/throughput.svg
+)](https://waffle.io/TopChef/TopChef/metrics/throughput) 
 
 ***Directory Structure***
 

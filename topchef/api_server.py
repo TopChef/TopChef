@@ -35,7 +35,8 @@ def hello_world():
         Content-Type: application/json
 
         {
-            'meta':
+            "data": {},
+            "meta":
             {
                 "author": "Michal Kononenko"
             }
@@ -106,7 +107,6 @@ def validate_json():
     :statuscode 200: The object matched the given JSON schema
     :statuscode 400: The object did not match the JSON schema. Errors are
         returned in the ``errors`` key in the data
-
     """
     schema = request.json['schema']
     _ , errors = JSONSchema().load(request.json['schema'])
@@ -143,7 +143,7 @@ def get_services():
 
     .. sourcecode:: http
 
-        HTTP/1.1 /services GET
+        GET /services HTTP/1.1
         Content-Type: application/json
 
         {
@@ -191,7 +191,7 @@ def register_service():
 
     .. sourcecode:: http
 
-        HTTP/1.1 /services POST
+        POST /services HTTP/1.1
         Content-Type: application/json
 
         {
@@ -374,6 +374,10 @@ def request_job(service_id):
     **Example Response**
     
     .. sourcecode:: http
+
+        HTTP/1.1 201 CREATED
+        Content-Type: application/json
+        Location: http://localhost:5000/jobs/eb511c46-6577-11e6-a72a-3c970e7271f5
       
         {
           "data": {
@@ -460,6 +464,36 @@ def request_job(service_id):
     response.status_code = 201
     return response
 
+@app.route('/services/<service_id>/queue', methods=["GET"])
+def get_service_queue(service_id):
+    session = SESSION_FACTORY()
+
+    try:
+        service_id = UUID(service_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'Could not parse job_id=%s as a UUID' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'Could not find service with id %s' % str(service_id)
+        })
+        response.status_code = 404
+        return response
+
+    job_list = [job for job in service.jobs if job.status == "REGISTERED"]
+
+    job_data = Job.JobSchema(many=True).dump(job_list).data
+
+    response = jsonify({'data': job_data})
+    response.status_code = 200
+    return response
+    
 
 @app.route('/jobs', methods=["GET"])
 def get_jobs():
@@ -501,6 +535,74 @@ def get_job(job_id):
     response = jsonify({'data': job.DetailedJobSchema().dump(job).data})
     response.status_code = 200
     return response
+
+@app.route('/jobs/<job_id>', methods=["PUT"])
+@check_json
+def put_job_details(job_id):
+    try:
+        job_id = UUID(job_id)
+    except ValueError:
+        response = jsonify({
+            'errors': 'Unable to cast job id %s to a UUID' % str(job_id)
+        })
+        response.status_code = 404
+        return response
+
+    session = SESSION_FACTORY()
+
+    job = session.query(Job).filter_by(id=job_id).first()
+
+    if not job:
+        response = jsonify({
+            'errors': 'Unable to find job with id %s' % str(job_id)
+        })
+        response.status_code = 404
+        return response
+
+    job.file_manager = FILE_MANAGER
+    job.session = session
+    job.parent_service.file_manager = FILE_MANAGER
+    
+    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+    
+    if errors:
+        response = jsonify({'errors': errors})
+        response.status_code = 400
+        return response
+
+    job.update(new_job_data)
+    
+    session.add(job)
+
+    try:
+        session.commit()
+    except IntegrityError as error:
+        case_number = uuid1()
+        LOG.error('case_number: %s, message: %s' % case_number, error)
+        session.rollback()
+
+        response = jsonify({
+            'errors': {
+                'case_number': case_number,
+                'message': 'Integrity error thrown when attempting commit'
+            }
+        })
+        response.status_code = 400
+        return response
+
+    response = jsonify({
+        'data': {
+            'message': 'Job %s updated successfully' % str(job_id),
+            'job_schema': job.DetailedJobSchema().dump(job).data
+            }
+        }
+    )
+    response.status_code = 200
+    response.headers['Location'] = url_for(
+        '.get_job', job_id=job.id, _external=True
+    )
+    return response
+
 
 @app.route('/jobs/<job_id>/next', methods=['GET'])
 def get_next_job(job_id):

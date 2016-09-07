@@ -222,6 +222,11 @@ class TestDetailedServiceSchema(object):
         "job_registration_schema": {"type": "object"},
     }
 
+    def test_make_service_error_thrown(self, app_test_client):
+        _, errors = models.Service.DetailedServiceSchema().load({})
+
+        assert errors
+
     def test_make_service_all_args(self, app_test_client):
         loader_result = models.Service.DetailedServiceSchema().load(
             self.data_to_load
@@ -229,6 +234,13 @@ class TestDetailedServiceSchema(object):
 
         assert isinstance(loader_result.data, models.Service)
         assert not loader_result.errors
+
+    def test_schema_parameters(self, app_test_client, service):
+        schema = service.DetailedServiceSchema().dump(service).data
+
+        assert schema['description'] 
+        assert schema['job_registration_schema'] 
+        assert schema['job_result_schema'] == {'type': 'object'}
 
 VALID_JOB_SCHEMA = {'value': 1}
 
@@ -242,3 +254,26 @@ class TestJobConstructor(object):
     def test_constructor_bad_schema(self, service):
         with pytest.raises(jsonschema.ValidationError):
             models.Job(service, {'value': -1})
+
+class TestJobSchema(object):
+    VALID_STRING = "WORKING"
+    INVALID_STRING = "The job is WORKING"
+    PARAMETERS={'foo': 'bar'}
+
+    def test_validator_valid_string(self):
+        data_to_load = {'parameters': self.PARAMETERS, 
+            'status': self.VALID_STRING}
+
+        data, errors = models.Job.JobSchema().load(data_to_load)
+
+        assert not errors
+        assert data
+
+    def test_validator_invalid_string(self):
+        data_to_load = {'parameters': self.PARAMETERS, 
+            'status': self.INVALID_STRING}
+
+        data, errors = models.Job.JobSchema().load(data_to_load)
+
+        assert errors 
+

@@ -4,12 +4,9 @@ language: python
 
 cache: pip
 
-env:
-  - TEST_DIRECTORY=topchef
-  - TEST_DIRECTORY=topchef_client
-
 services:
   - postgresql
+  - docker
 
 python:
   - "2.7"
@@ -17,9 +14,6 @@ python:
 
 notifications:
   email: false
-
-before_install:
-  - cd ./$TEST_DIRECTORY
 
 install:
   - pip install -r requirements.txt
@@ -30,7 +24,8 @@ before_script:
   - psql -c 'create database test_db;' -U postgres
 
 script:
-  
+  - docker build .
+
   - python setup.py install
   - cd tests
   - py.test

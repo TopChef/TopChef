@@ -3,6 +3,7 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
+import re
 import os
 import shutil
 import tempfile
@@ -15,6 +16,7 @@ import jsonschema
 from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
+from marshmallow import validates, ValidationError
 from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect, desc
 from sqlalchemy.ext.declarative import declarative_base
@@ -386,18 +388,12 @@ class Service(BASE):
     class DetailedServiceSchema(ServiceSchema):
         description = fields.Str(required=True)
         job_registration_schema = fields.Dict(required=True)
+        job_result_schema = fields.Dict()
 
         @post_load
         def make_service(self, data):
-            try:
-                description = data['description']
-            except IndexError:
-                description = 'No description'
-
-            try:
-                schema = data['job_registration_schema']
-            except KeyError:
-                schema = {'type': 'object'}
+            description = data['description']
+            schema = data['job_registration_schema']
 
             try:
                 result_schema = data['job_result_schema']
@@ -443,6 +439,8 @@ class Job(BASE):
 
         self.session = attached_session
         self.parameters = job_parameters
+        
+        self.result = {}
 
     def next(self, session):
         job = session.query(self.__class__).filter(
@@ -466,6 +464,7 @@ class Job(BASE):
 
         self.status = new_dictionary['status']
         self.result = new_dictionary['result']
+        self.parameters = new_dictionary['parameters']
 
     @property
     def parameters(self):
@@ -510,7 +509,7 @@ class Job(BASE):
         with open(schema_path) as result_file:
             file_data = result_file.read()
 
-        return JSONSchema().loads(file_data).data
+        return json.loads(file_data)
 
     @result.setter
     def result(self, job_result):
@@ -527,8 +526,18 @@ class Job(BASE):
     class JobSchema(Schema):
         id = fields.Str()
         date_submitted = fields.DateTime()
-        status = fields.Str()
+        status = fields.Str(default="REGISTERED")
         parameters = fields.Dict(required=True)
+
+        _valid_statuses = re.compile('^((REGISTERED)|(WORKING)|(COMPLETED))$')
+
+        @validates('status')
+        def _validate_status(self, value):
+            if self._valid_statuses.match(value) is None:
+                raise ValidationError(
+                    'The status %s is not REGISTERED, WORKING, or COMPLETED' % (
+                        value)
+                )
 
     class DetailedJobSchema(JobSchema):
         result = fields.Dict(required=False)
