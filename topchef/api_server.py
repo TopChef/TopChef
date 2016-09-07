@@ -35,7 +35,8 @@ def hello_world():
         Content-Type: application/json
 
         {
-            'meta':
+            "data": {},
+            "meta":
             {
                 "author": "Michal Kononenko"
             }
