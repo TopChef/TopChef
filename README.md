@@ -4,6 +4,10 @@
     https://travis-ci.org/TopChef/TopChef.svg?branch=master
 )](https://travis-ci.org/TopChef/TopChef)
 
+[![Documentation Status](
+    https://readthedocs.org/projects/topchef/badge/?version=latest)](
+    http://topchef.readthedocs.io/en/latest/?badge=latest)
+
 [![Stories in Ready](
     https://badge.waffle.io/TopChef/TopChef.png?label=ready&title=Ready
 )](http://waffle.io/TopChef/TopChef)

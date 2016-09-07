@@ -106,7 +106,6 @@ def validate_json():
     :statuscode 200: The object matched the given JSON schema
     :statuscode 400: The object did not match the JSON schema. Errors are
         returned in the ``errors`` key in the data
-
     """
     schema = request.json['schema']
     _ , errors = JSONSchema().load(request.json['schema'])
@@ -143,7 +142,7 @@ def get_services():
 
     .. sourcecode:: http
 
-        HTTP/1.1 /services GET
+        GET /services HTTP/1.1
         Content-Type: application/json
 
         {
@@ -191,7 +190,7 @@ def register_service():
 
     .. sourcecode:: http
 
-        HTTP/1.1 /services POST
+        POST /services HTTP/1.1
         Content-Type: application/json
 
         {
@@ -374,6 +373,10 @@ def request_job(service_id):
     **Example Response**
     
     .. sourcecode:: http
+
+        HTTP/1.1 201 CREATED
+        Content-Type: application/json
+        Location: http://localhost:5000/jobs/eb511c46-6577-11e6-a72a-3c970e7271f5
       
         {
           "data": {
