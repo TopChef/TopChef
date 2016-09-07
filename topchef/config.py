@@ -27,7 +27,7 @@ class Config(Iterable):
     BASE_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
     SCHEMA_DIRECTORY = os.path.join(BASE_DIRECTORY, 'schemas')
 
-    LOGFILE = '/var/tmp/topchef.log'
+    LOGFILE = os.path.join(BASE_DIRECTORY, 'topchef.log')
 
     # DATABASE
     DATABASE_URI = 'sqlite:///%s/db.sqlite3' % BASE_DIRECTORY
@@ -107,7 +107,7 @@ class Config(Iterable):
         except ValueError:
             if value_from_environment.upper() == 'TRUE':
                 new_value = True
-            elif value_from_environment == 'FALSE':
+            elif value_from_environment.upper() == 'FALSE':
                 new_value = False
             else:
                 new_value = value_from_environment
