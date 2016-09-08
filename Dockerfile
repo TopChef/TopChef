@@ -27,6 +27,8 @@ ENV DATABASE_URI "sqlite:////var/www/topchef/db.sqlite3"
 # Download the Debian dependencies for installing the
 # topchef package.
 
+RUN sed -i "s/httpredir.debian.org/`curl -s -D - http://httpredir.debian.org/demo/debian/ | awk '/^Link:/ { print $2 }' | sed -e 's@<http://\(.*\)/debian/>;@\1@g'`/" /etc/apt/sources.list
+
 # Clean and update all the packages
 RUN apt-get clean \
  && apt-get update --fix-missing \
