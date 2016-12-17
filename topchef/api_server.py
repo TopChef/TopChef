@@ -57,12 +57,14 @@ def hello_world():
         'data': {}
     })
 
+
 @app.route('/echo', methods=["POST"])
 @check_json
 def repeat_json():
     response = jsonify({'data': request.json})
     response.status_code = 200
     return response
+
 
 @app.route('/validator', methods=["POST"])
 @check_json
@@ -236,7 +238,7 @@ def register_service():
     if errors:
         response = jsonify({
             'errors': {
-                'message':'Invalid request, serializer produced errors.',
+                'message': 'Invalid request, serializer produced errors.',
                 'serializer_errors': errors
             }
         })
