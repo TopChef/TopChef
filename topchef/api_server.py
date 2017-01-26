@@ -291,7 +291,6 @@ def get_service_data(service_id):
     session = SESSION_FACTORY()
 
     service = session.query(Service).filter_by(id=service_id).first()
-    service.file_manager = FILE_MANAGER
 
     if service is None:
         response = jsonify({
@@ -299,6 +298,7 @@ def get_service_data(service_id):
         })
         response.status_code = 404
         return response
+    service.file_manager = FILE_MANAGER
 
     data, _ = service.DetailedServiceSchema().dump(service)
 

@@ -88,55 +88,6 @@ def posted_service(database):
     return service_id
 
 
-class TestService(object):
-
-    def test_service_data_good_code(self, posted_service):
-        endpoint = '/services/%s' % str(posted_service)
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-
-        assert response.status_code == 200
-
-    def test_service_bad_id(self, posted_service):
-        service_id = 'foo'
-        assert service_id != posted_service
-
-        endpoint = '/services/%s' % service_id
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-        
-        assert response.status_code == 404
-
-class TestPatchService(object):
-
-    def test_service_patch(self, posted_service):
-        endpoint = '/services/%s' % str(posted_service)
-
-        with app_client(endpoint) as client:
-            response = client.patch(endpoint)
-
-        assert response.status_code == 200
-
-
-    def test_service_404(self, posted_service):
-        service_id = 'foo'
-        assert service_id != str(posted_service)
-
-        endpoint = '/services/%s' % service_id
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-
-        assert response.status_code == 404
-
 @pytest.fixture
 def posted_job(database, posted_service):
     endpoint = '/services/%s/jobs' % str(posted_service)

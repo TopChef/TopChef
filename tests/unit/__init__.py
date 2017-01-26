@@ -2,6 +2,7 @@
 Contains unit tests for :mod:`topchef`
 """
 import abc
+import os
 import pytest
 from topchef.config import Config
 from sqlalchemy import create_engine
@@ -33,6 +34,16 @@ class UnitTest(object):
         config = Config()
         return config
 
+    @pytest.yield_fixture(scope='session')
+    def _schema_directory(self, _app_config):
+        if not os.path.isdir(_app_config.SCHEMA_DIRECTORY):
+            os.mkdir(_app_config.SCHEMA_DIRECTORY)
+
+        yield
+
+        if not os.listdir(_app_config.SCHEMA_DIRECTORY):
+            os.rmdir(_app_config.SCHEMA_DIRECTORY)
+
     @pytest.fixture(scope='session')
     def _engine(self, _app_config):
         """
@@ -46,7 +57,7 @@ class UnitTest(object):
         return engine
 
     @pytest.yield_fixture(scope='session')
-    def _database(self, _engine):
+    def _database(self, _engine, _schema_directory):
         """
         Creates an in-memory SQLite database out of a given engine
         :param _engine: The engine

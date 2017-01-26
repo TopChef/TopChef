@@ -16,6 +16,6 @@ class TestRootEndpoint(UnitTest):
         return '/'
 
     def test_get_request(self, _app_client):
-        response = _app_client.get(self.endpoint, self.headers)
+        response = _app_client.get(self.endpoint, headers=self.headers)
 
         assert response.status_code == 200

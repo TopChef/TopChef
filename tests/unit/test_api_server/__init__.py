@@ -5,6 +5,7 @@ import abc
 import pytest
 import json
 from tests.unit import UnitTest as _BaseUnitTest
+from uuid import UUID
 
 
 class UnitTest(_BaseUnitTest):
@@ -15,7 +16,8 @@ class UnitTest(_BaseUnitTest):
 
     status_codes = {
         'success': 200,
-        'created': 201
+        'created': 201,
+        'not found': 404
     }
 
 
@@ -26,12 +28,18 @@ class UnitTestWithService(UnitTest):
     __metaclass__ = abc.ABCMeta
 
     _services_endpoint = '/services'
+    service_name = "TestService"
+    service_id = None
+
+    bad_service_name = "InvalidService"
+
+    _template_endpoint = '/services/%s'
 
     @property
     def endpoint(self): return self._services_endpoint
 
     _job_registration_schema = {
-        "name": "TestService",
+        "name": service_name,
         "description": "A service created for unit testing",
         "job_registration_schema": {
             "type": "object",
@@ -61,4 +69,9 @@ class UnitTestWithService(UnitTest):
                 response.status_code
             )
 
+        data = json.loads(response.data.decode('utf-8'))
+
+        self.service_id = UUID(data['data']['service_details']['id'])
+
         yield _app_client
+

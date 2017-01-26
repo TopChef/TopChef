@@ -39,6 +39,7 @@ class TestRegisterService(UnitTestWithService):
         )
 
         assert response.status_code == 400
-        assert json.loads(response.data)['errors']['case_number']
+        assert json.loads(response.data.decode('utf-8'))['errors'][
+            'case_number']
         assert mock_commit.called
         assert mock_rollback.called
