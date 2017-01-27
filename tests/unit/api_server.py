@@ -105,7 +105,8 @@ def posted_job(database, posted_service):
         job_id = UUID(data['data']['job_details']['id'])
 
     return job_id
-        
+
+
 class TestGetServiceJobs(object):
     def test_get_jobs(self, posted_service, posted_job):
         endpoint = 'services/%s/jobs' % str(posted_service)

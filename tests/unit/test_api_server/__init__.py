@@ -75,3 +75,29 @@ class UnitTestWithService(UnitTest):
 
         yield _app_client
 
+
+class UnitTestWithJob(UnitTestWithService):
+    """
+    Base class for unit tests that also have a posted job
+    """
+
+    job_name = "Testing Job"
+    _job_id = None
+
+    _jobs_poster_template = '/services/%s/jobs'
+
+    @property
+    def job_id(self):
+        return self._job_id
+
+    @pytest.yield_fixture
+    def _posted_job(self, _posted_service):
+        response = _posted_service.post(
+            self._jobs_poster_template % self.service_id, headers=self.headers,
+            data=json.dumps(self._valid_job_schema)
+        )
+
+        data = json.loads(response.data.decode('utf-8'))
+        self._job_id = UUID(data['data']['job_details']['id'])
+
+        yield _posted_service
