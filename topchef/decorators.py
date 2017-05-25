@@ -17,7 +17,7 @@ def check_json(f):
     """
     @wraps(f)
     def checked_endpoint(*args, **kwargs):
-        if not request.json:
+        if not request.get_json():
             response = jsonify({'errors': 'The request body is not JSON'})
             response.status_code = 400
             return response

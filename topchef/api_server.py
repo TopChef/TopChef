@@ -61,7 +61,7 @@ def hello_world():
 @app.route('/echo', methods=["POST"])
 @check_json
 def repeat_json():
-    response = jsonify({'data': request.json})
+    response = jsonify({'data': request.get_json()})
     response.status_code = 200
     return response
 
@@ -110,15 +110,15 @@ def validate_json():
     :statuscode 400: The object did not match the JSON schema. Errors are
         returned in the ``errors`` key in the data
     """
-    schema = request.json['schema']
-    _ , errors = JSONSchema().load(request.json['schema'])
+    schema = request.get_json()['schema']
+    _ , errors = JSONSchema().load(request.get_json()['schema'])
     
     if errors:
         response = jsonify({'errors': errors})
         response.status_code = 400
         return response
 
-    object_to_validate = request.json['object']
+    object_to_validate = request.get_json()['object']
    
     try:
         jsonschema.validate(object_to_validate, schema)
@@ -233,7 +233,7 @@ def register_service():
     """
     session = SESSION_FACTORY()
 
-    new_service, errors = Service.DetailedServiceSchema().load(request.json)
+    new_service, errors = Service.DetailedServiceSchema().load(request.get_json())
 
     if errors:
         response = jsonify({
@@ -331,7 +331,7 @@ def heartbeat(service_id):
     session.add(service)
     session.commit()
 
-    if not request.json:
+    if not request.get_json():
         response = jsonify({
             'data': 'service %s checked in at %s' % (
                 service.id, datetime.utcnow().isoformat()
@@ -424,7 +424,7 @@ def request_job(service_id):
 
     service.file_manager = FILE_MANAGER
 
-    job_data, errors = Job.JobSchema().load(request.json)
+    job_data, errors = Job.JobSchema().load(request.get_json())
 
     if errors:
         response = jsonify({
@@ -565,7 +565,7 @@ def put_job_details(job_id):
     job.session = session
     job.parent_service.file_manager = FILE_MANAGER
     
-    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+    new_job_data, errors = Job.DetailedJobSchema().load(request.get_json())
     
     if errors:
         response = jsonify({'errors': errors})
@@ -669,7 +669,7 @@ def update_job_results(service_id, job_id):
         response.status_code = 404
         return response
 
-    new_job_data, errors = Job.DetailedJobSchema().load(request.json)
+    new_job_data, errors = Job.DetailedJobSchema().load(request.get_json())
 
     job.update(new_job_data)
 
