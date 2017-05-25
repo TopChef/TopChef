@@ -11,9 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   http_api
 
-.. autoflask:: topchef.api_server:app
-    :undoc-static:
 
 Indices and tables
 ==================
@@ -21,4 +20,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
