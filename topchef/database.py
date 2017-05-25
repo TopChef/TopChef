@@ -2,7 +2,7 @@ from sqlalchemy import String, ForeignKey, DateTime
 from sqlalchemy import MetaData, Table, Column, Integer, Boolean
 from sqlalchemy import Enum
 from sqlalchemy.types import TypeDecorator, CHAR
-from sqlalchemy.dialects.postgres import UUID
+from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 

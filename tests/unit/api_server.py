@@ -14,6 +14,7 @@ from topchef.config import config
 from topchef.database import METADATA
 import topchef.api_server as server
 from sqlalchemy.orm import sessionmaker
+from tests.unit import UnitTest
 
 try:
     DATABASE_URI = os.environ['DATABASE_URI']
@@ -68,95 +69,6 @@ def app_client(endpoint):
     request_context.pop()
 
 
-@pytest.mark.parametrize('endpoint', ['/', '/services', '/jobs'])
-def test_get_request(database, endpoint):
-    with app_client(endpoint) as client:
-        response = client.get(
-            endpoint, headers={'Content-Type': 'application/json'}
-        )
-
-    assert response.status_code == 200
-
-class TestLoopback(object):
-    endpoint = '/echo'
-    valid_json = json.dumps({'foo': 'string', 'bar': 1, 'baz': True})
-    invalid_json = 'not JSON'
-
-    def test_loopback_valid_json(self):
-        with app_client(self.endpoint) as client:
-            response = client.post(
-                self.endpoint, headers={'Content-Type': 'application/json'},
-                data=self.valid_json
-            )
-
-            assert response.status_code == 200
-
-            dict_from_loop = json.loads(response.data.decode('utf-8'))
-            dict_from_json = json.loads(self.valid_json)
-
-        assert dict_from_loop['data'] == dict_from_json
-
-    def test_loopback_invalid_json(self):
-
-        with app_client(self.endpoint) as client:
-            response = client.post(
-                self.endpoint, headers={'Content-Type': 'application/json'},
-                data=self.invalid_json
-            )
-
-            assert response.status_code == 400
-
-class TestJSONSchemaValidator(object):
-    ENDPOINT = '/validator'
-    VALID_JSON = {'value': 1}
-    INVALID_JSON = {'value': 'string'}
-    SCHEMA = {"type": "object", "properties": {"value": {"type": "integer"}}}
-
-    def test_validate_200(self):
-        valid_data = {'object': self.VALID_JSON, 'schema': self.SCHEMA}
-        with app_client(self.ENDPOINT) as client:
-            response = client.post(
-                self.ENDPOINT, headers={'Content-Type': 'application/json'},
-                data=json.dumps(valid_data)
-            )
-
-        assert response.status_code == 200
-
-    def test_validate_400(self):
-        valid_data = {'object': self.INVALID_JSON, 'schema': self.SCHEMA}
-
-        with app_client(self.ENDPOINT) as client:
-            response = client.post(
-                self.ENDPOINT, headers={'Content-Type': 'application/json'},
-                data=json.dumps(valid_data)
-            )
-
-        assert response.status_code == 400
-        assert json.loads(response.data.decode('utf-8'))['errors']
-
-    def test_validate_invalid_schema(self):
-        data = {'object': self.VALID_JSON, 'schema': 'string'}
-
-        with app_client(self.ENDPOINT) as client:
-            response = client.post(
-                self.ENDPOINT, headers={'Content-Type': 'application/json'},
-                data=json.dumps(data)
-            )
-
-        assert response.status_code == 400
-        assert json.loads(response.data.decode('utf-8'))['errors']
-
-
-def test_post_service(database):
-    endpoint = '/services'
-    with app_client(endpoint) as client:
-        response = client.post(
-            endpoint, headers={'Content-Type': 'application/json'},
-            data=json.dumps(JOB_REGISTRATION_SCHEMA)
-        )
-
-    assert response.status_code == 201
-
 @pytest.fixture
 def posted_service(database):
     endpoint = '/services'
@@ -175,54 +87,6 @@ def posted_service(database):
 
     return service_id
 
-class TestService(object):
-
-    def test_service_data_good_code(self, posted_service):
-        endpoint = '/services/%s' % str(posted_service)
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-
-        assert response.status_code == 200
-
-    def test_service_bad_id(self, posted_service):
-        service_id = 'foo'
-        assert service_id != posted_service
-
-        endpoint = '/services/%s' % service_id
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-        
-        assert response.status_code == 404
-
-class TestPatchService(object):
-
-    def test_service_patch(self, posted_service):
-        endpoint = '/services/%s' % str(posted_service)
-
-        with app_client(endpoint) as client:
-            response = client.patch(endpoint)
-
-        assert response.status_code == 200
-
-
-    def test_service_404(self, posted_service):
-        service_id = 'foo'
-        assert service_id != str(posted_service)
-
-        endpoint = '/services/%s' % service_id
-
-        with app_client(endpoint) as client:
-            response = client.get(
-                endpoint, headers={'Content-Type': 'application/json'}
-            )
-
-        assert response.status_code == 404
 
 @pytest.fixture
 def posted_job(database, posted_service):
@@ -241,7 +105,8 @@ def posted_job(database, posted_service):
         job_id = UUID(data['data']['job_details']['id'])
 
     return job_id
-        
+
+
 class TestGetServiceJobs(object):
     def test_get_jobs(self, posted_service, posted_job):
         endpoint = 'services/%s/jobs' % str(posted_service)
@@ -278,13 +143,13 @@ class TestGetServiceJobs(object):
 
 class TestGetServiceQueue(object):
     
-    @mock.patch('topchef.api_server.UUID', side_effect=ValueError('Kaboom'))
+    @mock.patch('topchef.test_api_server.UUID', side_effect=ValueError('Kaboom'))
     def test_get_service_queue_error(self, mock_error):
         service_uuid = 'd753ddf0-7053-11e6-b1ce-843a4b768af4'
         endpoint = '/services/%s/queue' % (service_uuid)
 
         with app_client(endpoint) as client:
-            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+            with mock.patch('topchef.test_api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
                 response = client.get(
                     endpoint, headers={'Content-Type': 'application/json'}
                 )
@@ -299,7 +164,7 @@ class TestGetServiceQueue(object):
         endpoint = '/services/%s/queue' % str(posted_service)
 
         with app_client(endpoint) as client:
-            with mock.patch('topchef.api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+            with mock.patch('topchef.test_api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
                 response = client.get(endpoint)
 
         assert response.status_code == 404

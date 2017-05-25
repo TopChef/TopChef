@@ -8,10 +8,6 @@
     https://readthedocs.org/projects/topchef/badge/?version=latest)](
     http://topchef.readthedocs.io/en/latest/?badge=latest)
 
-[![Stories in Ready](
-    https://badge.waffle.io/TopChef/TopChef.png?label=ready&title=Ready
-)](http://waffle.io/TopChef/TopChef)
-
 [![Requirements Status](
 https://requires.io/github/TopChef/TopChef/requirements.svg?branch=master
 )](
@@ -26,13 +22,8 @@ service contracts between the server are handled using
 [JSON Schema](http://json-schema.org/).
 
 ***Project Management***
-This project is being managed on [Waffle IO](https://waffle.io/TopChef/TopChef).
-
-The following figure shows throughput on the project
-
-[![Throughput Graph](
-    https://graphs.waffle.io/TopChef/TopChef/throughput.svg
-)](https://waffle.io/TopChef/TopChef/metrics/throughput) 
+This project is being managed on [Asana](
+    https://app.asana.com/0/349544982046885/349547942248954).
 
 ***Directory Structure***
 
