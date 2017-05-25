@@ -280,6 +280,39 @@ def register_service():
 
 @app.route('/services/<service_id>', methods=["GET"])
 def get_service_data(service_id):
+    """
+    Retrieve data for a particular service
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "name": "TestService",
+            "description": "Some test data",
+            "job_registration_schema": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                    }
+                }
+            }
+        }
+
+    :statuscode 200: The request completed successfully
+    :statuscode 404: A service with that UUID was not found
+
+    :param str service_id: The UUID representing the service for which data
+    is to be retrieved
+    :return: A response containing the service data
+    :rtype: Flask.Response
+    """
     try:
         service_id = UUID(service_id)
     except ValueError:
@@ -307,6 +340,46 @@ def get_service_data(service_id):
 
 @app.route('/services/<service_id>', methods=["PATCH"])
 def heartbeat(service_id):
+    """
+    If JSON is sent to this endpoint, update the service data with the new
+    schema. If no JSON is sent, the polling interval is reset. If the time
+    runs out before one of these requests is sent, then it will be assumed
+    that the service is not accessible. The schema for editing a service is
+    the same as the one for creating a service.
+
+    **Example Response With No JSON sent**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "data": "service 4487a994-415d-11e7-a880-843a4b768af4 checked in
+                at 2017-05-25T15:30:07.729941"
+        }
+
+    ** Example Response With JSON**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "meta":
+                "service 4487a994-415d-11e7-a880-843a4b768af4 has
+                heartbeated at 2017-05-25T11:34:29.302623"
+        }
+
+    :statuscode 200: The request completed successfully
+    :statuscode 400: The request JSON was formatted incorrectly
+    :statuscode 404: A service with that UUID could not be found.
+
+    :param str service_id: The service ID
+    :return: The appropriate response
+    :rtype: Flask.Response
+    """
     session = SESSION_FACTORY()
     try:
         service_id = UUID(service_id)
@@ -373,37 +446,44 @@ def request_job(service_id):
     """
     Request a job from a particular service to run on the system
 
+    **Example Request**
+
+    Let's say that we are working with a service that takes in an integer
+    from 1 to 10, and does something to it. In that case, we must adhere to
+    the schema that we have defined for this service, placing all the
+    parameters into a "parameters" field.
+
+    .. sourcecode:: http
+
+        POST /services/514d373a-e9af-41cf-a7d0-efe6a675f820/jobs HTTP/1.1
+        Content-Type: application/json
+
+        {
+            "parameters": {
+                "value": 1
+            }
+        }
+
     **Example Response**
     
     .. sourcecode:: http
 
         HTTP/1.1 201 CREATED
         Content-Type: application/json
-        Location: http://localhost:5000/jobs/eb511c46-6577-11e6-a72a-3c970e7271f5
+        Location: http://localhost:5000/jobs/d222b8fc-4162-11e7-a880-843a4b768af4
       
-        {
+       {
           "data": {
-            "message": "Service Service(id=312789728539838762115097976762654683637, name=TestService, description=Some test data, schema={'type': 'object', 'properties': {u'value': {u'minimum': 1, u'type': u'integer', u'maximum': 10}}}) successfully registered",
-            "service_details": [
-              {
-                "description": "Some test data",
-                "has_timed_out": false,
-                "id": "eb511c46-6577-11e6-a72a-3c970e7271f5",
-                "job_registration_schema": {
-                  "properties": {
-                    "value": {
-                      "maximum": 10,
-                      "minimum": 1,
-                      "type": "integer"
-                    }
-                  },
-                  "type": "object"
-                },
-                "name": "TestService",
-                "url": "http://localhost:5000/services/eb511c46-6577-11e6-a72a-3c970e7271f5"
+            "job_details": {
+              "date_submitted": "2017-05-25T15:57:14.618164+00:00",
+              "id": "d222b8fc-4162-11e7-a880-843a4b768af4",
+              "parameters": {
+                "value": 1
               },
-            ]
-          }
+              "status": "REGISTERED"
+            },
+            "message": "Job Job(parent_service=Service(id=91091903262496590623915637806013516532, name=TestService, description=Some test data, schema={'type': 'object', 'properties': {'value': {'type': 'integer', 'minimum': 1, 'maximum': 10}}}), job_parameters={'value': 1}, attached_session=<sqlalchemy.orm.session.Session object at 0x7f65b13ccb00>, file_manager=SchemaDirectoryOrganizer(schema_directory_path=/home/mkononen/.virtualenvs/TopChef/lib/python3.5/site-packages/topchef/schemas)) successfully created"
+            }
         }
 
     :statuscode 201: The job was created successfully
@@ -466,8 +546,37 @@ def request_job(service_id):
     response.status_code = 201
     return response
 
+
 @app.route('/services/<service_id>/queue', methods=["GET"])
 def get_service_queue(service_id):
+    """
+    Returns the list of jobs that are queued for this service to process.
+    The job list is in the order that the jobs will be processed.
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "data": [
+            {
+              "date_submitted": "2017-05-25T15:57:14.618164+00:00",
+              "id": "d222b8fc-4162-11e7-a880-843a4b768af4",
+              "status": "REGISTERED"
+            }
+          ]
+        }
+
+    :statuscode 200: The request completed successfully
+    :statuscode 404: A service with that particular service ID was not found
+
+    :param service_id: The UUID of the service for which this job is to be
+        created
+    :return: The appropriate Flask response
+    """
     session = SESSION_FACTORY()
 
     try:
@@ -499,6 +608,31 @@ def get_service_queue(service_id):
 
 @app.route('/jobs', methods=["GET"])
 def get_jobs():
+    """
+    Responds with a list of all jobs that are queued with this server
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "data": [
+            {
+              "date_submitted": "2017-05-25T15:57:14.618164+00:00",
+              "id": "d222b8fc-4162-11e7-a880-843a4b768af4",
+              "status": "REGISTERED"
+            }
+          ]
+        }
+
+    :statuscode 200: The request was completed successfully
+
+    :return: A flask response with the jobs listed
+    :rtype: Flask.Response
+    """
     session = SESSION_FACTORY()
     job_list = session.query(Job).all()
 
@@ -513,6 +647,35 @@ def get_jobs():
 
 @app.route('/jobs/<job_id>', methods=['GET'])
 def get_job(job_id):
+    """
+    Returns data for a particular job.
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "data": {
+                "date_submitted": "2017-05-25T15:57:14.618164+00:00",
+                "id": "d222b8fc-4162-11e7-a880-843a4b768af4",
+                "parameters": {
+                "value": 1
+            },
+            "result": {},
+            "status": "REGISTERED"
+            }
+        }
+
+    :statuscode 200: The request successfully completed
+    :statuscode 404: A job with that ID could not be found
+
+    :param str job_id: The ID of a particular job to use
+    :return: A flask response showing the details for a particular job
+    :rtype: Flask.Response
+    """
     try:
         job_id = UUID(job_id)
     except ValueError:
@@ -538,9 +701,61 @@ def get_job(job_id):
     response.status_code = 200
     return response
 
+
 @app.route('/jobs/<job_id>', methods=["PUT"])
 @check_json
 def put_job_details(job_id):
+    """
+    Update the job with new data
+
+   **Example Request**
+
+    .. sourcecode:: http
+
+        PUT /jobs/514d373a-e9af-41cf-a7d0-efe6a675f820 HTTP/1.1
+        Content-Type: application/json
+
+        {
+            "date_submitted": "2017-05-25T17:04:37.212708+00:00",
+            "id": "3bb5b090-416c-11e7-a880-843a4b768af4",
+            "parameters": {
+              "value": 1
+            },
+            "result": {},
+            "status": "WORKING"
+        }
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+        Location: http://localhost:5000/jobs/3bb5b090-416c-11e7-a880-843a4b768af4
+
+        {
+          "data": {
+            "job_schema": {
+              "date_submitted": "2017-05-25T17:04:37.212708+00:00",
+              "id": "3bb5b090-416c-11e7-a880-843a4b768af4",
+              "parameters": {
+                "value": 1
+              },
+              "result": {},
+              "status": "WORKING"
+            },
+            "message": "Job Job(parent_service=Service(id=262472146097748129118538192143273855732, name=TestService, description=Some test data, schema={'properties': {'value': {'minimum': 1, 'maximum': 10, 'type': 'integer'}}, 'type': 'object'}), job_parameters={'value': 1}, attached_session=<sqlalchemy.orm.session.Session object at 0x7ffaa689bf28>, file_manager=SchemaDirectoryOrganizer(schema_directory_path=/home/mkononen/git/TopChef/TopChef/topchef/schemas)) updated successfully"
+          }
+        }
+
+    :statuscode 200: The request completed succesfully
+    :statuscode 400: The JSON was not correctly formatted
+    :statuscode 404: A service or job with that particular ID could not be
+        found
+
+    :param job_id: The ID of the job to update
+    :return: The appropriate Flask Response
+    """
     try:
         job_id = UUID(job_id)
     except ValueError:
@@ -611,6 +826,41 @@ def get_next_job(job_id):
     """
     If a job has a next job, return a redirect to that job.
     Otherwise, return a 204 response
+
+    **Example Response: No Content**
+
+    ..sourcecode:: http
+
+        HTTP/1.1 204 NO CONTENT
+
+    **Example Response: Next Job**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "data": {
+            "date_submitted": "2017-05-25T17:38:18.979594+00:00",
+            "id": "f0c6d58c-4170-11e7-a880-843a4b768af4",
+            "parameters": {
+              "value": 2
+            },
+            "result": {},
+            "status": "REGISTERED"
+          }
+        }
+
+    :statuscode 200: This job has a next job. The job data is given in the
+        body of the response
+    :statuscode 204: This job has no next jobs.
+
+    :param str job_id: The UUID of the job for which a next job is to be
+        retrieved
+    :return: The appropriate Flask response
+    :rtype: Flask.Response
+
     """
     session = SESSION_FACTORY()
     try:
@@ -651,6 +901,58 @@ def get_next_job(job_id):
 @app.route('/services/<service_id>/jobs/<job_id>', methods=["PUT"])
 @check_json
 def update_job_results(service_id, job_id):
+    """
+
+    **Example Request**
+
+    .. sourcecode:: http
+
+        PUT /services/514d373a-e9af-41cf-a7d0-efe6a675f820/jobs
+            /8e877afc-bd9e-4f26-86e0-a53b353c56b5 HTTP/1.1
+        Content-Type: application/json
+
+        {
+            "date_submitted": "2017-05-25T17:04:37.212708+00:00",
+            "id": "3bb5b090-416c-11e7-a880-843a4b768af4",
+            "parameters": {
+              "value": 1
+            },
+            "result": {},
+            "status": "WORKING"
+        }
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+        Location: http://localhost:5000/jobs/3bb5b090-416c-11e7-a880-843a4b768af4
+
+        {
+          "data": {
+            "job_schema": {
+              "date_submitted": "2017-05-25T17:04:37.212708+00:00",
+              "id": "3bb5b090-416c-11e7-a880-843a4b768af4",
+              "parameters": {
+                "value": 1
+              },
+              "result": {},
+              "status": "WORKING"
+            },
+            "message": "Job Job(parent_service=Service(id=262472146097748129118538192143273855732, name=TestService, description=Some test data, schema={'properties': {'value': {'minimum': 1, 'maximum': 10, 'type': 'integer'}}, 'type': 'object'}), job_parameters={'value': 1}, attached_session=<sqlalchemy.orm.session.Session object at 0x7ffaa689bf28>, file_manager=SchemaDirectoryOrganizer(schema_directory_path=/home/mkononen/git/TopChef/TopChef/topchef/schemas)) updated successfully"
+          }
+        }
+
+    :statuscode 200: The request completed succesfully
+    :statuscode 400: The JSON was not correctly formatted
+    :statuscode 404: A service or job with that particular ID could not be
+        found
+
+    :param str service_id: The ID of the service for which this job is to be updated
+    :param job_id: The ID of the job that is to be updated
+    :return: The appropriate Flask response
+    """
     session = SESSION_FACTORY()
 
     service=session.query(Service).filter_by(id=service_id).first()
@@ -669,7 +971,11 @@ def update_job_results(service_id, job_id):
         response.status_code = 404
         return response
 
-    new_job_data, errors = Job.DetailedJobSchema().load(request.get_json())
+    job.file_manager = FILE_MANAGER
+    job.session = session
+    job.parent_service.file_manager = FILE_MANAGER
+    new_job_data, errors = Job.DetailedJobSchema(strict=True).load(
+        request.get_json())
 
     job.update(new_job_data)
 
@@ -694,7 +1000,7 @@ def update_job_results(service_id, job_id):
     response = jsonify({
         'data': {
             'message': 'Job %s updated successfully' % job,
-            'job_schema': job.DetailedJobSchema().dump(job).data()
+            'job_schema': job.DetailedJobSchema().dump(job).data
             }
         }
     )
@@ -703,4 +1009,3 @@ def update_job_results(service_id, job_id):
         '.get_job', job_id=job.id, _external=True
     )
     return response
-
