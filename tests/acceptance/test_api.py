@@ -75,6 +75,7 @@ def test_is_server_up(flask_app):
     )
     assert response.status_code == 200
 
+
 def test_json_loopback(flask_app, valid_json):
     url = '%s/echo' % flask_app
     response = requests.post(
@@ -88,8 +89,29 @@ def test_json_loopback(flask_app, valid_json):
 
     assert response_from_server['data'] == valid_json
 
+
 class TestJSONSchemaValidator(object):
     endpoint = '/validator'
+
+    def test_validator_getter(self, flask_app, json_schema, valid_json):
+        url = '%s%s' % (flask_app, self.endpoint)
+
+        response = requests.get(
+            url, headers={'Content-Type': 'application/json'}
+        )
+        assert response.status_code == 200
+
+        validator_schema = response.json()['meta']['validation_schema']
+        thing_to_validate = {'object': valid_json, 'schema': json_schema}
+
+        validator_response = requests.post(
+            url, headers={'Content-Type': 'application/json'},
+            data=json.dumps({
+                'object': thing_to_validate, 'schema': validator_schema
+            })
+        )
+
+        assert validator_response.status_code == 200
 
     def test_validator_200(self, flask_app, json_schema, valid_json):
         url = '%s%s' % (flask_app, self.endpoint)
