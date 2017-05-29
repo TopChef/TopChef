@@ -51,8 +51,7 @@ RUN apt-get install -y apt-utils \
 COPY . /opt/source
 WORKDIR /opt/source
 
-RUN pip install -r requirements.txt
-RUN python setup.py install
+RUN pip install .
 
 # Copy in the apache configuration file so that Apache is aware of
 # topchef's existence. 
@@ -108,4 +107,3 @@ RUN chmod 664 /var/www/topchef/topchef.log
 EXPOSE 80
 
 ENTRYPOINT /usr/sbin/apache2ctl -D FOREGROUND
-
