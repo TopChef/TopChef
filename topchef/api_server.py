@@ -66,6 +66,64 @@ def repeat_json():
     return response
 
 
+@app.route('/validator', methods=["GET"])
+def get_validator_data():
+    """
+    Returns information for API consumers describing how to use the JSON
+    schema validator
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        'data': {},
+        'meta': {
+            'validation_schema': {
+                '$schema': 'http://json-schema.org/draft-04/schema#',
+                'type': 'object',
+                'properties': {
+                    'object': {
+                        'type': 'object'
+                    },
+                    'schema': {
+                        'type': 'object'
+                    }
+                },
+                'required': ['object', 'schema']
+            }
+        }
+
+    :statuscode 200: The request completed successfully
+
+    :return: A Flask response containing the required data
+    :rtype: Flask.Response
+
+    """
+    response = jsonify({
+        'data': {},
+        'meta': {
+            'validation_schema': {
+                '$schema': 'http://json-schema.org/draft-04/schema#',
+                'type': 'object',
+                'properties': {
+                    'object': {
+                        'type': 'object'
+                    },
+                    'schema': {
+                        'type': 'object'
+                    }
+                },
+                'required': ['object', 'schema']
+            }
+        }
+    })
+    response.status_code = 200
+    return response
+
+
 @app.route('/validator', methods=["POST"])
 @check_json
 def validate_json():
