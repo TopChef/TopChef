@@ -5,7 +5,6 @@ import json
 import pytest
 import requests
 import multiprocessing
-import os
 from topchef.api_server import app
 import time
 

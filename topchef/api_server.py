@@ -11,11 +11,13 @@ from flask import Flask, jsonify, request, url_for, redirect
 from datetime import datetime
 from .models import Service, Job, UnableToFindItemError, FILE_MANAGER
 from .decorators import check_json
+from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
 app.config.update(config.parameter_dict)
+app.wsgi_app = HTTPMethodOverrideMiddleware(app.wsgi_app)
 
 SESSION_FACTORY = sessionmaker(bind=config.database_engine)
 LOG = logging.getLogger(__name__)
