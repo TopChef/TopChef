@@ -81,20 +81,22 @@ def get_validator_data():
         HTTP/1.1 200 OK
         Content-Type: application/json
 
-        'data': {},
-        'meta': {
-            'validation_schema': {
-                '$schema': 'http://json-schema.org/draft-04/schema#',
-                'type': 'object',
-                'properties': {
-                    'object': {
-                        'type': 'object'
+        {
+            'data': {},
+            'meta': {
+                'validation_schema': {
+                    '$schema': 'http://json-schema.org/draft-04/schema#',
+                    'type': 'object',
+                    'properties': {
+                        'object': {
+                            'type': 'object'
+                        },
+                        'schema': {
+                            'type': 'object'
+                        }
                     },
-                    'schema': {
-                        'type': 'object'
-                    }
-                },
-                'required': ['object', 'schema']
+                    'required': ['object', 'schema']
+                }
             }
         }
 
