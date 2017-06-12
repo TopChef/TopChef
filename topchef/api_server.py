@@ -482,6 +482,35 @@ def heartbeat(service_id):
 
 @app.route('/services/<service_id>/jobs', methods=["GET"])
 def get_jobs_for_service(service_id):
+    """
+    Returns a list of all the jobs that have been registered with a
+    particular service
+
+    **Example Response**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+          "data": [
+            {
+              "date_submitted": "2017-06-09T17:23:32.656168+00:00",
+              "id": "5caedeca-4d38-11e7-a611-3c970e7271f5",
+              "status": "REGISTERED"
+            }
+          ]
+        }
+
+    :statuscode 200: The request completed successfully
+    :statuscode 404: A service with the desired id could not be found
+
+
+    :param str service_id: The ID of the service for which Jjobs are to be
+        retrieved
+    :return: The appropriate flask response
+    """
     session = SESSION_FACTORY()
     service = session.query(Service).filter_by(id=service_id).first()
 
