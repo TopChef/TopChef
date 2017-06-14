@@ -14,6 +14,7 @@ from .decorators import check_json
 from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import desc
 
 app = Flask(__name__)
 app.config.update(config.parameter_dict)
@@ -636,6 +637,65 @@ def request_job(service_id):
     )
     response.status_code = 201
     return response
+
+
+@app.route('/services/<service_id>/jobs/next', methods=["GET"])
+def get_next_job_for_service(service_id):
+    """
+    If the service has a next job, returns this job with a 200 response. If
+    not, returns a 204 response.
+
+    **Example Response - Job Found**
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: application/json
+
+        {
+            "date_submitted": "2017-05-25T15:57:14.618164+00:00",
+            "id": "d222b8fc-4162-11e7-a880-843a4b768af4",
+            "parameters": {
+            "value": 1
+            },
+            "status": "REGISTERED"
+        }
+
+    :statuscode 200: The next job exists
+    :statuscode 204: The next job does not exist
+
+    :param str service_id: The ID of the service for which the next job is
+        to be obtained
+    :return: The appropriate Flask response
+    :rtype: Flask.Response
+    """
+    session = SESSION_FACTORY()
+    service = session.query(Service).filter_by(id=service_id).first()
+
+    if not service:
+        response = jsonify({
+            'errors': 'A service with id %s was not found' % service_id
+        })
+        response.status_code = 404
+        return response
+
+    service.file_manager = FILE_MANAGER
+    next_job = session.query(Job).filter(
+        Job.parent_service == service
+    ).filter(
+        Job.status == "REGISTERED"
+    ).order_by(
+        desc(Job.date_submitted)
+    ).first()
+
+    if next_job is None:
+        return ('', 204)
+    else:
+        next_job.file_manager = FILE_MANAGER
+        job_data = Job.JobSchema().dump(next_job).data
+        response = jsonify({'data': job_data})
+        response.status_code = 200
+        return response
 
 
 @app.route('/services/<service_id>/queue', methods=["GET"])

@@ -1,6 +1,7 @@
 from . import UnitTestWithJob
 from uuid import uuid4
 
+
 class TestGetJobsForService(UnitTestWithJob):
 
     _invalid_job_id = None
