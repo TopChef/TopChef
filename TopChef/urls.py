@@ -16,13 +16,20 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework import routers
+from rest_framework.schemas import get_schema_view
 from user_authenticator import views
+from topchef.views import ServiceViewSet, JobViewSet
+
+schema_view = get_schema_view(title='TopChef API')
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'groups', views.GroupViewSet)
+router.register(r'services', ServiceViewSet)
+router.register(r'jobs', JobViewSet)
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
-]
+    url(r'^schema/$', schema_view),
+] + router.urls
