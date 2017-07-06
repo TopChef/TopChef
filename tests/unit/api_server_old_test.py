@@ -14,7 +14,6 @@ from topchef.config import config
 from topchef.database import METADATA
 import topchef.api_server as server
 from sqlalchemy.orm import sessionmaker
-from tests.unit import UnitTest
 
 try:
     DATABASE_URI = os.environ['DATABASE_URI']
@@ -36,6 +35,7 @@ JOB_REGISTRATION_SCHEMA = {
 
 VALID_JOB_SCHEMA = {'parameters': {'value': 1}}
 
+
 @pytest.yield_fixture
 def schema_directory():
 
@@ -48,6 +48,7 @@ def schema_directory():
         if not os.listdir(config.SCHEMA_DIRECTORY):
             os.removedirs(config.SCHEMA_DIRECTORY)
 
+
 @pytest.fixture()
 def database(schema_directory):
     engine = create_engine(DATABASE_URI)
@@ -56,6 +57,7 @@ def database(schema_directory):
 
     METADATA.create_all(bind=engine)
     server.SESSION_FACTORY = sessionmaker(bind=engine)
+
 
 @contextmanager
 def app_client(endpoint):
@@ -141,15 +143,18 @@ class TestGetServiceJobs(object):
 
         assert response.status_code == 404
 
+
 class TestGetServiceQueue(object):
     
-    @mock.patch('topchef.test_api_server.UUID', side_effect=ValueError('Kaboom'))
+    @mock.patch('topchef.api_server.UUID', side_effect=ValueError(
+        'Kaboom'))
     def test_get_service_queue_error(self, mock_error):
         service_uuid = 'd753ddf0-7053-11e6-b1ce-843a4b768af4'
         endpoint = '/services/%s/queue' % (service_uuid)
 
         with app_client(endpoint) as client:
-            with mock.patch('topchef.test_api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+            with mock.patch('topchef.api_server.jsonify',
+                            return_value=jsonify({})) as mock_jsonify:
                 response = client.get(
                     endpoint, headers={'Content-Type': 'application/json'}
                 )
@@ -159,12 +164,35 @@ class TestGetServiceQueue(object):
             {'errors': 'Could not parse job_id=%s as a UUID' % service_uuid}
         )
 
+    def test_get_service_no_job(self, posted_service):
+        """
+
+        Tests that if there isn't a job available, then the returned status
+        code is 204: NO CONTENT
+
+        :param posted_service: The fixture for a service with no jobs
+        """
+        endpoint = '/services/%s/queue' % str(posted_service)
+        with app_client(endpoint) as client:
+            response = client.get(endpoint)
+
+        assert response.status_code == 204
+
+    def test_get_service_with_job(self, posted_service, posted_job):
+        endpoint = '/services/%s/queue' % str(posted_service)
+
+        with app_client(endpoint) as client:
+            response = client.get(endpoint)
+
+        assert response.status_code == 200
+
     @mock.patch('sqlalchemy.orm.Query.first', return_value=None)
     def test_no_service(self, mock_first, posted_service):
         endpoint = '/services/%s/queue' % str(posted_service)
 
         with app_client(endpoint) as client:
-            with mock.patch('topchef.test_api_server.jsonify', return_value=jsonify({})) as mock_jsonify:
+            with mock.patch('topchef.api_server.jsonify',
+                            return_value=jsonify({})) as mock_jsonify:
                 response = client.get(endpoint)
 
         assert response.status_code == 404
@@ -172,6 +200,7 @@ class TestGetServiceQueue(object):
             {'errors': 'Could not find service with id %s' % str(posted_service)
             }
         )
+
 
 class TestGetJobQueue(object):
     def test_get_queue(self, posted_service, posted_job):
@@ -193,8 +222,8 @@ class TestGetJobQueue(object):
                 endpoint, headers={'Content-Type': 'application/json'}
             )
 
-        assert response.status_code == 200
-        assert json.loads(response.data.decode('utf-8')) == {'data': []}
+        assert response.status_code == 204
+
 
 class TestPutJob(object):
     @staticmethod

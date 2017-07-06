@@ -10,7 +10,7 @@ from topchef.models import SchemaDirectoryOrganizer
 from topchef import models
 from topchef.config import config
 from topchef.api_server import app
-from .api_server import app_client
+from .api_server_old_test import app_client
 
 
 SERVICE_NAME = 'TestService'

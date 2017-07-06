@@ -753,7 +753,12 @@ def get_service_queue(service_id):
     job_data = Job.JobSchema(many=True).dump(job_list).data
 
     response = jsonify({'data': job_data})
-    response.status_code = 200
+
+    if len(job_list) == 0:
+        response.status_code = 204
+    else:
+        response.status_code = 200
+
     return response
     
 
