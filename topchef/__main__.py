@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import os
+
 from topchef.api_server import app
 from topchef.config import config
-from topchef.database import METADATA
+from topchef.database.schema import METADATA
 
 METADATA.create_all(bind=config.database_engine)
 

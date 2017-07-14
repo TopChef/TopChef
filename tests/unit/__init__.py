@@ -3,11 +3,13 @@ Contains unit tests for :mod:`topchef`
 """
 import abc
 import os
+
 import pytest
-from topchef.config import Config
 from sqlalchemy import create_engine
-from topchef.database import METADATA
+
 from topchef.api_server import app
+from topchef.config import Config
+from topchef.database.schema import METADATA
 
 
 class UnitTest(object):

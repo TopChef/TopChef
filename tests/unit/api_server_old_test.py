@@ -1,19 +1,21 @@
 """
 Contains unit tests for :mod:`topchef.api_server`
 """
-import mock
 import json
 import os
+from contextlib import contextmanager
+from uuid import UUID
+
+import mock
 import pytest
 from flask import jsonify
-from uuid import UUID
-from topchef.api_server import app
-from contextlib import contextmanager
 from sqlalchemy import create_engine
-from topchef.config import config
-from topchef.database import METADATA
-import topchef.api_server as server
 from sqlalchemy.orm import sessionmaker
+
+import topchef.api_server as server
+from topchef.api_server import app
+from topchef.config import config
+from topchef.database.schema import METADATA
 
 try:
     DATABASE_URI = os.environ['DATABASE_URI']

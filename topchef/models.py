@@ -3,17 +3,17 @@ Contains model classes for the API. These classes are atomic data types that
 have JSON representations written in marshmallow, and a single representation
 in the database.
 """
-import re
+import json
+import logging
 import os
+import re
 import shutil
 import tempfile
 import uuid
-import logging
-import json
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import jsonschema
-from datetime import datetime, timedelta
 from flask import url_for
 from marshmallow import Schema, fields, post_dump, post_load
 from marshmallow import validates, ValidationError
@@ -21,12 +21,13 @@ from marshmallow_jsonschema import JSONSchema
 from sqlalchemy import inspect, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
-from . import database
+
+from topchef.database import schema
 from .config import config
 
 LOG = logging.getLogger(__name__)
 
-BASE = declarative_base(metadata=database.METADATA)
+BASE = declarative_base(metadata=schema.METADATA)
 
 
 class SchemaDirectoryOrganizer(object):
@@ -224,7 +225,7 @@ class Service(BASE):
     """
     A basic compute service
     """
-    __table__ = database.services
+    __table__ = schema.services
 
     id = __table__.c.service_id
     name = __table__.c.name
@@ -413,7 +414,7 @@ class Job(BASE):
     """
     Base class for a compute job
     """
-    __table__ = database.jobs
+    __table__ = schema.jobs
 
     id = __table__.c.job_id
     date_submitted = __table__.c.date_submitted
