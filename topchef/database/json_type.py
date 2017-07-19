@@ -1,26 +1,26 @@
 """
-Contains a backend-agnostic UUID type that checks if the incoming string
-into the DB is a UUID. If the database is a PostgreSQL DB, the data will be
-written into a column of type UUID. Otherwise, it will be written as a string
+Contains a backend-agnostic JSON data type. If the database supports JSON,
+then write the data in as JSON. If it does not, serialize and write json as
+a string
 """
 from sqlalchemy import TypeDecorator
-from sqlalchemy.types import CHAR
+from sqlalchemy.types import VARCHAR
 from sqlalchemy import dialects
-from sqlalchemy.dialects import postgresql
-import uuid
+from sqlalchemy.dialects import postgresql, mysql
+import json
 from typing import Union, Optional
 
-DialectType = Union[postgresql.UUID, CHAR]
-ValueType = Optional[Union[uuid.UUID, str]]
+DialectType = Union[postgresql.UUID, VARCHAR]
+ValueType = Optional[Union[dict, str]]
 
 
-class UUID(TypeDecorator):
+class JSON(TypeDecorator):
     """
     Model class for the UUID type.
     impl represents the implementation to which this type will be forced
     when it is loaded from the DB
     """
-    impl = CHAR
+    impl = VARCHAR
 
     def load_dialect_impl(self, dialect: dialects) -> DialectType:
         """
@@ -35,9 +35,11 @@ class UUID(TypeDecorator):
         :return: The type descriptor for this type.
         """
         if dialect.name == 'postgresql':
-            return dialect.type_descriptor(postgresql.UUID())
+            return dialect.type_descriptor(postgresql.JSONB())
+        elif dialect.name == 'mysql':
+            return dialect.type_descriptor(mysql.JSON())
         else:
-            return dialect.type_descriptor(CHAR(32))
+            return dialect.type_descriptor(VARCHAR())
 
     def process_bind_param(
             self, value: ValueType, dialect: dialects
@@ -57,17 +59,12 @@ class UUID(TypeDecorator):
         """
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
-            return str(value)
         else:
-            if not isinstance(value, uuid.UUID):
-                return "%.32x" % int(uuid.UUID(value))
-            else:
-                return "%.32x" % int(value)
+            return json.dumps(value)
 
     def process_result_value(
             self, value: Optional[str], dialect: dialects
-    ) -> Optional[uuid.UUID]:
+    ) -> Optional[dict]:
         """
 
         :param value: The value to process from the SQL query
@@ -77,13 +74,13 @@ class UUID(TypeDecorator):
         if value is None:
             return value
         else:
-            return uuid.UUID(value)
+            return json.loads(value)
 
-    def copy(self, *args, **kwargs) -> 'UUID':
+    def copy(self, *args, **kwargs) -> 'JSON':
         """
 
         :param args: The arguments to the UUID constructor
         :param kwargs: The keyword arguments to the UUID constructor
         :return: A deep copy of this object
         """
-        return UUID(*args, **kwargs)
+        return JSON(*args, **kwargs)
