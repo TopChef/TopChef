@@ -3,7 +3,7 @@ Models job sets
 """
 from .job import Job
 from ..schemas import database
-from ._declarative_base import BASE
+from .declarative_base import BASE
 from sqlalchemy.orm import relationship
 
 

@@ -2,7 +2,7 @@ import abc
 from uuid import UUID
 from typing import TypeVar
 from sqlalchemy.orm import Session
-from topchef.storage import AbstractStorage
+from topchef.storage import DocumentStorage
 
 
 class AbstractModel(object, metaclass=abc.ABCMeta):
@@ -13,7 +13,7 @@ class AbstractModel(object, metaclass=abc.ABCMeta):
     T = TypeVar()
 
     @abc.abstractmethod
-    def write(self):
+    def write(self, session: Session, storage: DocumentStorage) -> None:
         """
 
         Write this object to persistent storage, taking ALL storage media
@@ -21,22 +21,13 @@ class AbstractModel(object, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
-    @property
-    def is_consistent(self):
-        """
-
-        :return: True if the model class is consistent.
-        """
-        raise NotImplementedError()
-
     @classmethod
     @abc.abstractmethod
     def from_storage(
             cls,
-            service_id: UUID,
+            model_id: UUID,
             db_session: Session,
-            storage: AbstractStorage
+            storage: DocumentStorage
     ) -> T:
         """
 

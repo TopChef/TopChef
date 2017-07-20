@@ -3,7 +3,7 @@ Contains a model for a job. A job is matched to a particular service. The job's
 parameters must be an instance of the service schema, and the result must be
 an instance of the result schema
 """
-from ._declarative_base import BASE
+from .declarative_base import BASE
 from ..schemas import database
 from .service import Service
 from sqlalchemy.orm import relationship

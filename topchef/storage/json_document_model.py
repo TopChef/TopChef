@@ -1,5 +1,5 @@
 from topchef.database.schemas.database_schema_with_json_table import database
-from topchef.database.models._declarative_base import BASE
+from topchef.database.models.declarative_base import BASE
 from typing import Dict, Optional, Any
 
 
