@@ -42,7 +42,8 @@ class DatabaseSchemaWithJSONTable(AbstractDatabaseSchemaWithJSONTable):
                ),
         Column('date_submitted', DateTime, nullable=False,
                default=datetime.utcnow),
-        Column('status', Enum("REGISTERED", "WORKING", "COMPLETED", "ERROR"),
+        Column('status', Enum("REGISTERED", "WORKING", "COMPLETED", "ERROR",
+                              name='jobStatus'),
                default="REGISTERED"),
         Column(
             'parameters_id',
