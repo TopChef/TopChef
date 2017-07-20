@@ -35,7 +35,7 @@ script:
   - python setup.py install
   - cd tests
   - py.test unit
-  - nosetests integration/test_storage/test_relational_database_storage
+  - nosetests integration/test_storage/test_relational_database_storage.py
 
 after_success:
   - sh -c "if [ '${TRAVIS_PULL_REQUEST}' = 'false' && '${TRAVIS_BRANCH}' = 'master' ]; 
