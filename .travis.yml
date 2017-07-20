@@ -6,7 +6,13 @@ cache: pip
 
 services:
   - postgresql
+  - mysql
   - docker
+
+env:
+  - DATABASE_URI=postgres://postgres:@localhost:5432/test_database
+  - DATABASE_URI=mysql://root:@localhost:3306/test_database
+  - DATABASE_URI=sqlite://
 
 python:
   - "3.5"
@@ -18,15 +24,18 @@ notifications:
 install:
   - pip install -r requirements.txt
   - pip install psycopg2 # Postgres driver
+  - pip install mysql-python # MySQL driver
 
 before_script:
 
-  - psql -c 'create database test_db;' -U postgres
+  - psql -c 'create database test_database;' -U postgres
+  - mysql - e 'CREATE DATABASE IF NOT EXISTS test_database;'
 
 script:
   - python setup.py install
   - cd tests
-  - py.test
+  - py.test tests/unit
+  - nosetests tests/integration/test_storage/test_relational_database_storage
 
 after_success:
   - sh -c "if [ '${TRAVIS_PULL_REQUEST}' = 'false' && '${TRAVIS_BRANCH}' = 'master' ]; 
