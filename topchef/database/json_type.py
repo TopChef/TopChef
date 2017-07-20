@@ -35,7 +35,7 @@ class JSON(TypeDecorator):
         :return: The type descriptor for this type.
         """
         if dialect.name == 'postgresql':
-            return dialect.type_descriptor(postgresql.JSONB())
+            return dialect.type_descriptor(postgresql.JSON())
         elif dialect.name == 'mysql':
             return dialect.type_descriptor(mysql.JSON())
         else:
