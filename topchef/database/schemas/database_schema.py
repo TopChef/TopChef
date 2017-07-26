@@ -1,4 +1,5 @@
 from .abstract_database_schemas import AbstractDatabaseSchema
+from .job_status import JobStatus
 from datetime import datetime
 from sqlalchemy import Table, Column, MetaData, String, Boolean, Integer
 from sqlalchemy import DateTime, ForeignKey, Enum
@@ -34,9 +35,7 @@ class DatabaseSchema(AbstractDatabaseSchema):
                ),
         Column('date_submitted', DateTime, nullable=False,
                default=datetime.utcnow()),
-        Column('status', Enum("REGISTERED", "WORKING", "COMPLETED", "ERROR",
-                              name="jobStatus"),
-               default="REGISTERED"),
+        Column('status', Enum(JobStatus), default=JobStatus.REGISTERED),
         Column('parameters_id', UUID, nullable=False),
         Column('results_id', UUID, nullable=False),
         Column('job_set_id', ForeignKey('job_sets.job_set_id'), nullable=True)

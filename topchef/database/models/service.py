@@ -22,13 +22,16 @@ class Service(BASE):
     description = __table__.c.description
     job_registration_schema_reference = __table__.c.job_registration_schema_id
     job_result_schema_reference = __table__.c.job_result_schema_id
+    is_service_available = __table__.c.is_service_available
 
     def __init__(
-            self, name: str, description: str,
+            self, service_id: UUID, name: str, description: str,
             registration_schema_id: UUID,
             result_schema_id: UUID
     ) -> None:
+        self.id = service_id
         self.name = name
         self.description = description
         self.job_registration_schema_reference = registration_schema_id
         self.job_result_schema_reference = result_schema_id
+        self.is_service_available = False

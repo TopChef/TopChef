@@ -49,3 +49,7 @@ class DocumentStorage(MutableMapping, metaclass=abc.ABCMeta):
         :return:
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def add(self, element: Dict[str, Optional[Any]]) -> UUID:
+        raise NotImplementedError()

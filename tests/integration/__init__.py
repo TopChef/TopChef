@@ -1,0 +1,1 @@
+from .integration_test_case import IntegrationTestCaseWithService

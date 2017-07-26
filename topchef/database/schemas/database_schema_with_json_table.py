@@ -51,7 +51,7 @@ class DatabaseSchemaWithJSONTable(AbstractDatabaseSchemaWithJSONTable):
         ),
         Column(
             'results_id',
-            ForeignKey('json_objects.document_id'), nullable=False
+            ForeignKey('json_objects.document_id'), nullable=True
         ),
         Column('job_set_id', ForeignKey('job_sets.job_set_id'), nullable=True)
     )

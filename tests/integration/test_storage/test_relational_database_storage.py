@@ -1,44 +1,16 @@
 """
 Contains unit tests for the relational database storage
 """
-import unittest
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from topchef.database.schemas import DatabaseSchemaWithJSONTable
-from topchef.storage import RelationalDatabaseStorage, JSONDocument
+from topchef.storage import JSONDocument
 from typing import Iterable
 from uuid import uuid4
+from ..integration_test_case import IntegrationTestCase
 
 
-class TestRelationalDbStorage(unittest.TestCase):
+class TestRelationalDbStorage(IntegrationTestCase):
     """
     Base class for unit testing the relational database storage
     """
-    DATABASE_ENVIRONMENT_VARIABLE_KEY = 'DATABASE_URI'
-    SQLITE_IN_MEMORY_URI = 'sqlite://'
-
-    def setUp(self) -> None:
-        """
-        Create the required variables for the test, working out of the
-        database provided by the ``DATABASE_URI`` environment variable.
-        """
-        self.database_uri = os.environ.get(
-            self.DATABASE_ENVIRONMENT_VARIABLE_KEY,
-            default=self.SQLITE_IN_MEMORY_URI
-        )
-        self.engine = create_engine(self.database_uri)
-        self.session_factory = sessionmaker(bind=self.engine)
-        self.database = DatabaseSchemaWithJSONTable()
-        self.database.metadata.create_all(bind=self.engine)
-
-        self.storage = RelationalDatabaseStorage(self.session_factory)
-
-    def tearDown(self) -> None:
-        """
-        Clear the database
-        """
-        self.database.metadata.drop_all(bind=self.engine)
 
 
 class TestRelationalDbWithDocument(TestRelationalDbStorage):

@@ -71,6 +71,14 @@ class RelationalDatabaseStorage(DocumentStorage):
         session = self._session_factory()  # type: Session
         return session.query(JSONDocument).count()
 
+    def add(self, element: Dict[str, Optional[Any]]) -> UUID:
+        session = self._session_factory()
+        document = JSONDocument(element)
+        session.add(document)
+        self._safely_commit_session(session)
+
+        return document.id
+
     @staticmethod
     def _get_document_from_storage(
             session: Session, model_id: UUID
