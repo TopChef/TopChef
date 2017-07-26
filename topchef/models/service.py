@@ -1,105 +1,136 @@
-"""
-Describes a top-level service
-"""
+from ..database.models import Service as DatabaseService
+from ..database.models import Job as DatabaseJob
 from uuid import UUID
-from collections import namedtuple
-from .abstract_model import AbstractModel
-from ..database import Service as DatabaseService
-from ..storage import DocumentStorage
+from ..json_type import JSON_TYPE as JSON
+from .job import Job
+from .abstract_service import AbstractService
+from .abstract_job import AbstractJob
 from sqlalchemy.orm import Session
+from typing import Optional, Iterator, Type
+import json
 
 
-class Service(AbstractModel):
-    """
-    Base class for a TopChef service
-    """
-    T = 'Service'
-    D = DatabaseService
+class Service(AbstractService):
+    def __init__(self, database_service: DatabaseService):
+        self.db_model = database_service
 
-    Documents = namedtuple(
-        '_Documents', ['job_registration_schema',
-                       'job_result_schema'])
+    @property
+    def id(self) -> UUID:
+        return self.db_model.id
 
-    def __init__(self, service_id: UUID, name: str, description: str,
-                 job_registration_schema: dict, job_result_schema: dict):
-        self.id = service_id
-        self.name = name
-        self.description = description
-        self.job_registration_schema = job_registration_schema
-        self.job_result_schema = job_result_schema
+    @property
+    def name(self) -> str:
+        return self.db_model.name
+
+    @name.setter
+    def name(self, new_name: str) -> None:
+        self.db_model.name = new_name
+
+    @property
+    def description(self) -> str:
+        return self.db_model.description
+
+    @description.setter
+    def description(self, new_description: str) -> None:
+        self.db_model.description = new_description
+
+    @property
+    def job_registration_schema(self) -> JSON:
+        return self.db_model.job_registration_schema
+
+    @property
+    def job_result_schema(self) -> JSON:
+        return self.db_model.job_result_schema
+
+    @property
+    def is_service_available(self) -> bool:
+        return self.db_model.is_service_available
+
+    @is_service_available.setter
+    def is_service_available(self, service_available: bool) -> None:
+        self.db_model.is_service_available = service_available
 
     @classmethod
-    def get_database_model(cls, model_id: UUID, db_session: Session) -> D:
-        return db_session.query(
-            DatabaseService
-        ).filter_by(id=model_id).first()
-
-    @classmethod
-    def get_documents_for_database_model(
-            cls, model: D, storage: DocumentStorage
-    ) -> 'Service.Documents':
-        return cls.Documents(
-            storage[model.job_registration_schema_reference],
-            storage[model.job_result_schema_reference]
+    def new(cls, name: str, description: str, registration_schema: JSON,
+            result_schema: JSON):
+        db_model = DatabaseService.new(
+            name, description, registration_schema, result_schema
         )
+        return cls(db_model)
 
-    @classmethod
-    def from_storage(
-            cls, model_id: UUID, db_session: Session, storage: DocumentStorage
-    ) -> 'Service':
-        db_model = cls.get_database_model(model_id, db_session)
+    def new_job(
+            self,
+            parameters: JSON,
+            database_job_constructor: Type[DatabaseJob]=Job
+    ) -> Job:
+        db_job = database_job_constructor.new(self.db_model, parameters)
+        return Job(db_job)
 
-        if db_model is None:
-            raise ValueError('A model with id %s does not exist', model_id)
+    @property
+    def jobs(self) -> 'Service.JobCollection':
+        return self.JobCollection(self.db_model)
 
-        documents = cls.get_documents_for_database_model(db_model, storage)
-
-        return cls(
-            model_id, db_model.name, db_model.description,
-            documents.job_registration_schema,
-            documents.job_result_schema
-        )
-
-    def write(self, session: Session, storage: DocumentStorage):
-        db_model = self.get_database_model(self.id, session)
-
-        if db_model is None:
-            self._write_new_model(session, storage)
-        else:
-            storage[db_model.job_registration_schema_reference] = \
-                self.job_registration_schema
-            storage[db_model.job_result_schema_reference] = self.job_result_schema
-            session.add(db_model)
-            session.commit()
-
-    def delete(self, session: Session, storage: DocumentStorage) -> None:
-        db_model = self.get_database_model(
-            self.id, session
-        )
-        session.delete(db_model)
-        del storage[db_model.job_registration_schema_reference]
-        del storage[db_model.job_result_schema_reference]
-        session.commit()
-
-    def _write_new_model(self, session: Session, storage: DocumentStorage):
-        registration_schema_id = storage.add(self.job_registration_schema)
-        result_schema_id = storage.add(self.job_result_schema)
-
-        db_service = DatabaseService(
-            self.id,
-            self.name, self.description, registration_schema_id,
-            result_schema_id
-        )
-
-        session.add(db_service)
-
+    @staticmethod
+    def _assert_json(json_to_set):
         try:
-            session.commit()
-        except:
-            session.rollback()
-            del storage[registration_schema_id]
-            del storage[result_schema_id]
-            raise
+            json.loads(json_to_set)
+        except json.JSONDecodeError as error:
+            raise ValueError(
+                'The input is not JSON', error
+            )
 
-    def __eq__(self, other: T) -> bool:
-        return self.id == other.id
+    class JobCollection(AbstractService.AbstractJobCollection):
+        """
+        Base class for a collection of jobs
+        """
+        def __init__(self, service_db_model: DatabaseService):
+            self.session = Session.object_session(
+                service_db_model
+            )  # type: Session
+            self.service_id = service_db_model.id
+
+        def __getitem__(self, job_id: UUID) -> AbstractJob:
+            db_job = self._get_job_model_guaranteed(job_id)
+            return Job(db_job)
+
+        def __setitem__(self, job_id: UUID, job: AbstractJob) -> None:
+            if job_id != job.id:
+                raise ValueError('The Job must match the Job ID')
+            db_job = self._get_job_model_guaranteed(job_id)
+
+            db_job.parameters = job.parameters
+            db_job.results = job.results
+            db_job.status = job.status
+
+            self.session.add(db_job)
+
+        def __delitem__(self, job_id: UUID) -> None:
+            db_job = self._get_job_model_guaranteed(job_id)
+            self.session.delete(db_job)
+
+        def __len__(self) -> int:
+            return self.session.query(DatabaseJob).filter_by(
+                service_id=self.service_id
+            ).count()
+
+        def __iter__(self) -> Iterator[Job]:
+            """
+            :return: An iterable over all the jobs
+            """
+            db_jobs = self.session.query(DatabaseJob).filter_by(
+                service_id=self.service_id
+            ).all()
+
+            return (Job(job) for job in db_jobs)
+
+
+        def _get_job_model_by_id(self, job_id: UUID) -> Optional[DatabaseJob]:
+            return self.session.query(DatabaseJob).filter_by(id=job_id).first()
+
+        def _get_job_model_guaranteed(self, job_id: UUID) -> DatabaseJob:
+            db_model = self._get_job_model_by_id(job_id)
+
+            if db_model is None:
+                raise KeyError("A Job with that ID does not exist")
+            else:
+                return db_model

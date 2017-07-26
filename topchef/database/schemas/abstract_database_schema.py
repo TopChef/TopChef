@@ -46,14 +46,3 @@ class AbstractDatabaseSchema(object, metaclass=abc.ABCMeta):
          related to the DB schema
         """
         raise NotImplementedError()
-
-
-class AbstractDatabaseSchemaWithJSONTable(
-        AbstractDatabaseSchema, metaclass=abc.ABCMeta):
-    """
-    Base class for a schema with a table for storing JSON
-    """
-    @property
-    @abc.abstractmethod
-    def json_objects(self) -> Table:
-        raise NotImplementedError()

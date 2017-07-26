@@ -1,10 +1,8 @@
 """
 Contains different database schemas used to represent data
 """
-from .abstract_database_schemas import AbstractDatabaseSchema
-from .abstract_database_schemas import AbstractDatabaseSchemaWithJSONTable
+from .abstract_database_schema import AbstractDatabaseSchema
 from .database_schema import DatabaseSchema
-from .database_schema_with_json_table import DatabaseSchemaWithJSONTable
 from .job_status import JobStatus
 
-database = DatabaseSchemaWithJSONTable()
+database = DatabaseSchema()

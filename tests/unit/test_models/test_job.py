@@ -1,46 +1,44 @@
-"""
-Contains unit tests for :mod:`topchef.models.job
-"""
-from uuid import uuid4
 import unittest
-from unittest import mock
+import unittest.mock as mock
+from hypothesis import given
+from hypothesis.strategies import dictionaries, text, integers
+from topchef.database.models import Job as DatabaseJob
 from topchef.models import Job
-from topchef.database import Job as DatabaseJob
-from sqlalchemy.orm import Session
+from topchef.database.models import JobStatus
 
 
 class TestJob(unittest.TestCase):
     """
-    Base class for unit testing :mod:`topchef.models.Job`
+    Base class for testing jobs
     """
     def setUp(self):
-        self.job_id = uuid4()
-        self.parameters = {'type': 'object'}
-        self.results = {'light_count': 152}
-        self.job = Job(self.job_id, self.parameters, self.results)
-
-        self.database_session = mock.MagicMock(spec=Session)
-        self.storage = mock.MagicMock()
-        self.db_model = mock.MagicMock(spec=DatabaseJob)
+        self.database_job = mock.MagicMock(
+            spec=DatabaseJob
+        )  # type: DatabaseJob
+        self.job = Job(self.database_job)
 
 
-class TestFromStorage(TestJob):
-    """
-    Contains unit tests for running things from storage
-    """
-    def test_from_storage(self):
-        job = Job.from_storage(
-            self.job_id, self.database_session, self.storage
-        )
-        self.assertEqual(
-            job.id,
-            self.database_session.query(DatabaseJob).filter_by(
-                id=self.job_id).first().id
-        )
-        self.assertEqual(
-            self.storage[self.db_model.parameters_id], job.parameters
-        )
-        self.assertEqual(
-            job.results,
-            self.storage[self.db_model.results_id]
-        )
+class TestId(TestJob):
+    def test_id(self):
+        self.assertEqual(self.job.id, self.database_job.id)
+
+
+class TestStatus(TestJob):
+    def test_status(self):
+        for status in {JobStatus.REGISTERED, JobStatus.ERROR,
+                       JobStatus.WORKING, JobStatus.COMPLETED}:
+            self.job.status = status
+            self.assertEqual(self.job.status, self.database_job.status)
+
+
+class TestParameters(TestJob):
+    def test_parameters(self):
+        self.assertEqual(self.job.parameters, self.database_job.parameters)
+
+
+class TestResults(TestJob):
+    @given(dictionaries(text(), integers()))
+    def test_results(self, results):
+        self.job.results = results
+        self.assertEqual(results, self.job.results)
+        self.assertEqual(self.job.results, self.database_job.results)

@@ -1,15 +1,18 @@
-from .abstract_database_schemas import AbstractDatabaseSchema
+from .abstract_database_schema import AbstractDatabaseSchema
 from .job_status import JobStatus
 from datetime import datetime
 from sqlalchemy import Table, Column, MetaData, String, Boolean, Integer
 from sqlalchemy import DateTime, ForeignKey, Enum
 from ..uuid_database_type import UUID
+from ..json_type import JSON
 
 
 class DatabaseSchema(AbstractDatabaseSchema):
     """
     Describes the schema for the database
     """
+    _GENERAL_JSON_SCHEMA = {'type': 'object'}
+
     _metadata = MetaData()
     _services = Table(
         'services', _metadata,
@@ -23,8 +26,17 @@ class DatabaseSchema(AbstractDatabaseSchema):
         Column('heartbeat_timeout_seconds', Integer,
                nullable=False, default=30),
         Column('is_service_available', Boolean, nullable=False),
-        Column('job_registration_schema_id', UUID, nullable=False),
-        Column('job_result_schema_id', UUID, nullable=False)
+        Column(
+            'job_registration_schema',
+            JSON, nullable=False,
+            default=_GENERAL_JSON_SCHEMA
+        ),
+        Column(
+            'job_result_schema',
+            JSON,
+            nullable=False,
+            default=_GENERAL_JSON_SCHEMA
+        )
     )
 
     _jobs = Table(
@@ -36,8 +48,8 @@ class DatabaseSchema(AbstractDatabaseSchema):
         Column('date_submitted', DateTime, nullable=False,
                default=datetime.utcnow()),
         Column('status', Enum(JobStatus), default=JobStatus.REGISTERED),
-        Column('parameters_id', UUID, nullable=False),
-        Column('results_id', UUID, nullable=False),
+        Column('parameters', JSON, nullable=False),
+        Column('results', JSON, nullable=True),
         Column('job_set_id', ForeignKey('job_sets.job_set_id'), nullable=True)
     )
 
