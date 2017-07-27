@@ -4,13 +4,14 @@ capable of processing jobs
 """
 import abc
 from uuid import UUID
+from sqlalchemy.orm import Session
 from topchef.json_type import JSON_TYPE as JSON
 from topchef.models.abstract_job import AbstractJob
 from topchef.database.models import BASE
 from topchef.database.models import Job as DatabaseJob
 from collections.abc import Iterable, MutableMapping
 from typing import Iterator as IteratorType
-from typing import Type
+from typing import Type, Union
 
 
 class AbstractService(Iterable, metaclass=abc.ABCMeta):
@@ -74,11 +75,15 @@ class AbstractService(Iterable, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractclassmethod
     def new(
-            cls, name: str, description: str, registration_schema: JSON,
-            result_schema: JSON) -> 'AbstractService':
+            cls,
+            name: str,
+            description: str,
+            registration_schema: JSON,
+            result_schema: JSON,
+            database_session: Session) -> 'AbstractService':
         """
         Create a new service and save the details of this service to some
-        persistent storage
+        persistent storage.
 
         :param name: The name of the newly-created service
         :param description: A human-readable description describing what the
@@ -87,6 +92,8 @@ class AbstractService(Iterable, metaclass=abc.ABCMeta):
             JSON objects that are allowed as parameters for this server's jobs
         :param result_schema: A JSON schema describing the set of all JSON
             objects that are allowed as results for this server's jobs
+        :param database_session: The SQLAlchemy session to which the
+            database model is to be written
         :return: The newly-created service
         """
         raise NotImplementedError()
@@ -115,7 +122,7 @@ class AbstractService(Iterable, metaclass=abc.ABCMeta):
         return self.id == other.id
 
     def __iter__(self) -> IteratorType[AbstractJob]:
-        return self.jobs
+        return self.jobs.__iter__()
 
     class AbstractJobCollection(MutableMapping, metaclass=abc.ABCMeta):
 
@@ -125,6 +132,13 @@ class AbstractService(Iterable, metaclass=abc.ABCMeta):
 
         @abc.abstractmethod
         def __setitem__(self, job_id: UUID, job: AbstractJob) -> None:
+            """
+            Update the job with this ID, and write the update to some
+            persistent storage
+
+            :param job_id: The ID of the job to set
+            :param job: The new job to set
+            """
             raise NotImplementedError()
 
         @abc.abstractmethod
@@ -137,4 +151,16 @@ class AbstractService(Iterable, metaclass=abc.ABCMeta):
 
         @abc.abstractmethod
         def __len__(self) -> int:
+            raise NotImplementedError()
+
+        @abc.abstractmethod
+        def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
+            """
+            Membership test for the container. This method MUST be able to
+            check whether a job or a job id is in the container
+
+            :param item: The job or the Job ID for which membership is to be
+                checked
+            :return: ``True`` if the job belongs to this service
+            """
             raise NotImplementedError()

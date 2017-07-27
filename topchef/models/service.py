@@ -6,7 +6,7 @@ from .job import Job
 from .abstract_service import AbstractService
 from .abstract_job import AbstractJob
 from sqlalchemy.orm import Session
-from typing import Optional, Iterator, Type
+from typing import Optional, Iterator, Type, Union
 import json
 
 
@@ -52,16 +52,17 @@ class Service(AbstractService):
 
     @classmethod
     def new(cls, name: str, description: str, registration_schema: JSON,
-            result_schema: JSON):
+            result_schema: JSON, database_session: Session) -> 'Service':
         db_model = DatabaseService.new(
             name, description, registration_schema, result_schema
         )
+        cls._write_database_model(db_model, database_session)
         return cls(db_model)
 
     def new_job(
             self,
             parameters: JSON,
-            database_job_constructor: Type[DatabaseJob]=Job
+            database_job_constructor: Type[DatabaseJob]=DatabaseJob
     ) -> Job:
         db_job = database_job_constructor.new(self.db_model, parameters)
         return Job(db_job)
@@ -79,15 +80,18 @@ class Service(AbstractService):
                 'The input is not JSON', error
             )
 
+    @staticmethod
+    def _write_database_model(
+            model: DatabaseService, session: Session
+    ) -> None:
+        session.add(model)
+
     class JobCollection(AbstractService.AbstractJobCollection):
         """
         Base class for a collection of jobs
         """
-        def __init__(self, service_db_model: DatabaseService):
-            self.session = Session.object_session(
-                service_db_model
-            )  # type: Session
-            self.service_id = service_db_model.id
+        def __init__(self, service_db_model: DatabaseService) -> None:
+            self.db_model = service_db_model
 
         def __getitem__(self, job_id: UUID) -> AbstractJob:
             db_job = self._get_job_model_guaranteed(job_id)
@@ -102,30 +106,49 @@ class Service(AbstractService):
             db_job.results = job.results
             db_job.status = job.status
 
-            self.session.add(db_job)
+            self._session.add(db_job)
 
         def __delitem__(self, job_id: UUID) -> None:
             db_job = self._get_job_model_guaranteed(job_id)
-            self.session.delete(db_job)
+            self._session.delete(db_job)
 
         def __len__(self) -> int:
-            return self.session.query(DatabaseJob).filter_by(
-                service_id=self.service_id
+            return self._session.query(DatabaseJob).filter_by(
+                service=self.db_model
             ).count()
 
         def __iter__(self) -> Iterator[Job]:
             """
             :return: An iterable over all the jobs
             """
-            db_jobs = self.session.query(DatabaseJob).filter_by(
-                service_id=self.service_id
+            db_jobs = self._session.query(DatabaseJob).filter_by(
+                service=self.db_model
             ).all()
 
             return (Job(job) for job in db_jobs)
 
+        def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
+            if isinstance(item, AbstractJob):
+                is_in_collection = self._check_membership_for_job(item)
+            else:
+                is_in_collection = self._check_membership_for_id(item)
+
+            return is_in_collection
+
+        @property
+        def _session(self) -> Session:
+            return Session.object_session(self.db_model)
+
+        @property
+        def _service_id(self) -> UUID:
+            return self.db_model.id
 
         def _get_job_model_by_id(self, job_id: UUID) -> Optional[DatabaseJob]:
-            return self.session.query(DatabaseJob).filter_by(id=job_id).first()
+            return self._session.query(
+                DatabaseJob
+            ).filter_by(
+                id=job_id
+            ).first()
 
         def _get_job_model_guaranteed(self, job_id: UUID) -> DatabaseJob:
             db_model = self._get_job_model_by_id(job_id)
@@ -134,3 +157,17 @@ class Service(AbstractService):
                 raise KeyError("A Job with that ID does not exist")
             else:
                 return db_model
+
+        def _check_membership_for_job(self, job: AbstractJob) -> bool:
+            return bool(
+                self._session.query(DatabaseJob).filter_by(
+                    id=job.id
+                ).count()
+            )
+
+        def _check_membership_for_id(self, job_id: UUID) -> bool:
+            return bool(
+                self._session.query(DatabaseJob).filter_by(
+                    id=job_id
+                ).count()
+            )

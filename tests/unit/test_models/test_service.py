@@ -99,6 +99,11 @@ class TestNewJob(TestService):
     def test_creating_a_new_job(self, parameters: dict) -> None:
         new_job = self.service.new_job(parameters, self.job_constructor)
         self.assertEqual(
-            new_job, Job(
-                self.job_constructor(self.service.db_model,parameters))
+            new_job.db_model,
+            self.job_constructor.new(self.service.db_model,parameters)
         )
+
+
+class TestJobs(TestService):
+    def test_jobs(self):
+        self.assertIsInstance(self.service.jobs, Service.AbstractJobCollection)
