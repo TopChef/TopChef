@@ -6,7 +6,8 @@ from .job import Job
 from .abstract_service import AbstractService
 from .abstract_job import AbstractJob
 from sqlalchemy.orm import Session
-from typing import Optional, Iterator, Type, Union, AsyncIterator
+from typing import Optional, Iterator, Type, Union, Sequence
+from collections.abc import AsyncIterator, Awaitable
 import json
 
 
@@ -128,13 +129,12 @@ class Service(AbstractService):
 
             return (Job(job) for job in db_jobs)
 
-        async def __aiter__(self) -> AsyncIterator[Job]:
+        def __aiter__(self) -> AsyncIterator:
             db_jobs = self._session.query(DatabaseJob).filter_by(
                 service=self.db_model
             ).all()
 
-            for job in db_jobs:
-                yield Job(job)
+            return self._AsynchronousJobsIterator(db_jobs)
 
         def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
             if isinstance(item, AbstractJob):
@@ -180,3 +180,28 @@ class Service(AbstractService):
                     id=job_id
                 ).count()
             )
+
+        class _AsynchronousJobsIterator(AsyncIterator):
+            def __init__(self, jobs: Sequence[Job]):
+                self.jobs = jobs
+                self._last_served_index = 0
+
+            def __len__(self):
+                return len(self.jobs)
+
+            async def __anext__(self) -> Awaitable:
+                if self._last_served_index < len(self.jobs):
+                    service = self._AsyncJobFuture(
+                        Job(self.jobs[self._last_served_index])
+                    )
+                    self._last_served_index += 1
+                else:
+                    raise StopAsyncIteration()
+                return service
+
+            class _AsyncJobFuture(Awaitable):
+                def __init__(self, job: Job):
+                    self.service = job
+
+                def __await__(self):
+                    return self.service
