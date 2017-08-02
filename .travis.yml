@@ -33,9 +33,7 @@ before_script:
 
 script:
   - python setup.py install
-  - cd tests
-  - py.test unit
-  - nosetests integration/test_models/test_service
+  - nosetests test/unit --with-coverage
 
 after_success:
   - sh -c "if [ '${TRAVIS_PULL_REQUEST}' = 'false' && '${TRAVIS_BRANCH}' = 'master' ]; 

@@ -1,13 +1,29 @@
-#!/usr/bin/env python
-import os
+from flask import Flask
+from flask_script import Manager, Command
+from topchef.wsgi_app import WSGIAppFactory, ProductionWSGIAppFactory
+from typing import Type
 
-from topchef.api_server import app
-from topchef.config import config
-from topchef.database.schema import METADATA
 
-METADATA.create_all(bind=config.database_engine)
+class TopchefManager(Manager):
+    def __init__(
+            self,
+            app_factory_constructor: Type[
+                WSGIAppFactory
+            ]=ProductionWSGIAppFactory
+    ) -> None:
+        super(TopchefManager, self).__init__()
+        self.app = app_factory_constructor().app
+        self.add_default_commands()
+        self.add_command('run', self.Run(self.app))
 
-if not os.path.isdir(config.SCHEMA_DIRECTORY):
-    os.mkdir(config.SCHEMA_DIRECTORY)
+    class Run(Command):
+        def __init__(self, app: Flask) -> None:
+            Command.__init__(self)
+            self.app = app
 
-app.run(host=config.HOSTNAME, port=config.PORT, debug=config.DEBUG)
+        def run(self) -> None:
+            self.app.run()
+
+if __name__ == '__main__':
+    manager = TopchefManager()
+    manager.run()

@@ -6,7 +6,7 @@ from .job import Job
 from .abstract_service import AbstractService
 from .abstract_job import AbstractJob
 from sqlalchemy.orm import Session
-from typing import Optional, Iterator, Type, Union
+from typing import Optional, Iterator, Type, Union, AsyncIterator
 import json
 
 
@@ -62,9 +62,10 @@ class Service(AbstractService):
     def new_job(
             self,
             parameters: JSON,
-            database_job_constructor: Type[DatabaseJob]=DatabaseJob
+            database_job_constructor: Type[DatabaseJob]=DatabaseJob.new
     ) -> Job:
-        db_job = database_job_constructor.new(self.db_model, parameters)
+        db_job = database_job_constructor(self.db_model, parameters)
+
         return Job(db_job)
 
     @property
@@ -126,6 +127,14 @@ class Service(AbstractService):
             ).all()
 
             return (Job(job) for job in db_jobs)
+
+        async def __aiter__(self) -> AsyncIterator[Job]:
+            db_jobs = self._session.query(DatabaseJob).filter_by(
+                service=self.db_model
+            ).all()
+
+            for job in db_jobs:
+                yield Job(job)
 
         def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
             if isinstance(item, AbstractJob):

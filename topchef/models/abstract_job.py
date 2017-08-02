@@ -3,6 +3,7 @@ Defines TopChef jobs
 """
 import abc
 from topchef.database.models import JobStatus
+from datetime import datetime
 
 
 class AbstractJob(object, metaclass=abc.ABCMeta):
@@ -49,6 +50,11 @@ class AbstractJob(object, metaclass=abc.ABCMeta):
     @results.setter
     @abc.abstractmethod
     def results(self, new_results):
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def date_submitted(self) -> datetime:
         raise NotImplementedError()
 
     def __eq__(self, other: 'AbstractJob') -> bool:

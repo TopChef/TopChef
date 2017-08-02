@@ -8,6 +8,7 @@ from ..schemas import database, JobStatus
 from uuid import UUID, uuid4
 from typing import Optional
 from ...json_type import JSON_TYPE as JSON
+from datetime import datetime
 
 
 class Job(BASE):
@@ -19,17 +20,20 @@ class Job(BASE):
     status = __table__.c.status  # type: JobStatus
     results = __table__.c.results  # type: JSON
     parameters = __table__.c.parameters  # type: JSON
+    date_submitted = __table__.c.date_submitted  # type: datetime
     _service_id = __table__.c.service_id
 
     def __init__(
             self, job_id: UUID, status: JobStatus, parameters: JSON,
-            service: 'Service', results: Optional[JSON]
+            service: 'Service', results: Optional[JSON],
+            date_submitted=datetime.utcnow()
     ) -> None:
         self.id = job_id
         self.status = status
         self.parameters = parameters
         self.results = results
         self.service = service
+        self.date_submitted = date_submitted
 
     @classmethod
     def new(cls, service: 'Service', parameters: JSON) -> 'Job':

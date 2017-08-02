@@ -1,7 +1,7 @@
 import unittest
 import unittest.mock as mock
 from topchef.models.service import Service
-from topchef.models.job import Job
+from sqlalchemy.orm import Session
 from topchef.database.models import Service as DatabaseService
 from hypothesis.strategies import text, booleans, dictionaries
 from hypothesis import given
@@ -68,6 +68,10 @@ class TestNew(TestService):
     """
     Contains unit tests for :meth:`topchef.models.Service.new`
     """
+    def setUp(self):
+        TestService.setUp(self)
+        self.session = mock.MagicMock(spec=Session)  # type: Session
+
     @given(
         text(),
         text(),
@@ -79,7 +83,7 @@ class TestNew(TestService):
             registration_schema: dict, result_schema: dict
     ):
         new_service = Service.new(
-            name, description, registration_schema, result_schema
+            name, description, registration_schema, result_schema, self.session
         )
         self.assertEqual(new_service.description, description)
         self.assertEqual(new_service.name, name)
@@ -100,7 +104,7 @@ class TestNewJob(TestService):
         new_job = self.service.new_job(parameters, self.job_constructor)
         self.assertEqual(
             new_job.db_model,
-            self.job_constructor.new(self.service.db_model,parameters)
+            self.job_constructor(self.service.db_model, parameters)
         )
 
 

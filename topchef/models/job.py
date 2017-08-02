@@ -5,6 +5,7 @@ from uuid import UUID
 from ..json_type import JSON_TYPE as JSON
 import json
 from typing import Optional
+from datetime import datetime
 
 
 class Job(AbstractJob):
@@ -30,6 +31,10 @@ class Job(AbstractJob):
     @property
     def results(self) -> Optional[JSON]:
         return self.db_model.results
+
+    @property
+    def date_submitted(self) -> datetime:
+        return self.db_model.date_submitted
 
     @results.setter
     def results(self, new_results: JSON) -> None:

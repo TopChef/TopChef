@@ -3,6 +3,7 @@ Contains integration tests for :mod:`topchef.models.service.Service`
 """
 from uuid import uuid4
 from tests.integration.test_models import IntegrationTestCaseWithModels
+import asyncio
 
 
 class TestService(IntegrationTestCaseWithModels):
@@ -62,6 +63,19 @@ class TestIterator(TestService):
     def test_iter(self):
         jobs = (job for job in self.service)
         self.assertIn(self.job, jobs)
+
+
+class TestAsyncIterator(TestService):
+    def test_async_iter(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.run_async())
+
+    async def run_async(self):
+        job_set = []
+        async for job in self.service:
+            job_set.append(job)
+
+        self.assertIn(job, job_set)
 
 
 class TestContains(TestService):
