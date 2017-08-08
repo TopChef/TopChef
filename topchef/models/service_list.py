@@ -1,15 +1,17 @@
-from .abstract_service_list import AbstractServiceList
-from uuid import UUID
-from sqlalchemy.orm import Session
-from topchef.database.models import Service as DatabaseService
-from topchef.models.service import Service
-from typing import Union, Iterator, Sequence, AsyncIterator
-from topchef.json_type import JSON_TYPE as JSON
 from collections.abc import AsyncIterator as CollectionsAsyncIterator
 from collections.abc import Awaitable
+from typing import Union, Iterator, Sequence, AsyncIterator
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from topchef.database.models import Service as DatabaseService
+from topchef.json_type import JSON_TYPE as JSON
+from topchef.models.interfaces.service_list import ServiceList as IServiceList
+from topchef.models.service import Service
 
 
-class ServiceList(AbstractServiceList):
+class ServiceList(IServiceList):
     """
     Implements a means of getting services from a relational DB back end
     """
@@ -57,10 +59,10 @@ class ServiceList(AbstractServiceList):
         return self.session.query(DatabaseService).count()
 
     def __iter__(self) -> Iterator[Service]:
-        services = self.session.query(DatabaseService).all()
-
-        for service in services:
-            yield Service(service)
+        return (
+            Service(db_service)
+            for db_service in self.session.query(DatabaseService).all()
+        )
 
     def __aiter__(self) -> AsyncIterator[Service]:
         services = self.session.query(DatabaseService).all()  # type: list

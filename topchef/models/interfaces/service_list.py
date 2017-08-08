@@ -4,12 +4,12 @@ Contains an interface for getting services
 import abc
 from uuid import UUID
 from collections.abc import AsyncIterable, MutableMapping
-from topchef.models.service import Service
 from typing import Union, AsyncIterator, Iterator
 from topchef.json_type import JSON_TYPE as JSON
+from topchef.models.interfaces.service import Service
 
 
-class AbstractServiceList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
+class ServiceList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
     """
     Describes an interface for manipulating the set of all services that
     have been posted to the API.

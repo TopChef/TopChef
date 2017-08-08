@@ -4,18 +4,21 @@ capable of processing jobs. In practice, there exists a mapping between
 services and experiment setups.
 """
 import abc
+from collections.abc import Iterable, AsyncIterable
+from typing import Callable, AsyncIterator
+from typing import Iterator as IteratorType
 from uuid import UUID
+
 from sqlalchemy.orm import Session
-from topchef.json_type import JSON_TYPE as JSON
-from topchef.models.abstract_job import AbstractJob
+from topchef.models.interfaces.job_list import JobList
+
 from topchef.database.models import Job as DatabaseJob
 from topchef.database.models import Service as DatabaseService
-from collections.abc import Iterable, MutableMapping, AsyncIterable
-from typing import Iterator as IteratorType
-from typing import Union, Callable, AsyncIterator
+from topchef.json_type import JSON_TYPE as JSON
+from topchef.models.interfaces.job import Job
 
 
-class AbstractService(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
+class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
     """
     The interface for the service, and the collection of jobs that the
     service manages. Describes the immutable and mutable properties of the
@@ -128,7 +131,7 @@ class AbstractService(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
             description: str,
             registration_schema: JSON,
             result_schema: JSON,
-            database_session: Session) -> 'AbstractService':
+            database_session: Session) -> 'Service':
         """
         Create a new service and save the details of this service to some
         persistent storage.
@@ -151,8 +154,8 @@ class AbstractService(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
             self,
             parameters: JSON,
             database_job_constructor: Callable[
-                [DatabaseService, JSON], AbstractJob]=DatabaseJob.new
-    ) -> AbstractJob:
+                [DatabaseService, JSON], Job]=DatabaseJob.new
+    ) -> Job:
         """
         Using the
 
@@ -165,61 +168,18 @@ class AbstractService(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def jobs(self) -> 'AbstractService.AbstractJobCollection':
+    def jobs(self) -> JobList:
+        """
+
+        :return: The list of all jobs that belong to this service
+        """
         raise NotImplementedError()
 
-    def __eq__(self, other: 'AbstractService') -> bool:
+    def __eq__(self, other: 'Service') -> bool:
         return self.id == other.id
 
-    def __iter__(self) -> IteratorType[AbstractJob]:
+    def __iter__(self) -> IteratorType[Job]:
         return self.jobs.__iter__()
 
-    async def __aiter__(self) -> AsyncIterator[AbstractJob]:
+    def __aiter__(self) -> AsyncIterator[Job]:
         return self.jobs.__aiter__()
-
-    class AbstractJobCollection(
-        MutableMapping, AsyncIterable, metaclass=abc.ABCMeta
-    ):
-
-        @abc.abstractmethod
-        def __getitem__(self, job_id: UUID) -> AbstractJob:
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        def __setitem__(self, job_id: UUID, job: AbstractJob) -> None:
-            """
-            Update the job with this ID, and write the update to some
-            persistent storage
-
-            :param job_id: The ID of the job to set
-            :param job: The new job to set
-            """
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        def __delitem__(self, job_id: UUID) -> None:
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        def __iter__(self) -> IteratorType[AbstractJob]:
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        def __len__(self) -> int:
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
-            """
-            Membership test for the container. This method MUST be able to
-            check whether a job or a job id is in the container
-
-            :param item: The job or the Job ID for which membership is to be
-                checked
-            :return: ``True`` if the job belongs to this service
-            """
-            raise NotImplementedError()
-
-        @abc.abstractmethod
-        async def __aiter__(self) -> AsyncIterator[AbstractJob]:
-            raise NotImplementedError()

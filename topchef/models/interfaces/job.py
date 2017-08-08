@@ -2,11 +2,12 @@
 Defines TopChef jobs
 """
 import abc
+from enum import Enum
 from topchef.database.models import JobStatus
 from datetime import datetime
 
 
-class AbstractJob(object, metaclass=abc.ABCMeta):
+class Job(object, metaclass=abc.ABCMeta):
     """
     Interface for the job
     """
@@ -57,5 +58,14 @@ class AbstractJob(object, metaclass=abc.ABCMeta):
     def date_submitted(self) -> datetime:
         raise NotImplementedError()
 
-    def __eq__(self, other: 'AbstractJob') -> bool:
+    def __eq__(self, other: 'Job') -> bool:
         return self.id == other.id
+
+    class JobStatus(Enum):
+        """
+        The possible job statuses
+        """
+        REGISTERED = "REGISTERED"
+        COMPLETED = "COMPLETED"
+        WORKING = "WORKING"
+        ERROR = "ERROR"

@@ -1,8 +1,12 @@
+"""
+Contains unit tests for :mod:`topchef.models.service.Service`
+"""
 import unittest
 import unittest.mock as mock
 from topchef.models.service import Service
 from sqlalchemy.orm import Session
 from topchef.database.models import Service as DatabaseService
+from topchef.models import JobList as JobListInterface
 from hypothesis.strategies import text, booleans, dictionaries
 from hypothesis import given
 
@@ -109,5 +113,31 @@ class TestNewJob(TestService):
 
 
 class TestJobs(TestService):
-    def test_jobs(self):
-        self.assertIsInstance(self.service.jobs, Service.AbstractJobCollection)
+    """
+    Contains unit tests for the ``jobs`` property in the service model.
+    """
+    def setUp(self) -> None:
+        """
+        Overload the getter for SQLAlchemy sessions for a given database
+        model with a mock. This method should work similarly to
+        ``Session.object_session``, which returns the SQLAlchemy ORM session
+        to which the model class is bound
+        """
+        TestService.setUp(self)
+        self.session_getter = mock.MagicMock(spec=Session.object_session)
+        self.service = Service(
+            self.database_service, session_getter_for_model=self.session_getter
+        )
+
+    def test_jobs(self) -> None:
+        """
+        Tests that the session getter is called correctly when instantiating
+        the job list. Tests that the job list that is returned implements the
+        ``JobListInterface``.
+        """
+        jobs = self.service.jobs
+        self.assertIsInstance(jobs, JobListInterface)
+        self.assertEqual(
+            mock.call(self.database_service),
+            self.session_getter.call_args
+        )

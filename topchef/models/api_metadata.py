@@ -1,8 +1,8 @@
-from .abstract_api_metadata import AbstractAPIMetadata
 from topchef.config import config
+from topchef.models.interfaces.api_metadata import APIMetadata
 
 
-class APIMetadata(AbstractAPIMetadata):
+class APIMetadata(APIMetadata):
     @property
     def maintainer_email(self) -> str:
         return config.AUTHOR_EMAIL

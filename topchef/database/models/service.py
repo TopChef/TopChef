@@ -27,7 +27,10 @@ class Service(BASE):
     job_result_schema = __table__.c.job_result_schema  # type: JSON
     is_service_available = __table__.c.is_service_available
 
-    jobs = relationship(Job, backref='service', cascade='all, delete-orphan')
+    jobs = relationship(
+        Job, backref='service', cascade='all, delete-orphan',
+        lazy='dynamic'
+    )
 
     def __init__(
             self, service_id: UUID, name: str, description: str,

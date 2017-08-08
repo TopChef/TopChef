@@ -14,7 +14,6 @@ setup(name='topchef',
           'marshmallow==2.13.5',
           'marshmallow-jsonschema==0.3.0',
           'SQLAlchemy==1.1.10',
-          'Flask-RESTful==0.3.6',
           'Flask-Script==2.0.5'
       ]
 )

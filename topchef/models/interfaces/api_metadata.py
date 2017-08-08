@@ -5,7 +5,7 @@ API
 import abc
 
 
-class AbstractAPIMetadata(object, metaclass=abc.ABCMeta):
+class APIMetadata(object, metaclass=abc.ABCMeta):
     """
     """
     @property

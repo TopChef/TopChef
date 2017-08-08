@@ -1,14 +1,25 @@
-from flask_restful import Resource
-from flask import jsonify
+"""
+Describes the root endpoint of the API, which provides some metadata about
+the API.
+"""
+from .abstract_endpoint import AbstractEndpoint
+from flask import jsonify, Response
 from topchef.serializers import APIMetadata as MetadataSerializer
 from topchef.serializers import JSONSchema
 from topchef.models.api_metadata import APIMetadata as MetadataModel
 
 
-class APIMetadata(Resource):
-    def get(self):
+class APIMetadata(AbstractEndpoint):
+    """
+    Maps HTTP ``GET`` methods to the API's root endpoint
+    """
+    def get(self) -> Response:
+        """
+
+        :return: A response containing the metadata
+        """
         response = jsonify({
-            'data': self._data, 'meta': self._meta
+            'data': self._data, 'meta': self._meta, 'links': self.links
         })
         response.status_code = 200
         return response

@@ -1,54 +1,108 @@
-from ..database.models import Service as DatabaseService
-from ..database.models import Job as DatabaseJob
-from uuid import UUID
-from ..json_type import JSON_TYPE as JSON
-from .job import Job
-from .abstract_service import AbstractService
-from .abstract_job import AbstractJob
-from sqlalchemy.orm import Session
-from typing import Optional, Iterator, Type, Union, Sequence
-from collections.abc import AsyncIterator, Awaitable
+"""
+Contains an implementation of the ``Service`` interface that pulls all the
+required data from a SQLAlchemy model class.
+"""
 import json
+from typing import Type, Callable
+from uuid import UUID
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.declarative import declarative_base
+from .interfaces import Service as ServiceInterface
+from .interfaces import JobList as JobListInterface
+from .abstract_classes import JobListRequiringQuery
+from .job import Job
+from ..database.models import Job as DatabaseJob
+from ..database.models import Service as DatabaseService
+from ..json_type import JSON_TYPE as JSON
 
 
-class Service(AbstractService):
-    def __init__(self, database_service: DatabaseService):
+class Service(ServiceInterface):
+    """
+    Provides a model class that gets all its data from an underlying
+    database service already in the API's database
+    """
+    def __init__(
+            self,
+            database_service: DatabaseService,
+            session_getter_for_model:
+            Callable[[declarative_base()], Session]=Session.object_session
+    ) -> None:
         self.db_model = database_service
+        self._session_getter_for_model = session_getter_for_model
 
     @property
     def id(self) -> UUID:
+        """
+
+        :return: The service ID
+        """
         return self.db_model.id
 
     @property
     def name(self) -> str:
+        """
+
+        :return: The service name
+        """
         return self.db_model.name
 
     @name.setter
     def name(self, new_name: str) -> None:
+        """
+
+        :param new_name: The new name to be set in the API
+        """
         self.db_model.name = new_name
 
     @property
     def description(self) -> str:
+        """
+
+        :return: A human-readable description for the service
+        """
         return self.db_model.description
 
     @description.setter
     def description(self, new_description: str) -> None:
+        """
+
+        :param new_description: The desired new description
+        """
         self.db_model.description = new_description
 
     @property
     def job_registration_schema(self) -> JSON:
+        """
+
+        :return: The JSON schema that must be satisfied in order to create a
+            new job
+        """
         return self.db_model.job_registration_schema
 
     @property
     def job_result_schema(self) -> JSON:
+        """
+
+        :return: The JSON schema that must be satisfied in order to post a
+            result to the job
+        """
         return self.db_model.job_result_schema
 
     @property
     def is_service_available(self) -> bool:
+        """
+
+        :return: A flag that indicates whether the service is ready to
+            accept jobs
+        """
         return self.db_model.is_service_available
 
     @is_service_available.setter
     def is_service_available(self, service_available: bool) -> None:
+        """
+
+        :param service_available: The desired value for the flag
+        """
         self.db_model.is_service_available = service_available
 
     @classmethod
@@ -70,8 +124,10 @@ class Service(AbstractService):
         return Job(db_job)
 
     @property
-    def jobs(self) -> 'Service.JobCollection':
-        return self.JobCollection(self.db_model)
+    def jobs(self) -> JobListInterface:
+        return self._ListOfJobsForService(
+            self, self._session_getter_for_model(self.db_model)
+        )
 
     @staticmethod
     def _assert_json(json_to_set):
@@ -88,120 +144,13 @@ class Service(AbstractService):
     ) -> None:
         session.add(model)
 
-    class JobCollection(AbstractService.AbstractJobCollection):
-        """
-        Base class for a collection of jobs
-        """
-        def __init__(self, service_db_model: DatabaseService) -> None:
-            self.db_model = service_db_model
-
-        def __getitem__(self, job_id: UUID) -> AbstractJob:
-            db_job = self._get_job_model_guaranteed(job_id)
-            return Job(db_job)
-
-        def __setitem__(self, job_id: UUID, job: AbstractJob) -> None:
-            if job_id != job.id:
-                raise ValueError('The Job must match the Job ID')
-            db_job = self._get_job_model_guaranteed(job_id)
-
-            db_job.parameters = job.parameters
-            db_job.results = job.results
-            db_job.status = job.status
-
-            self._session.add(db_job)
-
-        def __delitem__(self, job_id: UUID) -> None:
-            db_job = self._get_job_model_guaranteed(job_id)
-            self._session.delete(db_job)
-
-        def __len__(self) -> int:
-            return self._session.query(DatabaseJob).filter_by(
-                service=self.db_model
-            ).count()
-
-        def __iter__(self) -> Iterator[Job]:
-            """
-            :return: An iterable over all the jobs
-            """
-            db_jobs = self._session.query(DatabaseJob).filter_by(
-                service=self.db_model
-            ).all()
-
-            return (Job(job) for job in db_jobs)
-
-        def __aiter__(self) -> AsyncIterator:
-            db_jobs = self._session.query(DatabaseJob).filter_by(
-                service=self.db_model
-            ).all()
-
-            return self._AsynchronousJobsIterator(db_jobs)
-
-        def __contains__(self, item: Union[UUID, AbstractJob]) -> bool:
-            if isinstance(item, AbstractJob):
-                is_in_collection = self._check_membership_for_job(item)
-            else:
-                is_in_collection = self._check_membership_for_id(item)
-
-            return is_in_collection
+    class _ListOfJobsForService(JobListRequiringQuery):
+        def __init__(self, service: ServiceInterface, db_session: Session):
+            super(self.__class__, self).__init__(db_session)
+            self.service_id = service.id
 
         @property
-        def _session(self) -> Session:
-            return Session.object_session(self.db_model)
-
-        @property
-        def _service_id(self) -> UUID:
-            return self.db_model.id
-
-        def _get_job_model_by_id(self, job_id: UUID) -> Optional[DatabaseJob]:
-            return self._session.query(
-                DatabaseJob
-            ).filter_by(
-                id=job_id
-            ).first()
-
-        def _get_job_model_guaranteed(self, job_id: UUID) -> DatabaseJob:
-            db_model = self._get_job_model_by_id(job_id)
-
-            if db_model is None:
-                raise KeyError("A Job with that ID does not exist")
-            else:
-                return db_model
-
-        def _check_membership_for_job(self, job: AbstractJob) -> bool:
-            return bool(
-                self._session.query(DatabaseJob).filter_by(
-                    id=job.id
-                ).count()
+        def root_job_query(self):
+            return self.session.query(DatabaseJob).filter_by(
+                service_id=self.service_id
             )
-
-        def _check_membership_for_id(self, job_id: UUID) -> bool:
-            return bool(
-                self._session.query(DatabaseJob).filter_by(
-                    id=job_id
-                ).count()
-            )
-
-        class _AsynchronousJobsIterator(AsyncIterator):
-            def __init__(self, jobs: Sequence[Job]):
-                self.jobs = jobs
-                self._last_served_index = 0
-
-            def __len__(self):
-                return len(self.jobs)
-
-            async def __anext__(self) -> Awaitable:
-                if self._last_served_index < len(self.jobs):
-                    service = self._AsyncJobFuture(
-                        Job(self.jobs[self._last_served_index])
-                    )
-                    self._last_served_index += 1
-                else:
-                    raise StopAsyncIteration()
-                return service
-
-            class _AsyncJobFuture(Awaitable):
-                def __init__(self, job: Job):
-                    self.service = job
-
-                def __await__(self):
-                    return self.service

@@ -3,8 +3,12 @@ Contains a factory for making WSGI applications
 """
 import abc
 from flask import Flask
-from .api import api
+from .api import APIMetadata, ServicesList
 from .method_override_middleware import HTTPMethodOverrideMiddleware
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
+from .config import config
 
 
 class WSGIAppFactory(object, metaclass=abc.ABCMeta):
@@ -13,22 +17,19 @@ class WSGIAppFactory(object, metaclass=abc.ABCMeta):
     """
     @property
     @abc.abstractmethod
-    def app(self):
+    def app(self) -> Flask:
         raise NotImplementedError()
 
 
-class APIFactory(object, metaclass=abc.ABCMeta):
-    """
-    Interface for making the Flask-REST-JSONAPI spec
-    """
+class DatabaseEngineFactory(object, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
-    def api(self):
+    def engine(self) -> Engine:
         raise NotImplementedError()
 
 
 class ProductionWSGIAppFactory(
-    WSGIAppFactory, APIFactory
+    WSGIAppFactory, DatabaseEngineFactory
 ):
     """
     Factory for making the app
@@ -36,20 +37,35 @@ class ProductionWSGIAppFactory(
     def __init__(self):
         self._app = Flask(__name__)
         self._app.wsgi_app = HTTPMethodOverrideMiddleware(self._app.wsgi_app)
-        self._api = api
-        self._api.init_app(self._app)
+
+        self._engine = create_engine(config.DATABASE_URI)
+
+        self._app.add_url_rule(
+            '/', view_func=APIMetadata.as_view(
+                APIMetadata.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/services', view_func=ServicesList.as_view(
+                ServicesList.__name__, self._session_factory()
+            )
+        )
 
     @property
-    def app(self):
+    def app(self) -> Flask:
         return self._app
 
     @property
-    def api(self):
-        return self._api
+    def engine(self) -> Engine:
+        return self._engine
+
+    @property
+    def _session_factory(self) -> sessionmaker:
+        return sessionmaker(bind=self._engine)
 
 
 class TestingWSGIAPPFactory(
-    ProductionWSGIAppFactory, WSGIAppFactory, APIFactory
+    ProductionWSGIAppFactory, WSGIAppFactory, DatabaseEngineFactory
 ):
     pass
 

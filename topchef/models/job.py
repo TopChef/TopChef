@@ -1,28 +1,56 @@
-from ..database.models import Job as DatabaseJob
-from ..database.models import JobStatus
-from .abstract_job import AbstractJob
-from uuid import UUID
-from ..json_type import JSON_TYPE as JSON
+"""
+Implements a job that maps to the 
+"""
 import json
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+from uuid import UUID
+from topchef.models.interfaces.job import Job as JobInterface
+from ..database.models import Job as DatabaseJob
+from ..database.models import JobStatus as DatabaseJobStatus
+from ..json_type import JSON_TYPE as JSON
 
 
-class Job(AbstractJob):
+class Job(JobInterface):
+    """
+    Contains an implementation of the job interface
+    """
+    _DATABASE_JOB_STATUS_LOOKUP = {
+        DatabaseJobStatus.REGISTERED: JobInterface.JobStatus.REGISTERED,
+        DatabaseJobStatus.COMPLETED: JobInterface.JobStatus.COMPLETED,
+        DatabaseJobStatus.WORKING: JobInterface.JobStatus.WORKING,
+        DatabaseJobStatus.ERROR: JobInterface.JobStatus.ERROR
+    }
+
+    _MODEL_JOB_STATUS_LOOKUP = {
+        JobInterface.JobStatus.REGISTERED: DatabaseJobStatus.REGISTERED,
+        JobInterface.JobStatus.COMPLETED: DatabaseJobStatus.COMPLETED,
+        JobInterface.JobStatus.WORKING: DatabaseJobStatus.WORKING,
+        JobInterface.JobStatus.ERROR: DatabaseJobStatus.ERROR
+    }
+
     def __init__(self, database_job: DatabaseJob):
+        """
+
+        :param database_job: The database model for the job
+        """
         self.db_model = database_job
 
     @property
     def id(self) -> UUID:
+        """
+
+        :return: The job ID
+        """
         return self.db_model.id
 
     @property
-    def status(self) -> JobStatus:
-        return self.db_model.status
+    def status(self) -> JobInterface.JobStatus:
+        return self._DATABASE_JOB_STATUS_LOOKUP[self.db_model.status]
 
     @status.setter
-    def status(self, new_status: JobStatus) -> None:
-        self.db_model.status = new_status
+    def status(self, new_status: JobInterface.JobStatus) -> None:
+        self.db_model.status = self._MODEL_JOB_STATUS_LOOKUP[new_status]
 
     @property
     def parameters(self) -> JSON:
