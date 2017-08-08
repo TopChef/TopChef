@@ -172,7 +172,7 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
         if first_code == second_code:
             return first_code
         else:
-            if first_code < 500 and second_code < 500:
+            if 400 < first_code < 500 and 400 < second_code < 500:
                 return 400
             else:
                 return 500
