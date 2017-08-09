@@ -75,6 +75,8 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
         except APIException as error:
             self.errors.append(error)
             response = self._error_response
+        except self.Abort:
+            response = self._error_response
         finally:
             self._close_session(self.database_session)
 
@@ -110,8 +112,16 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
 
         :return: The status code that should be thrown for an error response
         """
-        error_status_codes = (error.status_code for error in self.errors)
-        return reduce(self._error_code_reducer, error_status_codes)
+        code = reduce(
+            self._error_code_reducer,
+            (error.status_code for error in self.errors)
+        )
+        catchall_code = 500
+
+        if code is None:
+            return catchall_code
+        else:
+            return code
 
     @property
     def _error_response(self) -> Response:
@@ -198,3 +208,9 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
             return getattr(self, 'put')
         else:
             raise ValueError("Unable to find method %s" % desired_method)
+
+    class Abort(Exception):
+        """
+        Exception thrown if the endpoint has to stop. The error response
+        will be returned at this point.
+        """

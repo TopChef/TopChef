@@ -6,6 +6,7 @@ from flask import jsonify, Response, request
 from topchef.models.service_list import ServiceList as ServiceListModel
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from topchef.models.exceptions import SerializationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import ServiceOverview as ServiceOverviewSerializer
 from topchef.serializers import NewService as NewServiceSerializer
@@ -48,7 +49,8 @@ class ServicesList(AbstractEndpoint):
         data, errors = serializer.load(request.json)
 
         if errors:
-            response = self._handle_serialization_error(errors)
+            self._handle_serialization_error(errors)
+            raise self.Abort()
         else:
             response = self._make_service_from_data(data)
 
@@ -87,16 +89,8 @@ class ServicesList(AbstractEndpoint):
             )
         }
 
-    def _handle_serialization_error(self, errors: dict) -> Response:
-        response = jsonify({
-            'errors': errors,
-            'meta': {
-                'error_schema': self._error_schema
-            },
-            'links': self.links
-        })
-        response.status_code = 400
-        return response
+    def _handle_serialization_error(self, errors: list) -> None:
+        self.errors.extend(SerializationError(error) for error in errors)
 
     @property
     def _error_schema(self) -> dict:
