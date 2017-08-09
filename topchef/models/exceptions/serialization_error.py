@@ -1,44 +1,45 @@
 """
-Describes a reportable exception that is thrown if Marshmallow or jsonschema
-is unable to deserialize an instance, or validate it against a JSON schema. One
-of these should be reported for each validation error
+Describes an error to be thrown if the server is provided with some invalid
+data from the API
 """
 from topchef.models import APIException
 
 
 class SerializationError(APIException):
     """
-    Describes the exception
+    Describes an error thrown if the server receives an object that it
+    cannot serialize with a particular serializer. This is a ``500`` series
+    error. If this error is encountered in production, the API maintainer
+    should hang their head in shame.
     """
-    def __init__(self, validator_error_message: str) -> None:
+    def __init__(self, marshmallow_error: str) -> None:
         """
 
-        :param validator_error_message: The error message reported by the
-            validator
+        :param marshmallow_error: The error message thrown by marshmallow
         """
-        self._message = validator_error_message
+        self._error = marshmallow_error
 
     @property
     def status_code(self) -> int:
         """
 
-        :return: Since this error is thrown when the user inputs invalid
-            data, the status code for this error is ``400 BAD REQUEST``
+        :return: The status code for this error
         """
-        return 400
+        return 500
+
+    @property
+    def title(self) -> str:
+        """
+
+        :return: The title of this exception
+        """
+        return 'Serialization Error From Server Data'
 
     @property
     def detail(self) -> str:
         """
 
-        :return: The error message reported by the serializer
+        :return: A detailed error message
         """
-        return self._message
-
-    @property
-    def title(self):
-        """
-
-        :return: The title of the error
-        """
-        return 'Deserialization Error'
+        return 'The serializer used by this server threw error "%s". Report ' \
+               'this to the maintainer as soon as possible.'

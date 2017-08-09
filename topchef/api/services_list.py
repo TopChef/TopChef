@@ -3,20 +3,25 @@ Describes the endpoint for listing services
 """
 from .abstract_endpoint import AbstractEndpoint
 from flask import jsonify, Response, request
+from topchef.models import ServiceList as ServiceListInterface
 from topchef.models.service_list import ServiceList as ServiceListModel
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from topchef.models.exceptions import SerializationError
+from topchef.models.exceptions import DeserializationError, SerializationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import ServiceOverview as ServiceOverviewSerializer
 from topchef.serializers import NewService as NewServiceSerializer
+from typing import Type
 
 
 class ServicesList(AbstractEndpoint):
     """
     Maps methods for listing services as well as creating a service
     """
-    def __init__(self, session: Session) -> None:
+    def __init__(
+            self, session: Session,
+            service_list_model: Type[ServiceListInterface]=ServiceListModel
+    ) -> None:
         """
 
         Create a service list model that is capable of getting services from
@@ -25,7 +30,7 @@ class ServicesList(AbstractEndpoint):
         :param session: The database session to use
         """
         super(self.__class__, self).__init__(session)
-        self.service_list = ServiceListModel(self.database_session)
+        self.service_list = service_list_model(self.database_session)
 
     def get(self) -> Response:
         """
@@ -49,7 +54,7 @@ class ServicesList(AbstractEndpoint):
         data, errors = serializer.load(request.json)
 
         if errors:
-            self._handle_serialization_error(errors)
+            self._report_client_serialization_errors(errors)
             raise self.Abort()
         else:
             response = self._make_service_from_data(data)
@@ -64,7 +69,12 @@ class ServicesList(AbstractEndpoint):
             API
         """
         serializer = ServiceOverviewSerializer()
-        service_list = serializer.dump(self.service_list, many=True)
+        service_list, errors = serializer.dump(self.service_list, many=True)
+
+        if errors:
+            self._report_server_serialization_errors(errors)
+            raise self.Abort()
+
         return service_list
 
     @property
@@ -89,7 +99,10 @@ class ServicesList(AbstractEndpoint):
             )
         }
 
-    def _handle_serialization_error(self, errors: list) -> None:
+    def _report_client_serialization_errors(self, errors: list) -> None:
+        self.errors.extend(DeserializationError(error) for error in errors)
+
+    def _report_server_serialization_errors(self, errors: list) -> None:
         self.errors.extend(SerializationError(error) for error in errors)
 
     @property
