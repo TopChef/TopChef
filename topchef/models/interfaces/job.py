@@ -3,6 +3,7 @@ Defines TopChef jobs
 """
 import abc
 from enum import Enum
+from uuid import UUID
 from topchef.database.models import JobStatus
 from datetime import datetime
 
@@ -13,7 +14,7 @@ class Job(object, metaclass=abc.ABCMeta):
     """
     @property
     @abc.abstractmethod
-    def id(self):
+    def id(self) -> UUID:
         """
 
         :return: The Job ID

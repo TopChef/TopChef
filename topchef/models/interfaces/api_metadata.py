@@ -7,6 +7,7 @@ import abc
 
 class APIMetadata(object, metaclass=abc.ABCMeta):
     """
+    Describes the metadata for the API
     """
     @property
     @abc.abstractmethod
