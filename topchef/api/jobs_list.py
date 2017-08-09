@@ -1,25 +1,34 @@
+# -*- coding: utf-8 -*-
 """
 Describes an API endpoint that describes the endpoint for ``/jobs``
 """
 from topchef.models.job_list import JobList as JobListModel
 from .abstract_endpoint import AbstractEndpoint
 from sqlalchemy.orm import Session
-from flask import Response
-from flask import jsonify
+from flask import Request, Response
+from flask import request, jsonify
 from topchef.serializers import JobOverview as JobSerializer
 from topchef.serializers import JSONSchema
+
+__all__ = ["JobsList"]
 
 
 class JobsList(AbstractEndpoint):
     """
     Maps HTTP requests for the ``/jobs`` endpoint to methods in this class
     """
-    def __init__(self, session: Session) -> None:
+    def __init__(
+            self,
+            session: Session,
+            flask_request: Request=request
+    ) -> None:
         """
 
         :param session: The session to use
+        :param flask_request: The Flask request that this endpoint needs to
+            process
         """
-        super(self.__class__, self).__init__(session)
+        super(self.__class__, self).__init__(session, flask_request)
         self.job_list = JobListModel(self.database_session)
 
     def get(self) -> Response:
@@ -52,7 +61,8 @@ class JobsList(AbstractEndpoint):
     def _data_schema(self) -> dict:
         """
 
-        :return:
+        :return: A JSON schema for the data in the ``data`` key of this
+            response
         """
         json_serializer = JSONSchema()
 

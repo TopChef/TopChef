@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 The base module of entry for the application. This module contains the
 command line argument parser, allowing for starting and maintaining the

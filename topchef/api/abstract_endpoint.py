@@ -23,7 +23,20 @@ __all__ = ['AbstractEndpoint']
 
 class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     """
-    Defines the abstract endpoint
+    Defines the abstract endpoint, taking care of exceptions.
+
+    Error reporting becomes a little more complicated when dealing with HTTP
+    APIs, as the separation between errors and exceptions becomes more
+    pronounced. For instance, when de-serializing invalid user input,
+    the error that results from validation must be reported, but the program
+    is still in a well-determined state that precludes the need for throwing
+    an exception.
+
+    Error reporting in this API relies heavily on :class:`APIException`.
+    Errors can be reported either destructively by raising the
+    :class:`APIException`, or non-destructively by appending the exception to
+    the ``errors`` object. In order to stop execution of the endpoint and
+    return an ``error`` response, raise :class:`AbstractEndpoint.Abort`.
     """
     def __new__(cls, session: Session, *args, **kwargs):
         """
