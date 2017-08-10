@@ -1,7 +1,7 @@
 """
 Contains a generator for job lists
 """
-from hypothesis.strategies import composite, integers, lists
+from hypothesis.strategies import composite, lists
 from tests.unit.model_generators.job import jobs
 from topchef.models import JobList as JobListInterface
 from topchef.models import Job as JobInterface
@@ -9,7 +9,7 @@ from typing import Iterable, MutableSequence, Iterator, Union
 from uuid import UUID
 
 
-class _JobList(JobListInterface):
+class JobList(JobListInterface):
     """
     Implements the job list interface
     """
@@ -58,4 +58,4 @@ class _JobList(JobListInterface):
 def job_lists(
         draw, jobs=lists(jobs())
 ) -> JobListInterface:
-    return _JobList(draw(jobs))
+    return JobList(draw(jobs))

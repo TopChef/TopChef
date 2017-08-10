@@ -84,6 +84,11 @@ class TestGet(TestJobList):
     def assert_data_equal(
             self, data: dict, job_list: JobListInterface
     ) -> None:
+        """
+        Assert that the data is correctly displayed
+        :param data: The data to retrieve
+        :param job_list: The list of jobs to serialize
+        """
         self.assertEqual(
             data['data'],
             self.serialize_jobs(job_list)

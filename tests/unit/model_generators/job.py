@@ -8,7 +8,7 @@ from hypothesis.strategies import dictionaries, datetimes
 from topchef.models import Job as JobInterface
 
 
-class _Job(JobInterface):
+class Job(JobInterface):
     """
     Provides an implementation of the ``JobInterface`` that works with
     randomly-generated data
@@ -68,7 +68,7 @@ def jobs(
         results=dictionaries(text(), text()),
         dates_submitted=datetimes()
 ) -> JobInterface:
-    return _Job(
+    return Job(
         draw(ids), draw(statuses), draw(parameters), draw(results),
         draw(dates_submitted)
     )

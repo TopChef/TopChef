@@ -8,10 +8,8 @@ from collections.abc import Iterable, AsyncIterable
 from typing import Callable, AsyncIterator
 from typing import Iterator as IteratorType
 from uuid import UUID
-
 from sqlalchemy.orm import Session
 from topchef.models.interfaces.job_list import JobList
-
 from topchef.database.models import Job as DatabaseJob
 from topchef.database.models import Service as DatabaseService
 from topchef.json_type import JSON_TYPE as JSON
