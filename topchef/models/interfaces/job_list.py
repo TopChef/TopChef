@@ -87,3 +87,4 @@ class JobList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
         :return: ``True`` if the equality definition is met, otherwise
             ``False``
         """
+        raise NotImplementedError()

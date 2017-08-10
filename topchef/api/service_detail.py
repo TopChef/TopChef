@@ -2,17 +2,17 @@
 Describes an endpoint where detailed information about the service can be
 obtained
 """
-from flask import Response, jsonify
+from flask import Response, jsonify, Request, request
 from uuid import UUID
 from .abstract_endpoint import AbstractEndpoint
 from sqlalchemy.orm import Session
-from topchef.models import Service, ServiceList
+from topchef.models import Service
 from topchef.models.service_list import ServiceList as ServiceListModel
 from topchef.models.exceptions import ServiceWithUUIDNotFound
 from topchef.models.exceptions import NotUUIDError
 from topchef.serializers import ServiceDetail as ServiceSerializer
 from topchef.serializers import JSONSchema
-from typing import Type
+from typing import Optional
 
 
 class ServiceDetail(AbstractEndpoint):
@@ -22,15 +22,19 @@ class ServiceDetail(AbstractEndpoint):
     def __init__(
             self,
             session: Session,
-            service_list_model_class: Type[ServiceList]=ServiceListModel
+            flask_request: Request=request,
+            service_list_model: Optional[ServiceListModel]=None
     ) -> None:
         """
         Create the service list model
 
         :param session: The database session to use for making the request
         """
-        super(self.__class__, self).__init__(session)
-        self.service_list = service_list_model_class(self.database_session)
+        super(self.__class__, self).__init__(session, request=flask_request)
+        if service_list_model is None:
+            self.service_list = ServiceListModel(self.database_session)
+        else:
+            self.service_list = service_list_model
 
     def get(self, service_id: str) -> Response:
         """
@@ -71,7 +75,7 @@ class ServiceDetail(AbstractEndpoint):
             description='A comprehensive schema for displaying services'
         )
         response = jsonify({
-            'data': serializer.dump(service, many=False),
+            'data': serializer.dump(service, many=False).data,
             'meta': {'service_schema': serializer_schema.dump(serializer)},
             'links': self.links
         })

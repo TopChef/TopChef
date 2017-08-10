@@ -1,16 +1,19 @@
 """
 Contains unit tests for the ``/services/<service_id>`` endpoint
 """
+import json
 import unittest
 import unittest.mock as mock
 from uuid import UUID
-from topchef.models import ServiceList, Service
+from topchef.models import Service, ServiceList
 from topchef.api import ServiceDetail
 from topchef.models.exceptions import NotUUIDError, ServiceWithUUIDNotFound
 from sqlalchemy.orm import Session
-from flask import Flask
-from hypothesis import given
-from hypothesis.strategies import text, uuids, dictionaries, booleans
+from flask import Flask, Request
+from hypothesis import given, assume
+from hypothesis.strategies import text, uuids
+from topchef.serializers import ServiceDetail as ServiceSerializer
+from tests.unit.model_generators.service_list import service_lists
 
 
 class TestServiceDetail(unittest.TestCase):
@@ -22,19 +25,12 @@ class TestServiceDetail(unittest.TestCase):
         Set up some mock model classes and create an endpoint
         """
         self.session = mock.MagicMock(spec=Session)
-        self.service_list = mock.MagicMock(spec=ServiceList)
-        self.service_list_constructor = mock.MagicMock(
-            spec=type, return_value=self.service_list
-        )
-
-        self.endpoint = ServiceDetail(
-            self.session, self.service_list_constructor
-        )
+        self.request = mock.MagicMock(spec=Request)
 
         self._app = Flask(__name__)
         self._app.add_url_rule(
-            '/', view_func=self.endpoint.__class__.as_view(
-                self.endpoint.__class__.__name__, self.session
+            '/', view_func=ServiceDetail.as_view(
+                ServiceDetail.__name__, self.session
             )
         )
 
@@ -57,6 +53,7 @@ class TestGet(TestServiceDetail):
     def setUp(self):
         TestServiceDetail.setUp(self)
         self.service = mock.MagicMock(spec=Service)
+        self.endpoint = ServiceDetail(self.session)
 
     @given(text())
     def test_get_not_uuid(self, bad_id: str) -> None:
@@ -72,57 +69,62 @@ class TestGet(TestServiceDetail):
             404, assertion.exception.status_code
         )
 
-    @given(uuids())
-    def test_get_service_not_found(self, service_id: UUID) -> None:
+    @given(uuids(), service_lists())
+    def test_get_service_not_found(
+            self,
+            service_id: UUID,
+            service_list: ServiceList
+    ) -> None:
         """
         Tests that a ``ServiceWithUUIDNotFound`` is thrown if a service with
         this ID is not found
 
         :param service_id: The ID for which a service does not exist
+        :param service_list: The list of services to be made
         """
-        self.service_list.__getitem__ = mock.MagicMock(side_effect=KeyError())
+        assume(service_id not in set(service.id for service in service_list))
+        endpoint = ServiceDetail(self.session, self.request, service_list)
         with self.assertRaises(ServiceWithUUIDNotFound) as assertion:
-            self.endpoint.get(str(service_id))
+            endpoint.get(str(service_id))
 
         self.assertEqual(
             404, assertion.exception.status_code
         )
 
-    @given(
-        uuids(),
-        text(),
-        text(),
-        dictionaries(text(), text()),
-        dictionaries(text(), text()),
-        booleans()
-    )
+    @given(service_lists())
     def test_get_service_happy_path(
-            self, service_id: UUID, name: str, description: str,
-            reg_schema: dict, res_schema: dict, is_available: bool
+            self, service_list: ServiceList
     ) -> None:
         """
 
         Tests that a valid service gives a ``200`` response from the detail
         endpoint
 
-        :param service_id: A randomly-generated service ID
-        :param name: A random service name
-        :param description: A random description
-        :param reg_schema: A random job registration schema
-        :param res_schema: A random job result schema
-        :param is_available: A random flag for service availabilty
+        :param service_list: A randomly-generated list of services
         """
-        self.service.id = service_id
-        self.service.name = name
-        self.service.description = description
-        self.service.job_registration_schema = reg_schema
-        self.service.job_result_schema = res_schema
-        self.service.is_available = is_available
-        self.service.jobs = []
+        assume(len(service_list) > 0)
+        service = self._get_first_service_from_list(service_list)
+        endpoint = ServiceDetail(self.session, self.request, service_list)
 
-        self.service_list.__getitem__ = mock.MagicMock(
-            return_value=self.service
+        response = endpoint.get(str(service.id))
+        self.assertEqual(
+            200, response.status_code
+        )
+        self.assert_data_equal(
+            json.loads(response.data.decode('utf-8')),
+            service
         )
 
-        response = self.endpoint.get(str(service_id))
-        self.assertEqual(200, response.status_code)
+    def assert_data_equal(self, data: dict, service: Service) -> None:
+        self.assertEqual(
+            data['data'], self._get_dict_for_service(service)
+        )
+
+    @staticmethod
+    def _get_first_service_from_list(service_list: ServiceList) -> Service:
+        return next(service for service in service_list)
+
+    @staticmethod
+    def _get_dict_for_service(service: Service) -> dict:
+        serializer = ServiceSerializer()
+        return serializer.dump(service).data

@@ -58,6 +58,21 @@ class Job(JobInterface):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))
 
+    def __repr__(self) -> str:
+        """
+
+        :return: The code used to create this instance
+        """
+        return '%s(job_id=%s, status=%s, parameters=%s, results=%s, ' \
+            'date_submitted=%s' % (
+                self.__class__.__name__,
+                self._job_id,
+                self._status,
+                self._parameters,
+                self._results,
+                self._date_submitted
+            )
+
 
 @composite
 def jobs(

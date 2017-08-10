@@ -53,6 +53,13 @@ class JobList(JobListInterface):
     def __eq__(self, other: JobListInterface) -> bool:
         return set(self) == set(other)
 
+    def __repr__(self) -> str:
+        """
+
+        :return: The python code used to create this object
+        """
+        return '%s(random_jobs=%s)' % (self.__class__.__name__, self._jobs)
+
 
 @composite
 def job_lists(

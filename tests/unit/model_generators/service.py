@@ -18,7 +18,7 @@ from topchef.models import JobList as JobListInterface
 from datetime import datetime
 
 
-class _Service(ServiceInterface):
+class Service(ServiceInterface):
     """
     A minimal implementation of the ``ServiceInterface`` that can be easily
     generated using hypothesis
@@ -35,7 +35,14 @@ class _Service(ServiceInterface):
     ) -> None:
         """
 
-        :param service_id: The ID of the service to retrieve
+        :param service_id: The ID of the mock service
+        :param name: The name of the mock service
+        :param description: The service's description
+        :param registration_schema: A random dictionary
+        :param result_schema: A random dictionary
+        :param is_service_available: A random boolean indicating whether the
+            service is available
+        :param job_list: The list of jobs belonging to this service
         """
         self._id = service_id
         self._name = name
@@ -92,7 +99,7 @@ class _Service(ServiceInterface):
     ) -> ServiceInterface:
         service_id = uuid4()
         is_service_available = False
-        return _Service(
+        return Service(
             service_id,
             name,
             description,
@@ -123,6 +130,24 @@ class _Service(ServiceInterface):
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self._id))
 
+    def __repr__(self) -> str:
+        constructor_args = {
+            'service_id': self._id,
+            'description': self._description,
+            'name': self._name,
+            'registration_schema': self._registration_schema,
+            'result_schema': self._result_schema,
+            'is_service_available': self._is_service_available,
+            'job_list': self._jobs
+        }
+
+        argument_string = ', '.join(
+            (
+                '%s=%s' % (key, constructor_args[key])
+            ) for key in constructor_args.keys()
+        )
+
+        return '%s(%s)' % (self.__class__.__name__, argument_string)
 
 @composite
 def services(
@@ -135,7 +160,7 @@ def services(
         are_available=booleans(),
         service_job_lists=job_lists()
 ) -> ServiceInterface:
-    return _Service(
+    return Service(
         draw(ids), draw(names), draw(descriptions),
         draw(registration_schemas), draw(result_schemas),
         draw(are_available), draw(service_job_lists)
