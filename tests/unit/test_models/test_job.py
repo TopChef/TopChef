@@ -1,10 +1,12 @@
 import unittest
 import unittest.mock as mock
 from hypothesis import given
-from hypothesis.strategies import dictionaries, text, integers, sampled_from
+from hypothesis.strategies import dictionaries, text, integers, \
+    sampled_from, composite
 from topchef.database.models import Job as DatabaseJob
 from topchef.database.models import JobStatus as DatabaseJobStatus
 from topchef.models.job import Job
+from tests.unit.database_model_generators import jobs as database_jobs
 
 
 class TestJob(unittest.TestCase):
@@ -20,18 +22,27 @@ class TestJob(unittest.TestCase):
         )  # type: DatabaseJob
         self.job = Job(self.database_job)
 
+    @staticmethod
+    @composite
+    def jobs(draw, db_jobs=database_jobs) -> Job:
+        return Job(draw(db_jobs))
+
 
 class TestId(TestJob):
     """
     Contains unit tests for the ``id`` getter
     """
-    def test_id(self) -> None:
+    @given(database_jobs())
+    def test_id(self, db_job: DatabaseJob) -> None:
         """
 
         Check that the Job ID is the same as that of the underlying database
         model
+
+        :param db_job: A randomly-generated database job
         """
-        self.assertEqual(self.job.id, self.database_job.id)
+        job = Job(db_job)
+        self.assertEqual(job.id, db_job.id)
 
 
 class TestStatus(TestJob):
@@ -67,11 +78,13 @@ class TestParameters(TestJob):
     """
     Contains unit tests for the ``parameters`` property
     """
-    def test_parameters(self) -> None:
+    @given(database_jobs())
+    def test_parameters(self, db_job: DatabaseJob) -> None:
         """
         Tests that the parameters match those of the underlying job
         """
-        self.assertEqual(self.job.parameters, self.database_job.parameters)
+        job = Job(db_job)
+        self.assertEqual(job.parameters, db_job.parameters)
 
 
 class TestResults(TestJob):

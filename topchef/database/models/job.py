@@ -12,7 +12,9 @@ from datetime import datetime
 
 
 class Job(BASE):
-
+    """
+    The database model for a job
+    """
     __table__ = database.jobs
 
     id = __table__.c.job_id
