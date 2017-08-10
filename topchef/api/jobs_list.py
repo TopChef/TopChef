@@ -2,6 +2,7 @@
 """
 Describes an API endpoint that describes the endpoint for ``/jobs``
 """
+from topchef.models import JobList as JobListInterface
 from topchef.models.job_list import JobList as JobListModel
 from .abstract_endpoint import AbstractEndpoint
 from sqlalchemy.orm import Session
@@ -9,6 +10,7 @@ from flask import Request, Response
 from flask import request, jsonify
 from topchef.serializers import JobOverview as JobSerializer
 from topchef.serializers import JSONSchema
+from typing import Optional
 
 __all__ = ["JobsList"]
 
@@ -20,7 +22,8 @@ class JobsList(AbstractEndpoint):
     def __init__(
             self,
             session: Session,
-            flask_request: Request=request
+            flask_request: Request=request,
+            job_list_model: Optional[JobListInterface]=None
     ) -> None:
         """
 
@@ -29,7 +32,10 @@ class JobsList(AbstractEndpoint):
             process
         """
         super(self.__class__, self).__init__(session, flask_request)
-        self.job_list = JobListModel(self.database_session)
+        if job_list_model is None:
+            self.job_list = JobListModel(self.database_session)
+        else:
+            self.job_list = job_list_model
 
     def get(self) -> Response:
         """
@@ -49,7 +55,7 @@ class JobsList(AbstractEndpoint):
         :return: The JSON containing a list of all the jobs on the system
         """
         serializer = JobSerializer()
-        return serializer.dump(self.job_list, many=True)
+        return serializer.dump(self.job_list, many=True).data
 
     @property
     def _meta(self) -> dict:

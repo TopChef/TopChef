@@ -55,6 +55,9 @@ class _Job(JobInterface):
     def date_submitted(self) -> datetime:
         return self._date_submitted
 
+    def __hash__(self) -> int:
+        return hash((self.__class__.__name__, self.id))
+
 
 @composite
 def jobs(

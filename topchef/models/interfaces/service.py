@@ -183,3 +183,7 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
 
     def __aiter__(self) -> AsyncIterator[Job]:
         return self.jobs.__aiter__()
+
+    @abc.abstractmethod
+    def __hash__(self) -> int:
+        raise NotImplementedError()

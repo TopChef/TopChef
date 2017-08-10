@@ -153,6 +153,15 @@ class JobListRequiringQuery(JobList, metaclass=abc.ABCMeta):
     def _all_database_jobs(self) -> Sequence[DatabaseJob]:
         return self.root_job_query.all()
 
+    def __eq__(self, other: JobList) -> bool:
+        """
+
+        :param other: The other job list to compare
+        :return: ``True`` if the jobs in this list are equal to jobs in the
+            other list
+        """
+        return set(self) == set(other)
+
     class _AsyncJobIterator(AsyncIterator):
         def __init__(self, db_job_list: Sequence[DatabaseJob]) -> None:
             self.database_jobs = db_job_list

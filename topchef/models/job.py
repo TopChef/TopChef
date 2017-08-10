@@ -69,6 +69,9 @@ class Job(JobInterface):
         self._assert_json(new_results)
         self.db_model.results = new_results
 
+    def __hash__(self) -> int:
+        return hash((self.__class__.__name__, self.id))
+
     @staticmethod
     def _assert_json(json_to_set):
         try:

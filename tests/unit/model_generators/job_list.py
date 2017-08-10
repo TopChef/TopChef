@@ -50,6 +50,9 @@ class _JobList(JobListInterface):
     def __aiter__(self):
         raise Exception()
 
+    def __eq__(self, other: JobListInterface) -> bool:
+        return set(self) == set(other)
+
 
 @composite
 def job_lists(

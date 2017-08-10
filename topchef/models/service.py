@@ -144,6 +144,9 @@ class Service(ServiceInterface):
     ) -> None:
         session.add(model)
 
+    def __hash__(self) -> int:
+        return hash((self.__class__.__name__, self.db_model.id))
+
     class _ListOfJobsForService(JobListRequiringQuery):
         def __init__(self, service: ServiceInterface, db_session: Session):
             super(self.__class__, self).__init__(db_session)

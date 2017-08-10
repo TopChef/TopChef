@@ -59,6 +59,14 @@ class Job(object, metaclass=abc.ABCMeta):
     def date_submitted(self) -> datetime:
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def __hash__(self) -> int:
+        """
+
+        :return: The hash of the number
+        """
+        raise NotImplementedError()
+
     def __eq__(self, other: 'Job') -> bool:
         return self.id == other.id
 

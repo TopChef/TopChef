@@ -7,13 +7,17 @@ from typing import Iterator, AsyncIterator, Union
 
 class JobList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
     """
-    Describes an interface for manipulating a set of jobs posted to the API
+    Describes an interface for manipulating a set of jobs posted to the API.
+    The Job list should be iterating over all the jobs in the list.
     """
     @abc.abstractmethod
     def __getitem__(self, job_id: UUID) -> Job:
         """
+        Given a job ID, this method must return a job with an ID
+        corresponding to that job ID, or raise ``KeyError``.
 
-        :param job_id: The ID of the job to retrieve
+        :param job_id: The ID of the job to retrieve, or the value of the
+            job to retrieve
         :return: The job
         :raises: :exc:`KeyError` if a job with that ID does not exist
         """
@@ -73,3 +77,13 @@ class JobList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
             jobs in the set
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def __eq__(self, other: 'JobList') -> bool:
+        """
+
+        :param other: The other job list against which equality is to be
+            determined
+        :return: ``True`` if the equality definition is met, otherwise
+            ``False``
+        """

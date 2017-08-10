@@ -60,6 +60,11 @@ class TestGet(TestAPIMetadata):
     def assert_data_equal(
             self, data: dict, metadata: MetadataInterface
     ) -> None:
+        """
+
+        :param data: The data from the endpoint to check
+        :param metadata: The metadata against which the data is to be checked
+        """
         self.assertEqual(
             data['data'], self._get_dict_for_metadata_model(metadata)
         )
