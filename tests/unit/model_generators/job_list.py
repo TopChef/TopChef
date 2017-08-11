@@ -63,6 +63,6 @@ class JobList(JobListInterface):
 
 @composite
 def job_lists(
-        draw, jobs=lists(jobs())
+        draw, jobs=lists(jobs(), average_size=3)
 ) -> JobListInterface:
     return JobList(draw(jobs))

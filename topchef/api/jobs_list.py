@@ -2,15 +2,17 @@
 """
 Describes an API endpoint that describes the endpoint for ``/jobs``
 """
-from topchef.models import JobList as JobListInterface
-from topchef.models.job_list import JobList as JobListModel
-from .abstract_endpoint import AbstractEndpoint
-from sqlalchemy.orm import Session
+from typing import Optional
+
 from flask import Request, Response
 from flask import request, jsonify
-from topchef.serializers import JobOverview as JobSerializer
+from sqlalchemy.orm import Session
+
+from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
+from topchef.models import JobList as JobListInterface
+from topchef.models.job_list import JobList as JobListModel
 from topchef.serializers import JSONSchema
-from typing import Optional
+from topchef.serializers import JobOverview as JobSerializer
 
 __all__ = ["JobsList"]
 

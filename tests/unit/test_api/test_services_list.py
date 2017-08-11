@@ -2,13 +2,15 @@
 Contains unit tests for the services list
 """
 import json
-from topchef.models import ServiceList, Service
+from topchef.models import ServiceList
+from topchef.serializers import ServiceOverview as ServiceSerializer
+from flask import Request
 from tests.unit.test_api import TestAPI
 import unittest.mock as mock
 from sqlalchemy.orm import Session
 from topchef.api import ServicesList
 from hypothesis import given
-from tests.unit.service_generator import services
+from tests.unit.model_generators.service_list import service_lists
 
 
 class TestServicesList(TestAPI):
@@ -21,57 +23,43 @@ class TestServicesList(TestAPI):
         Create a fake service list endpoint
         """
         TestAPI.setUp(self)
-        self.session = mock.MagicMock(spec=Session)
-        self.service_list = mock.MagicMock(spec=ServiceList)
-        self.service_list_constructor = mock.MagicMock(
-            spec=type, return_value=self.service_list
-        )
-
-
-class TestServiceGenerator(TestAPI):
-    @given(services())
-    def test_description(self, service: Service) -> None:
-        self.assertIsInstance(service.description, str)
+        self.session = mock.MagicMock(spec=Session)  # type: Session
+        self.request = mock.MagicMock(spec=Request)  # type: Request
 
 
 class TestGet(TestServicesList):
     """
     Contains unit tests for the ``get`` method
     """
-    def setUp(self) -> None:
-        """
-
-        Establish an expected status code for the response
-        """
+    def setUp(self):
         TestServicesList.setUp(self)
-        self.service = mock.MagicMock(spec=Service)
-        self.services = [self.service],
-        self.service_list.__iter__ = mock.MagicMock(
-            return_value=self.services.__iter__()
-        )
         self.expected_response_code = 200
 
-    def test_200_status_code(self) -> None:
+    @given(service_lists())
+    def test_200_status_code(self, service_list: ServiceList) -> None:
         """
 
         Tests that the method returns the 200 status code
         """
-        response = self.endpoint.get()
+        endpoint = ServicesList(
+            self.session, self.request, service_list
+        )
+        response = endpoint.get()
         self.assertEqual(self.expected_response_code, response.status_code)
-        self.assertEqual(mock.call(self.session),
-                         self.service_list_constructor.call_args)
+        self.assert_data_equal(
+            json.loads(response.data.decode('utf-8')), service_list
+        )
 
-    def test_data(self) -> None:
+    def assert_data_equal(self, data: dict, service_list: ServiceList) -> None:
         """
 
-        Tests that the response contains a ``data`` field
+        :param data: The data to check
+        :param service_list: The list of services to check
         """
-        result_dict = json.loads(self.endpoint.get().data.decode('utf-8'))
-        self.assertIn('data', result_dict.keys())
-
-    def test_meta(self) -> None:
-        """
-
-        Tests that the response contains a ``meta`` field that contains the
-        schemas required to interpret the endpoint
-        """
+        serializer = ServiceSerializer()
+        serializer_data, errors = serializer.dump(service_list, many=True)
+        self.assertFalse(errors)
+        self.assertEqual(
+            data['data'],
+            serializer_data
+        )

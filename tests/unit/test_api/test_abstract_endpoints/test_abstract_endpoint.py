@@ -4,9 +4,11 @@ Contains unit tests for
 import json
 import unittest
 import unittest.mock as mock
+
 from flask import Request, jsonify, Response, Flask
 from sqlalchemy.orm import Session
-from topchef.api.abstract_endpoint import AbstractEndpoint
+
+from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
 from topchef.models import APIException
 
 

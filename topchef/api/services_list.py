@@ -1,17 +1,17 @@
 """
 Describes the endpoint for listing services
 """
-from .abstract_endpoint import AbstractEndpoint
-from flask import jsonify, Response, request
-from topchef.models import ServiceList as ServiceListInterface
-from topchef.models.service_list import ServiceList as ServiceListModel
-from sqlalchemy.orm import Session
+from flask import jsonify, Response, request, Request
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+from typing import Optional
+from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
+from topchef.models import ServiceList as ServiceListInterface
 from topchef.models.exceptions import DeserializationError, SerializationError
+from topchef.models.service_list import ServiceList as ServiceListModel
 from topchef.serializers import JSONSchema
-from topchef.serializers import ServiceOverview as ServiceOverviewSerializer
 from topchef.serializers import NewService as NewServiceSerializer
-from typing import Type
+from topchef.serializers import ServiceOverview as ServiceOverviewSerializer
 
 
 class ServicesList(AbstractEndpoint):
@@ -20,7 +20,8 @@ class ServicesList(AbstractEndpoint):
     """
     def __init__(
             self, session: Session,
-            service_list_model: Type[ServiceListInterface]=ServiceListModel
+            flask_request: Request=request,
+            service_list: Optional[ServiceListInterface]=None
     ) -> None:
         """
 
@@ -29,8 +30,12 @@ class ServicesList(AbstractEndpoint):
 
         :param session: The database session to use
         """
-        super(self.__class__, self).__init__(session)
-        self.service_list = service_list_model(self.database_session)
+        super(self.__class__, self).__init__(session, flask_request)
+
+        if service_list is not None:
+            self.service_list = service_list
+        else:
+            self.service_list = ServiceListModel(session)
 
     def get(self) -> Response:
         """

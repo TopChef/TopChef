@@ -2,13 +2,14 @@
 Describes the root endpoint of the API, which provides some metadata about
 the API.
 """
-from .abstract_endpoint import AbstractEndpoint
 from flask import jsonify, Response, Request, request
-from topchef.serializers import APIMetadata as MetadataSerializer
-from topchef.serializers import JSONSchema
+from sqlalchemy.orm import Session
+
+from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
 from topchef.models import APIMetadata as APIMetadataModelInterface
 from topchef.models.api_metadata import APIMetadata as MetadataModel
-from sqlalchemy.orm import Session
+from topchef.serializers import APIMetadata as MetadataSerializer
+from topchef.serializers import JSONSchema
 
 
 class APIMetadata(AbstractEndpoint):
