@@ -2,7 +2,6 @@
 Describes the endpoint for listing services
 """
 from flask import jsonify, Response, request, Request
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from typing import Optional
 from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
@@ -110,23 +109,6 @@ class ServicesList(AbstractEndpoint):
     def _report_server_serialization_errors(self, errors: list) -> None:
         self.errors.extend(SerializationError(error) for error in errors)
 
-    @property
-    def _error_schema(self) -> dict:
-        """
-
-        :return: The schema for marshmallow serialization errors
-        """
-        return {
-            '$schema': "http://json-schema.org/schema#",
-            'title': 'Serialization Error Schema',
-            'description': 'The schema for errors in the errors key of this '
-                           'response',
-            'type': 'array',
-            'items': {
-                'type': 'string'
-            }
-        }
-
     def _make_service_from_data(self, data) -> Response:
         self.service_list.new(
             data['name'],
@@ -134,23 +116,7 @@ class ServicesList(AbstractEndpoint):
             data['job_registration_schema'],
             data['job_result_schema']
         )
-
-        try:
-            self.database_session.commit()
-        except SQLAlchemyError as error:
-            self.database_session.rollback()
-            return self._make_commit_error(error)
-        else:
-            return self._make_correct_response()
-
-    def _make_commit_error(self, error: SQLAlchemyError) -> Response:
-        response = jsonify({
-            'errors': [str(error)],
-            'meta': self._error_schema,
-            'links': self.links
-        })
-        response.status_code = 500
-        return response
+        return self._make_correct_response()
 
     def _make_correct_response(self) -> Response:
         response = jsonify({

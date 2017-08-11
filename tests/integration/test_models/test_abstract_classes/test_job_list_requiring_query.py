@@ -7,7 +7,7 @@ from tests.integration.test_models import IntegrationTestCaseWithModels
 from topchef.models.abstract_classes import JobListRequiringQuery
 from sqlalchemy.orm import Query
 from topchef.database.models import Job as DatabaseJob
-from topchef.database.schemas.job_status import JobStatus
+from topchef.database.schemas.job_status import JobStatus as DatabaseJobStatus
 from typing import AsyncIterator
 from topchef.models.interfaces import Job
 
@@ -66,11 +66,11 @@ class TestSetItem(TestJobListRequiringQuery):
         Tests that a mutable property of the job can be successfully set
         """
         job_from_db = self.job_list[self.job.id]
-        job_from_db.status = JobStatus.COMPLETED
+        job_from_db.status = job_from_db.JobStatus.COMPLETED
         self.job_list[self.job.id] = job_from_db
 
         second_job_from_db = self.job_list[self.job.id]
-        self.assertEqual(second_job_from_db.status, JobStatus.COMPLETED)
+        self.assertIs(second_job_from_db.status, Job.JobStatus.COMPLETED)
 
 
 class TestDelItem(TestJobListRequiringQuery):

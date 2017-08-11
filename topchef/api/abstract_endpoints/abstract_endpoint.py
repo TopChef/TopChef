@@ -37,24 +37,33 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     :class:`APIException`, or non-destructively by appending the exception to
     the ``errors`` object. In order to stop execution of the endpoint and
     return an ``error`` response, raise :class:`AbstractEndpoint.Abort`.
+
+    The ``links`` object exists primarily to display a link to the current
+    endpoint. If an endpoint will be paginated, the pagination links should
+    go into this object.
     """
     def __new__(cls, session: Session, *args, **kwargs):
         """
+        Determine the allowed HTTP methods for this endpoint based on the
+        methods that the class defines. These need to be assigned to a
+        ``methods`` list so that Flask can understand which methods are
+        allowed for this endpoint. This list of methods will be read out
+        during ``OPTIONS`` requests to the URL that this endpoint is mapped to
 
         :param session: The database session to use
         :return: The methods to be implemented
         """
-        cls.methods = ['OPTIONS', 'HEAD']
+        cls.methods = {'OPTIONS', 'HEAD'}
         if hasattr(cls, 'get'):
-            cls.methods.append('GET')
+            cls.methods.add('GET')
         if hasattr(cls, 'post'):
-            cls.methods.append('POST')
+            cls.methods.add('POST')
         if hasattr(cls, 'put'):
-            cls.methods.append('PUT')
+            cls.methods.add('PUT')
         if hasattr(cls, 'patch'):
-            cls.methods.append('PATCH')
+            cls.methods.add('PATCH')
         if hasattr(cls, 'delete'):
-            cls.methods.append('DELETE')
+            cls.methods.add('DELETE')
 
         return super(AbstractEndpoint, cls).__new__(cls)
 

@@ -1,7 +1,7 @@
 """
 Contains integration tests for TopChefModels
 """
-from ...integration import IntegrationTestCase
+from tests.integration import IntegrationTestCase
 from topchef.models.service import Service
 
 

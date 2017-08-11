@@ -23,7 +23,7 @@ class Job(BASE):
     results = __table__.c.results  # type: JSON
     parameters = __table__.c.parameters  # type: JSON
     date_submitted = __table__.c.date_submitted  # type: datetime
-    _service_id = __table__.c.service_id
+    service_id = __table__.c.service_id
 
     def __init__(
             self, job_id: UUID, status: JobStatus, parameters: JSON,

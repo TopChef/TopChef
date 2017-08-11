@@ -1,6 +1,6 @@
 from abc import ABCMeta
 
-from ... import IntegrationTestCase
+from tests.integration import IntegrationTestCase
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from topchef.database.models import Service

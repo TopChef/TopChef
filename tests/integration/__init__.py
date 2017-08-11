@@ -1,12 +1,8 @@
 import os
 from unittest import TestCase
 from abc import ABCMeta
-from uuid import uuid4
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-
-from topchef.database import Service
 from topchef.database.schemas import DatabaseSchema
 
 

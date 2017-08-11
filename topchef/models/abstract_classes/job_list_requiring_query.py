@@ -37,6 +37,7 @@ import abc
 from ..interfaces.job_list import JobList
 from sqlalchemy.orm import Query, Session
 from topchef.database.models import Job as DatabaseJob
+from topchef.database.models.job import JobStatus as DatabaseJobStatus
 from typing import Iterator, Sequence
 from collections.abc import AsyncIterator
 from topchef.models.interfaces.job import Job
@@ -47,6 +48,13 @@ from typing import Union
 
 
 class JobListRequiringQuery(JobList, metaclass=abc.ABCMeta):
+    _MODEL_TO_DB_JOB_STATUS = {
+        Job.JobStatus.REGISTERED: DatabaseJobStatus.REGISTERED,
+        Job.JobStatus.WORKING: DatabaseJobStatus.WORKING,
+        Job.JobStatus.COMPLETED: DatabaseJobStatus.COMPLETED,
+        Job.JobStatus.ERROR: DatabaseJobStatus.ERROR
+    }
+
     @property
     @abc.abstractmethod
     def root_job_query(self) -> Query:
@@ -78,7 +86,7 @@ class JobListRequiringQuery(JobList, metaclass=abc.ABCMeta):
         :param job: The parameters of the job to set
         """
         database_job = self._safely_get_database_job(job_id)
-        database_job.status = job.status
+        database_job.status = self._MODEL_TO_DB_JOB_STATUS[job.status]
         database_job.results = job.results
 
         self.session.add(database_job)

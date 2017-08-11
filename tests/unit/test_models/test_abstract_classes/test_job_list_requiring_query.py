@@ -6,7 +6,7 @@ import unittest
 import unittest.mock as mock
 from topchef.models.abstract_classes import JobListRequiringQuery
 from topchef.models.interfaces.job import Job
-from topchef.database.schemas import JobStatus
+from topchef.database.models.job import JobStatus as DatabaseJobStatus
 from sqlalchemy.orm import Session, Query
 from hypothesis import given
 from hypothesis.strategies import uuids, sampled_from, dictionaries, text
@@ -18,6 +18,13 @@ class TestJobListRequiringQuery(unittest.TestCase):
     """
     Contains unit tests for the abstract job requiring a query
     """
+    MODEL_TO_DB_JOB_STATUS = {
+        Job.JobStatus.REGISTERED: DatabaseJobStatus.REGISTERED,
+        Job.JobStatus.WORKING: DatabaseJobStatus.WORKING,
+        Job.JobStatus.COMPLETED: DatabaseJobStatus.COMPLETED,
+        Job.JobStatus.ERROR: DatabaseJobStatus.ERROR
+    }
+
     def setUp(self) -> None:
         """
         Set up mock p, AsyncIterator,arameters for the query, the session, and
@@ -83,13 +90,13 @@ class TestSetItem(TestJobListRequiringQuery):
     Contains unit tests for the ``__setitem__`` method of the job list
     """
     @given(
-        uuids(), sampled_from(JobStatus),
+        uuids(), sampled_from(Job.JobStatus),
         dictionaries(
             keys=text(), values=text()
         )
     )
     def test_that_setitem_sets_the_job_correctly(
-            self, job_id: UUID, job_status: JobStatus,
+            self, job_id: UUID, job_status: Job.JobStatus,
             results: dict
     ):
         """
@@ -103,7 +110,10 @@ class TestSetItem(TestJobListRequiringQuery):
         job.results = results
         self.job_list[job_id] = job
         database_job = self.session.add.call_args[0][0]
-        self.assertEqual(database_job.status, job_status)
+        self.assertEqual(
+            database_job.status,
+            self.MODEL_TO_DB_JOB_STATUS[job_status]
+        )
         self.assertEqual(database_job.results, results)
 
 

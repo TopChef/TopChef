@@ -84,23 +84,23 @@ class TestInitAndNew(TestAbstractEndpoint):
         """
         endpoint = self.ConcreteGetEndpoint(self.session, self.request)
         self.assertEqual(endpoint.database_session, self.session)
-        self.assertEqual(endpoint.methods, ['OPTIONS', 'HEAD', 'GET'])
+        self.assertIn('GET', endpoint.methods)
 
     def test_new_patch_endpoint(self):
         endpoint = self.ConcretePatchEndpoint(self.session, self.request)
-        self.assertEqual(endpoint.methods, ['OPTIONS', 'HEAD', 'PATCH'])
+        self.assertIn('PATCH', endpoint.methods)
 
     def test_new_post_endpoint(self):
         endpoint = self.ConcretePostEndpoint(self.session, self.request)
-        self.assertEqual(endpoint.methods, ['OPTIONS', 'HEAD', 'POST'])
+        self.assertIn('POST', endpoint.methods)
 
     def test_new_put_endpoint(self):
         endpoint = self.ConcretePutEndpoint(self.session, self.request)
-        self.assertEqual(endpoint.methods, ['OPTIONS', 'HEAD', 'PUT'])
+        self.assertIn('PUT', endpoint.methods)
 
     def test_new_delete_endpoint(self):
         endpoint = self.ConcreteDeleteEndpoint(self.session, self.request)
-        self.assertEqual(endpoint.methods, ['OPTIONS', 'HEAD', 'DELETE'])
+        self.assertIn('DELETE', endpoint.methods)
 
 
 class TestDispatchRequest(TestAbstractEndpoint):

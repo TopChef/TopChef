@@ -1,4 +1,5 @@
-from tests.integration import IntegrationTestCaseWithService
+from tests.integration.test_database.test_models import \
+    IntegrationTestCaseWithService
 from topchef.database.models import Job
 from topchef.database.schemas import JobStatus
 from uuid import uuid4
