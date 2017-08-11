@@ -2,37 +2,18 @@
 Describes an endpoint where detailed information about the service can be
 obtained
 """
-from typing import Optional
-from uuid import UUID
-
-from flask import Response, jsonify, Request, request
-from sqlalchemy.orm import Session
-
-from topchef.api.abstract_endpoints import AbstractEndpointWithService
-from topchef.models import Service, ServiceList
+from flask import Response, jsonify
+from topchef.api.abstract_endpoints import AbstractEndpointForService
+from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
+from topchef.models import Service
 from topchef.serializers import JSONSchema
 from topchef.serializers import ServiceDetail as ServiceSerializer
 
 
-class ServiceDetail(AbstractEndpointWithService):
+class ServiceDetail(AbstractEndpointForService):
     """
     Describes the endpoint that returns the details for a particular service
     """
-    def __init__(
-            self,
-            session: Session,
-            flask_request: Request=request,
-            service_list_model: Optional[ServiceList]=None
-    ) -> None:
-        """
-        Create the service list model
-
-        :param session: The database session to use for making the request
-        """
-        super(self.__class__, self).__init__(
-            session, request=flask_request, service_list=service_list_model
-        )
-
     def get(self, service: Service) -> Response:
         """
 
@@ -51,3 +32,12 @@ class ServiceDetail(AbstractEndpointWithService):
         })
         response.status_code = 200
         return response
+
+
+class ServiceDetailForServiceID(
+    ServiceDetail, metaclass=AbstractEndpointForServiceMeta
+):
+    """
+    Contains a mixin to help the web endpoints parse ``service_id`` string
+    as they come raw from the HTTP endpoint
+    """

@@ -1,2 +1,4 @@
 from .abstract_endpoint import AbstractEndpoint
-from .endpoint_with_service import AbstractEndpointWithService
+from .endpoint_with_service_wrapper import AbstractEndpointForServiceMeta
+from .endpoint_with_service_wrapper import AbstractEndpointForService
+from .endpoint_with_service_wrapper import EndpointForServiceIdMeta
