@@ -63,3 +63,9 @@ class TestGet(TestServicesList):
             data['data'],
             serializer_data
         )
+
+
+class TestPost(TestServicesList):
+    """
+    Contains unit tests for the post method
+    """

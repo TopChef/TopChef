@@ -38,8 +38,18 @@ class ServicesList(AbstractEndpoint):
 
     def get(self) -> Response:
         """
+        Returns a list of all services exposed by this API
 
-        :return A Flask response with the appropriate data
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+
+
+        :return: A Flask response with the appropriate data
         """
         response = jsonify({
             'data': self._data, 'meta': self._meta, 'links':

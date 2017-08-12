@@ -159,16 +159,17 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
             mixture of ``400`` and ``500`` series error codes, then the
             error code to return will be ``500``
         """
-        code = reduce(
-            self._error_code_reducer,
-            (error.status_code for error in self.errors)
-        )
         catchall_code = 500
 
-        if code is None:
-            return catchall_code
+        if self.errors:
+            code = reduce(
+                self._error_code_reducer,
+                (error.status_code for error in self.errors)
+            )
         else:
-            return code
+            code = catchall_code
+
+        return code
 
     @property
     def _error_response(self) -> Response:

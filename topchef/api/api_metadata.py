@@ -38,6 +38,66 @@ class APIMetadata(AbstractEndpoint):
 
     def get(self) -> Response:
         """
+        Get the metadata for this API
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "documentation_url": "https://topchef.readthedocs.io/en/latest/",
+                    "maintainer_email": "michalkononenko@gmail.com",
+                    "maintainer_name": "Michal Kononenko",
+                    "source_code_repository_url": "https://www.github.com/MichalKononenko/TopChef",
+                    "version": "0.1dev"
+                },
+                "links": {
+                    "self": "http://localhost:5000/"
+                },
+                "meta": {
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "Describes the JSON schema for describing API metadata",
+                        "properties": {
+                            "documentation_url": {
+                                "title": "documentation_url",
+                                "type": "string"
+                            },
+                            "maintainer_email": {
+                                "title": "maintainer_email",
+                                "type": "string"
+                            },
+                            "maintainer_name": {
+                                "title": "maintainer_name",
+                                "type": "string"
+                            },
+                            "source_code_repository_url": {
+                                "title": "source_code_repository_url",
+                                "type": "string"
+                            },
+                            "version": {
+                                "title": "version",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "documentation_url",
+                            "maintainer_email",
+                            "maintainer_name",
+                            "source_code_repository_url",
+                            "version"
+                        ],
+                        "title": "API Metadata",
+                        "type": "object"
+                    }
+                }
+            }
+
+        :statuscode 200: The request completed successfully
 
         :return: A response containing the metadata
         """

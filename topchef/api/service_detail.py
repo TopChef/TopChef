@@ -18,7 +18,7 @@ class ServiceDetail(AbstractEndpointForService):
         """
 
         :param service: The service for which a response is to be retrieved
-        :return:
+        :return: A flask response with the appropriate data
         """
         serializer = ServiceSerializer()
         serializer_schema = JSONSchema(

@@ -96,6 +96,54 @@ Job List From Query
     :special-members:
     :exclude-members: __dict__, __weakref__, __module__
 
+Database Model Implementations
+------------------------------
+
+API Metadata
+~~~~~~~~~~~~
+
+.. automodule:: topchef.models.api_metadata
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
+
+Job
+~~~
+
+.. automodule:: topchef.models.job
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
+
+Job List
+~~~~~~~~
+
+.. automodule:: topchef.models.job_list
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
+
+Service
+~~~~~~~
+
+.. automodule:: topchef.models.service
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
+
+Service List
+~~~~~~~~~~~~
+
+.. automodule:: topchef.models.service_list
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
+
 Errors
 ------
 

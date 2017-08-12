@@ -72,6 +72,13 @@ class TestAbstractEndpoint(unittest.TestCase):
         def delete(self):
             return jsonify({'status': 'success'})
 
+    class ConcreteGetEndpointWithAbort(AbstractEndpoint):
+        """
+        Contains an endpoint whose get method will throw an ``Abort`` exception
+        """
+        def get(self):
+            raise self.Abort()
+
 
 class TestInitAndNew(TestAbstractEndpoint):
     """
@@ -163,6 +170,20 @@ class TestDispatchRequest(TestAbstractEndpoint):
             'errors', json.loads(response.data.decode('utf-8')).keys()
         )
         self.assertTrue(self.session.commit.called)
+
+    def test_get_abort_exception_thrown(self) -> None:
+        """
+        Tests that the error is correctly handled if an ``Abort`` is thrown
+        in the endpoint
+        """
+        endpoint = self.ConcreteGetEndpointWithAbort(
+            self.session, self.request
+        )
+        response = endpoint.dispatch_request()
+        self.assertEqual(500, response.status_code)
+        self.assertIn(
+            'errors', json.loads(response.data.decode('utf-8')).keys()
+        )
 
     def test_get_error_appended_in_method(self) -> None:
         """
