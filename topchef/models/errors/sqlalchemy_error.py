@@ -1,11 +1,11 @@
 """
 Contains an exception to be thrown if the SQL library acts up
 """
-from topchef.models.interfaces import APIException
+from topchef.models.interfaces import APIError
 from sqlalchemy.exc import SQLAlchemyError
 
 
-class SQLAlchemyException(APIException, Exception):
+class SQLAlchemyError(APIError, Exception):
     """
     Base class for an HTTP exception thrown as a result of a SQLAlchemy error
     """

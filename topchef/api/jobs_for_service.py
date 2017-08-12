@@ -2,15 +2,16 @@
 Maps the ``/services/<service_id>/jobs`` endpoint
 """
 from flask import Response, jsonify
-from topchef.api.abstract_endpoints import AbstractEndpointWithService
+from topchef.api.abstract_endpoints import AbstractEndpointForService
+from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
 from topchef.models import Service
-from topchef.models.exceptions import SerializationError
+from topchef.models.errors import SerializationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
 from topchef.serializers.new_job import NewJobSchema as NewJobSerializer
 
 
-class JobsForServiceEndpoint(AbstractEndpointWithService):
+class JobsForServiceEndpoint(AbstractEndpointForService):
     """
     Describes the endpoint. A ``GET`` request to this endpoint returns all
     the jobs registered for a particular service. A ``POST`` request to this
@@ -69,3 +70,11 @@ class JobsForServiceEndpoint(AbstractEndpointWithService):
             'items': json_schema.dump(JobDetailSerializer())
         }
         return schema
+
+class JobsForServiceID(
+    JobsForServiceEndpoint, metaclass=AbstractEndpointForServiceMeta
+):
+    """
+    Endpoint that maps the web endpoints defined in the superclass to match
+    service ids
+    """

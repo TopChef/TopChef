@@ -1,1 +1,1 @@
-from .job_list_requiring_query import JobListRequiringQuery
+from .job_list_from_query import JobListFromQuery

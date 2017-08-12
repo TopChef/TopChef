@@ -9,7 +9,7 @@ from flask import Request, jsonify, Response, Flask
 from sqlalchemy.orm import Session
 
 from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
-from topchef.models import APIException
+from topchef.models import APIError
 
 
 class TestAbstractEndpoint(unittest.TestCase):
@@ -153,7 +153,7 @@ class TestDispatchRequest(TestAbstractEndpoint):
 
     def test_get_error_thrown_in_method(self) -> None:
         """
-        Tests that the endpoint correctly reports reportable exceptions that
+        Tests that the endpoint correctly reports reportable errors that
         were thrown during the endpoint execution
         """
         endpoint = self.ExplosiveGetEndpoint(self.session, self.request)
@@ -174,7 +174,7 @@ class TestDispatchRequest(TestAbstractEndpoint):
 
     def test_two_400_exceptions(self):
         """
-        Tests that appending two exceptions with different ``4XX`` series
+        Tests that appending two errors with different ``4XX`` series
         HTTP status codes will result in a single request that has a status
         code of ``400``.
         """
@@ -205,9 +205,9 @@ class TestDispatchRequest(TestAbstractEndpoint):
             )
 
         def get(self) -> Response:
-            raise TestDispatchRequest.ConcreteAPIException()
+            raise TestDispatchRequest.ConcreteAPIError()
 
-    class ConcreteAPIException(APIException):
+    class ConcreteAPIError(APIError):
         """
         A generic reportable API exception
         """
@@ -243,7 +243,7 @@ class TestDispatchRequest(TestAbstractEndpoint):
         An endpoint that appends an exception to the error list
         """
         def get(self) -> Response:
-            self.errors.append(TestDispatchRequest.ConcreteAPIException())
+            self.errors.append(TestDispatchRequest.ConcreteAPIError())
             return jsonify({
                 'status':
                     "If you're reading this from the API, you dun goofed!"
@@ -251,23 +251,23 @@ class TestDispatchRequest(TestAbstractEndpoint):
 
     class TwoFourHundredExceptionEndpoint(AbstractEndpoint):
         """
-        Describes an endpoint that throws two ``4XX`` series exceptions
+        Describes an endpoint that throws two ``4XX`` series errors
         """
         def get(self) -> Response:
             self.errors.append(
-                TestDispatchRequest.ConcreteAPIException(499)
+                TestDispatchRequest.ConcreteAPIError(499)
             )
             self.errors.append(
-                TestDispatchRequest.ConcreteAPIException(431)
+                TestDispatchRequest.ConcreteAPIError(431)
             )
             return jsonify(dict())
 
     class FiveHundredExceptionEndpoint(AbstractEndpoint):
         def get(self) -> Response:
             self.errors.append(
-                TestDispatchRequest.ConcreteAPIException(499)
+                TestDispatchRequest.ConcreteAPIError(499)
             )
             self.errors.append(
-                TestDispatchRequest.ConcreteAPIException(501)
+                TestDispatchRequest.ConcreteAPIError(501)
             )
             return jsonify(dict())

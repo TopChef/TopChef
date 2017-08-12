@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from flask import Response, Request, request
 from topchef.models import ServiceList
 from topchef.models.service_list import ServiceList as ServiceListModel
-from topchef.models.exceptions import NotUUIDError, ServiceWithUUIDNotFound
+from topchef.models.errors import NotUUIDError, ServiceWithUUIDNotFound
 from uuid import UUID
 from topchef.models import Service
 from .abstract_endpoint import AbstractEndpoint

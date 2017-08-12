@@ -4,7 +4,7 @@ Contains unit tests for
 """
 import unittest
 import unittest.mock as mock
-from topchef.models.abstract_classes import JobListRequiringQuery
+from topchef.models.abstract_classes import JobListFromQuery
 from topchef.models.interfaces.job import Job
 from topchef.database.models.job import JobStatus as DatabaseJobStatus
 from sqlalchemy.orm import Session, Query
@@ -33,11 +33,11 @@ class TestJobListRequiringQuery(unittest.TestCase):
         self.session = mock.MagicMock(spec=Session)  # type: Session
         self.root_query = mock.MagicMock(spec=Query)  # type: Query
 
-        self.job_list = self.MockJobListRequiringQuery(
+        self.job_list = self.MockJobListFromQuery(
             self.session, self.root_query
         )
 
-    class MockJobListRequiringQuery(JobListRequiringQuery):
+    class MockJobListFromQuery(JobListFromQuery):
         """
         Stubs out the root job query with a mock root job query that will be
         given into this class at initialization

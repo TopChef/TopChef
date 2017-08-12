@@ -15,8 +15,8 @@ class APIMetadata(object, metaclass=abc.ABCMeta):
         """
 
         :return: An email address for the API maintainer. Users should be
-        able to send emails to this address to inform the maintainer of any
-        bugs in the API.
+            able to send emails to this address to inform the maintainer of any
+            bugs in the API.
         """
         raise NotImplementedError()
 
@@ -35,8 +35,8 @@ class APIMetadata(object, metaclass=abc.ABCMeta):
         """
 
         :return: A URL to the repository where the API source code is
-        located. Users should be able to use resources at this URL in order
-        to inspect the source code
+            located. Users should be able to use resources at this URL in order
+            to inspect the source code
         """
         raise NotImplementedError()
 
@@ -55,7 +55,7 @@ class APIMetadata(object, metaclass=abc.ABCMeta):
         """
 
         :return: A URL to the API's documentation. This includes both user
-        documentation such as tutorials, and reference documentation for
-        things like Python API methods
+            documentation such as tutorials, and reference documentation for
+            things like Python API methods
         """
         raise NotImplementedError()

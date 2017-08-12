@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from .interfaces import Service as ServiceInterface
 from .interfaces import JobList as JobListInterface
-from .abstract_classes import JobListRequiringQuery
+from .abstract_classes import JobListFromQuery
 from .job import Job
 from ..database.models import Job as DatabaseJob
 from ..database.models import Service as DatabaseService
@@ -154,7 +154,7 @@ class Service(ServiceInterface):
             self._session_getter_for_model
         )
 
-    class _ListOfJobsForService(JobListRequiringQuery):
+    class _ListOfJobsForService(JobListFromQuery):
         def __init__(self, service: ServiceInterface, db_session: Session):
             super(self.__class__, self).__init__(db_session)
             self.service_id = service.id

@@ -46,7 +46,7 @@ class JobList(MutableMapping, AsyncIterable, metaclass=abc.ABCMeta):
         """
 
         :return: An iterator that can iterate synchronously through all the
-        jobs in the set
+            jobs in the set
         """
         raise NotImplementedError()
 

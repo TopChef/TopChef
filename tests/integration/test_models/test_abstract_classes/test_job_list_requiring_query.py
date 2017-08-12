@@ -4,7 +4,7 @@ Contains unit tests for the ``JobListRequiringQuery`` abstract class
 import asyncio
 from uuid import uuid4
 from tests.integration.test_models import IntegrationTestCaseWithModels
-from topchef.models.abstract_classes import JobListRequiringQuery
+from topchef.models.abstract_classes import JobListFromQuery
 from sqlalchemy.orm import Query
 from topchef.database.models import Job as DatabaseJob
 from topchef.database.schemas.job_status import JobStatus as DatabaseJobStatus
@@ -23,7 +23,7 @@ class TestJobListRequiringQuery(IntegrationTestCaseWithModels):
         self.job_list = self.ConcreteJobList(self.session)
         self.invalid_job_id = uuid4()
 
-    class ConcreteJobList(JobListRequiringQuery):
+    class ConcreteJobList(JobListFromQuery):
         """
         An instance of the job list that will work for all the jobs placed
         into the models

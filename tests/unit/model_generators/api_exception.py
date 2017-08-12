@@ -1,7 +1,7 @@
 """
 Contains a generator for APIExceptions
 """
-from topchef.models import APIException as APIExceptionInterface
+from topchef.models import APIError as APIExceptionInterface
 from hypothesis.strategies import composite, integers, text
 
 __all__ = ['api_exceptions']

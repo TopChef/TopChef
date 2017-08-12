@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 import abc
 from typing import List, Iterable, Callable, Optional, Any
-from topchef.models import APIException
-from topchef.models.exceptions import MethodNotAllowedException
-from topchef.models.exceptions import SQLAlchemyException
+from topchef.models import APIError
+from topchef.models.errors import MethodNotAllowedError
+from topchef.models.errors import SQLAlchemyError
 from topchef.serializers import APIException as ExceptionSerializer
 from topchef.serializers import JSONSchema
 
@@ -23,10 +23,10 @@ __all__ = ['AbstractEndpoint']
 
 class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     """
-    Defines the abstract endpoint, taking care of exceptions.
+    Defines the abstract endpoint, taking care of errors.
 
     Error reporting becomes a little more complicated when dealing with HTTP
-    APIs, as the separation between errors and exceptions becomes more
+    APIs, as the separation between errors and errors becomes more
     pronounced. For instance, when de-serializing invalid user input,
     the error that results from validation must be reported, but the program
     is still in a well-determined state that precludes the need for throwing
@@ -84,6 +84,11 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     def dispatch_request(self, *args, **kwargs) -> Response:
         """
         Create a session, and dispatch the request to the appropriate methods
+
+        :param args: The function arguments built by Flask that are to be
+            sent to the method called up by this dispatch
+        :param kwargs: The keyword arguments built by Flask, that are going
+            to be sent to the method dispatched here
         """
         if self._request.method not in self.methods:
             return self._get_method_not_allowed_response(
@@ -94,7 +99,7 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
 
         try:
             response = method(*args, **kwargs)
-        except APIException as error:
+        except APIError as error:
             self.errors.append(error)
             response = self._error_response
         except self.Abort:
@@ -108,15 +113,23 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
         return response
 
     @property
-    def links(self):
+    def links(self) -> dict:
+        """
+
+        :return: The relevant links required for the endpoint
+        """
         return {'self': url_for(self.__class__.__name__, _external=True)}
 
     @property
     def database_session(self) -> Session:
+        """
+
+        :return: The SQLAlchemy session used to contact the database
+        """
         return self._session
 
     @property
-    def errors(self) -> List[APIException]:
+    def errors(self) -> List[APIError]:
         """
 
         :return: The errors encountered in the API
@@ -125,6 +138,11 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
 
     @property
     def _serialized_errors(self) -> List[dict]:
+        """
+
+        :return: The errors encountered in the API after having been
+            serialized
+        """
         serializer = ExceptionSerializer(many=True)
         return serializer.dump(self.errors)
 
@@ -132,7 +150,14 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     def _error_status_code(self) -> int:
         """
 
-        :return: The status code that should be thrown for an error response
+        :return: The status code that should be thrown for an error response.
+            The status code to be returned is the most general one for the
+            errors provided. If all the errors have the same status code,
+            then the status code to return is the status code for the
+            errors. If all the errors are 400-series status codes, then the
+            error code that will be returned is ``400``. If there is a
+            mixture of ``400`` and ``500`` series error codes, then the
+            error code to return will be ``500``
         """
         code = reduce(
             self._error_code_reducer,
@@ -147,7 +172,14 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
 
     @property
     def _error_response(self) -> Response:
-        response = jsonify({'errors': self._serialized_errors})
+        """
+
+        :return: A response containing the errors that were encountered
+            while working with the API
+        """
+        response = jsonify({
+            'errors': self._serialized_errors
+        })
         response.status_code = self._error_status_code
         return response
 
@@ -160,7 +192,7 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
         :param allowed_methods: The allowed methods on the API
         :return: A Flask response indicating why the error was thrown
         """
-        exception = MethodNotAllowedException(
+        exception = MethodNotAllowedError(
             method, allowed_methods
         )
         serializer = ExceptionSerializer()
@@ -191,7 +223,7 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
             session.commit()
         except SQLAlchemyError as error:
             session.rollback()
-            self.errors.append(SQLAlchemyException(error))
+            self.errors.append(SQLAlchemyError(error))
 
     @staticmethod
     def _error_code_reducer(first_code: int, second_code: int) -> int:

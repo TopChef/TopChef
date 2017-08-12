@@ -7,7 +7,7 @@ from uuid import UUID
 from flask import Response, jsonify
 from topchef.api.abstract_endpoints import EndpointForServiceIdMeta
 from topchef.models import ServiceList, Service
-from topchef.models.exceptions import NotUUIDError, ServiceWithUUIDNotFound
+from topchef.models.errors import NotUUIDError, ServiceWithUUIDNotFound
 from hypothesis import given, assume, settings
 from hypothesis.strategies import text, uuids
 from tests.unit.model_generators.service_list import service_lists

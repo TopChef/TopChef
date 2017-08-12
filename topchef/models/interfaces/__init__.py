@@ -6,4 +6,4 @@ from .service_list import ServiceList
 from .job import Job
 from .job_list import JobList
 from .service import Service
-from .api_exception import APIException
+from .api_error import APIError

@@ -3,10 +3,10 @@ Contains an exception thrown if a service is not found
 """
 import abc
 from uuid import UUID
-from topchef.models.interfaces import APIException
+from topchef.models.interfaces import APIError
 
 
-class ServiceNotFoundException(APIException, metaclass=abc.ABCMeta):
+class ServiceNotFoundError(APIError, metaclass=abc.ABCMeta):
     """
     Thrown if a service with a particular ID is not found
     """
@@ -38,7 +38,7 @@ class ServiceNotFoundException(APIException, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
 
-class ServiceWithUUIDNotFound(ServiceNotFoundException):
+class ServiceWithUUIDNotFound(ServiceNotFoundError):
     """
     Thrown if a service with a particular UUID is not found
     """

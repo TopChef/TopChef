@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
 from topchef.models import ServiceList as ServiceListInterface
-from topchef.models.exceptions import DeserializationError, SerializationError
+from topchef.models.errors import DeserializationError, SerializationError
 from topchef.models.service_list import ServiceList as ServiceListModel
 from topchef.serializers import JSONSchema
 from topchef.serializers import NewService as NewServiceSerializer

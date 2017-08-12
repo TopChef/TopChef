@@ -1,11 +1,11 @@
 """
 Contains the exception to be thrown if a method is not allowed
 """
-from topchef.models.interfaces import APIException
+from topchef.models.interfaces import APIError
 from typing import Iterable
 
 
-class MethodNotAllowedException(APIException, Exception):
+class MethodNotAllowedError(APIError, Exception):
     """
     Describes an exception thrown if an HTTP method is called on an endpoint
     that does not have this method defined

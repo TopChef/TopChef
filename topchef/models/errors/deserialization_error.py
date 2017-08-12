@@ -3,10 +3,10 @@ Describes a reportable exception that is thrown if Marshmallow or jsonschema
 is unable to deserialize an object provided into the API. This is a
 client-side error.
 """
-from topchef.models import APIException
+from topchef.models import APIError
 
 
-class DeserializationError(APIException):
+class DeserializationError(APIError):
     """
     Describes the exception
     """

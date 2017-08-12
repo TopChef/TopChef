@@ -82,7 +82,7 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
         """
 
         :return: A JSON schema representing the set of all valid JSON
-        objects that can serve as parameters for this service's jobs
+            objects that can serve as parameters for this service's jobs
         """
         raise NotImplementedError()
 
@@ -92,7 +92,7 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
         """
 
         :return: A JSON schema representing the set of all valid JSON
-        objects that can serve as results for this service's jobs
+            objects that can serve as results for this service's jobs
         """
         raise NotImplementedError()
 
@@ -102,12 +102,12 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
         """
 
         :return: A user-settable flag to indicate whether the service is
-        available or not. Clients consuming a service SHOULD flip this flag
-        to ``True`` when they are ready to accept services. Clients SHOULD
-        flip this flag to ``False`` when they are shutting down. Clients
-        posting jobs to this service MAY use this flag to check whether the
-        service is available. Jobs posted to an unavailable service will
-        still be pushed to the service's queue
+            available or not. Clients consuming a service SHOULD flip this flag
+            to ``True`` when they are ready to accept services. Clients SHOULD
+            flip this flag to ``False`` when they are shutting down. Clients
+            posting jobs to this service MAY use this flag to check whether the
+            service is available. Jobs posted to an unavailable service will
+            still be pushed to the service's queue
         """
         raise NotImplementedError()
 
@@ -117,12 +117,12 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
         """
 
         :param service_available: The state to which the
-        ``is_service_available`` flag is to be set
+            ``is_service_available`` flag is to be set
         """
         raise NotImplementedError()
 
     @classmethod
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def new(
             cls,
             name: str,

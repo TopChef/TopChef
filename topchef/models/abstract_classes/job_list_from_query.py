@@ -5,14 +5,14 @@ similar code. The only difference between these two types is the "base" SQL
 query on which they operate. In order to get all the jobs on the API,
 I would have to run
 
-.. sql::
+.. code-block:: sql
 
     SELECT * FROM jobs
 
 Whereas to get all the jobs for a particular service (let's say with ID =
 1), I would have to run
 
-.. sql::
+.. code-block:: sql
 
     SELECT * FROM jobs
     INNER JOIN services ON jobs.service_id == service.service_id
@@ -20,13 +20,13 @@ Whereas to get all the jobs for a particular service (let's say with ID =
 
 The former query would map to SQLAlchemy as
 
-.. python::
+.. code-block:: python
 
     session.query(Job).all()
 
 and the latter would map to
 
-.. python::
+.. code-block:: python
 
     session.query(Job).filter_by(service=Service).all()
 
@@ -47,7 +47,7 @@ from uuid import UUID
 from typing import Union
 
 
-class JobListRequiringQuery(JobList, metaclass=abc.ABCMeta):
+class JobListFromQuery(JobList, metaclass=abc.ABCMeta):
     _MODEL_TO_DB_JOB_STATUS = {
         Job.JobStatus.REGISTERED: DatabaseJobStatus.REGISTERED,
         Job.JobStatus.WORKING: DatabaseJobStatus.WORKING,

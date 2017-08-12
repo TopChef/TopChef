@@ -2,10 +2,10 @@
 Describes an error to be thrown if the server is provided with some invalid
 data from the API
 """
-from topchef.models import APIException
+from topchef.models import APIError
 
 
-class SerializationError(APIException):
+class SerializationError(APIError):
     """
     Describes an error thrown if the server receives an object that it
     cannot serialize with a particular serializer. This is a ``500`` series

@@ -8,4 +8,4 @@ from .interfaces import JobList
 from .interfaces import Service
 from .interfaces import ServiceList
 from .interfaces import APIMetadata
-from .interfaces import APIException
+from .interfaces import APIError

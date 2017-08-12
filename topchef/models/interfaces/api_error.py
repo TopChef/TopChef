@@ -5,7 +5,7 @@ at some point.
 import abc
 
 
-class APIException(Exception, metaclass=abc.ABCMeta):
+class APIError(Exception, metaclass=abc.ABCMeta):
     """
     Describes the interface for working with an API Exception.
     """
@@ -15,7 +15,7 @@ class APIException(Exception, metaclass=abc.ABCMeta):
 
         :return: The status code that should ideally be associated with this
             exception. For instance, if a service is not found, the status code
-            for the error is a ``404``. If multiple exceptions are thrown of
+            for the error is a ``404``. If multiple errors are thrown of
             a particular exception series, then the most general status code
             will be returned. For instance, if two errors are ``404`` and
             ``403``, then the error returned will be ``400``. If both
@@ -29,7 +29,7 @@ class APIException(Exception, metaclass=abc.ABCMeta):
         """
 
         :return: The title associated with this exception. This should be
-        common across exceptions of a particular type
+            common across errors of a particular type
         """
         raise NotImplementedError()
 

@@ -1,7 +1,7 @@
-from topchef.models.interfaces import APIException
+from topchef.models.interfaces import APIError
 
 
-class NotUUIDError(APIException):
+class NotUUIDError(APIError):
     def __init__(self, not_a_uuid: str) -> None:
         """
 
