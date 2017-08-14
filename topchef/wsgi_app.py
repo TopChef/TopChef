@@ -4,7 +4,8 @@ Contains a factory for making WSGI applications
 import abc
 from flask import Flask
 from .api import APIMetadata, ServicesList, ServiceDetail
-from .api import JobsList
+from .api import JobsList, JobsForService, JobQueueForService
+from .api import NextJob as NextJobEndpoint
 from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -53,15 +54,33 @@ class ProductionWSGIAppFactory(
             )
         )
         self._app.add_url_rule(
-            '/service/<service_id>',
+            '/services/<service_id>',
             view_func=ServiceDetail.as_view(
                 ServiceDetail.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/services/<service_id>/jobs/queue',
+            view_func=JobQueueForService.as_view(
+                JobQueueForService.__name__, self._session_factory()
             )
         )
         self._app.add_url_rule(
             '/jobs',
             view_func=JobsList.as_view(
                 JobsList.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/services/<service_id>/jobs',
+            view_func=JobsForService.as_view(
+                JobsForService.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/services/<service_id>/jobs/next',
+            view_func=NextJobEndpoint.as_view(
+                NextJobEndpoint.__name__, self._session_factory()
             )
         )
 

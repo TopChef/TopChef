@@ -42,7 +42,7 @@ class Job(BASE):
         """
 
         :param Service service: The service for which this job is being
-        created.
+            created.
         :param JSON parameters: The job parameters
         :return: The newly-created job
         """

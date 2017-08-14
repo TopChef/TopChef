@@ -16,3 +16,6 @@ from .abstract_endpoint import AbstractEndpoint
 from .endpoint_for_service import AbstractEndpointForServiceMeta
 from .endpoint_for_service import AbstractEndpointForService
 from .endpoint_for_service import EndpointForServiceIdMeta
+from .endpoint_for_job import EndpointForJobIdMeta
+from .endpoint_for_job import AbstractEndpointForJob
+from .endpoint_for_job import AbstractEndpointForJobMeta

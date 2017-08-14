@@ -5,12 +5,12 @@ as well as providing a ``links`` object containing the endpoint to itself.
 """
 from functools import reduce
 from flask import Response, jsonify
-from flask.views import View, MethodViewType
+from flask.views import View, http_method_funcs
 from flask import url_for, Request
 from flask import request as flask_request
 from sqlalchemy.orm import Session
 import abc
-from typing import List, Iterable, Callable, Optional, Any
+from typing import List, Iterable, Callable, Optional, Any, Set
 from topchef.models import APIError
 from topchef.models.errors import MethodNotAllowedError
 from topchef.models.errors import SQLAlchemyError
@@ -21,10 +21,45 @@ from topchef.serializers import JSONSchema
 __all__ = ['AbstractEndpoint']
 
 
-class AbstractMethodViewType(abc.ABCMeta, MethodViewType):
+class AbstractMethodViewType(abc.ABCMeta):
     """
     Maps the class for abstract method views
     """
+    def __new__(mcs, name, bases, namespace: dict) -> type:
+        if 'methods' not in namespace.keys():
+            namespace['methods'] = mcs._get_methods_from_bases(bases)
+            namespace['methods'].extend(
+                mcs._get_methods_from_namespace(namespace)
+            )
+
+        return abc.ABCMeta.__new__(mcs, name, bases, namespace)
+
+    def __init__(cls, name, bases, namespace: dict) -> None:
+        super(AbstractMethodViewType, cls).__init__(name, bases, namespace)
+
+    @staticmethod
+    def _get_methods_from_bases(bases: Iterable[type]):
+        available_methods = set()
+        for base in bases:
+            if hasattr(base, 'methods'):
+                AbstractMethodViewType._update_from_base(
+                    base, available_methods
+                )
+        return list(available_methods)
+
+    @staticmethod
+    def _update_from_base(
+            base: type, available_methods: Set[str]
+    ) -> None:
+        if base.methods is not None:
+            available_methods.update(method for method in base.methods)
+
+    @staticmethod
+    def _get_methods_from_namespace(namespace: dict):
+        attributes = http_method_funcs
+        for function_name in attributes:
+            if function_name in namespace.keys():
+                yield function_name.upper()
 
 
 class AbstractEndpoint(View, metaclass=AbstractMethodViewType):

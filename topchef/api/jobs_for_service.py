@@ -39,7 +39,7 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
         :param service: The service for which the new job is to be made
         :return:
         """
-        data, errors = NewJobSerializer().load(self._request.json)
+        data, errors = NewJobSerializer().load(self.request_json)
         if errors:
             self.errors.extend(SerializationError(error) for error in errors)
             raise self.Abort()
@@ -70,6 +70,7 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             'items': json_schema.dump(JobDetailSerializer())
         }
         return schema
+
 
 class JobsForServiceID(
     JobsForServiceEndpoint, metaclass=AbstractEndpointForServiceMeta

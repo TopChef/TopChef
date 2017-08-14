@@ -7,8 +7,8 @@ Using this package along with SQLAlchemy should allow querying of all the
 resources in the database. This package alone DOES NOT guarantee that all
 the models will be self-consistent, as this codebase allows resources to
 span multiple storage systems. Since each type of resource is represented by
- a model class, the onus is on the developer to make sure that resources are
-  consistent when loaded from multiple storage systems.
+a model class, the onus is on the developer to make sure that resources are
+consistent when loaded from multiple storage systems.
 
 For example, if a ``Service`` has both a record in a MySQL database, and a
 ``job_registration_schema`` stored on a MongoDB instance, the ``Service``
