@@ -21,6 +21,7 @@ class TestEndpointForService(unittest.TestCase):
         """
         A type that uses the metaclass
         """
+
         def __init__(self, service_list: ServiceList) -> None:
             self._service_list = service_list
             self._service = None

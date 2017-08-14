@@ -4,10 +4,10 @@ Contains unit tests for the ``/services/<service_id>`` endpoint
 import json
 import unittest
 import unittest.mock as mock
-from topchef.api import ServiceDetail
+from topchef.api.service_detail import ServiceDetail
 from sqlalchemy.orm import Session
 from flask import Flask, Request
-from hypothesis import given
+from hypothesis import given, settings
 from topchef.models import Service, ServiceList
 from topchef.serializers import ServiceDetail as ServiceSerializer
 from tests.unit.model_generators.service import services
@@ -51,6 +51,7 @@ class TestGet(TestServiceDetail):
     Contains unit tests for the ``get`` method
     """
     @given(services())
+    @settings(perform_health_check=False)
     def test_get(self, service: Service):
         endpoint = ServiceDetail(
             self.session, self.request, self.service_list

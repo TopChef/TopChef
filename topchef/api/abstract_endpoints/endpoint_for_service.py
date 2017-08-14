@@ -12,7 +12,7 @@ from topchef.models.errors import NotUUIDError, ServiceWithUUIDNotFound
 from uuid import UUID
 from topchef.models import Service
 from .abstract_endpoint import AbstractEndpoint, AbstractMethodViewType
-from typing import Union, Optional
+from typing import Union, Optional, Iterable
 
 
 class EndpointForServiceIdMeta(AbstractMethodViewType):
@@ -27,6 +27,9 @@ class EndpointForServiceIdMeta(AbstractMethodViewType):
         :param namespace: The ``__dict__`` of the instance to be created
         :return:
         """
+        if 'methods' not in namespace.keys():
+            namespace['methods'] = mcs._get_methods_from_bases(bases)
+
         return super().__new__(mcs, name, bases, namespace)
 
     def __init__(cls, name, bases, namespace) -> None:
@@ -45,6 +48,14 @@ class EndpointForServiceIdMeta(AbstractMethodViewType):
             cls.service_list = namespace['service_list']
 
         cls._decorate_endpoints()
+
+    @staticmethod
+    def _get_methods_from_bases(bases: Iterable[type]):
+        available_methods = set()
+        for base in bases:
+            if hasattr(base, 'methods'):
+                available_methods.update(method for method in base.methods)
+        return list(available_methods)
 
     def _service_decorator(cls, function_to_decorate):
         """
