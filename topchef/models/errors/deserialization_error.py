@@ -10,13 +10,16 @@ class DeserializationError(APIError):
     """
     Describes the exception
     """
-    def __init__(self, validator_error_message: str) -> None:
+    def __init__(self, source: str, validator_error_message: str) -> None:
         """
 
+        :param source: The source from where the error came
         :param validator_error_message: The error message reported by the
             validator
         """
-        self._message = validator_error_message
+        self._message = "Valdation of key '%s' threw error '%s'."  % (
+            source, validator_error_message
+        )
 
     @property
     def status_code(self) -> int:

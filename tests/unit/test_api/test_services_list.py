@@ -9,7 +9,8 @@ from tests.unit.test_api import TestAPI
 import unittest.mock as mock
 from sqlalchemy.orm import Session
 from topchef.api import ServicesList
-from hypothesis import given
+from hypothesis import given, assume
+from hypothesis.strategies import composite, text, dictionaries
 from tests.unit.model_generators.service_list import service_lists
 
 
@@ -65,7 +66,51 @@ class TestGet(TestServicesList):
         )
 
 
+@composite
+def _valid_post_requests(
+        draw,
+        names: str=text(),
+        descriptions: str=text(),
+        job_registration_schemas: dict=dictionaries(text(), text()),
+        job_result_schemas: dict=dictionaries(text(), text())
+) -> dict:
+    return {
+        'name': draw(names),
+        'description': draw(descriptions),
+        'job_registration_schema': draw(job_registration_schemas),
+        'job_result_schema': draw(job_result_schemas)
+    }
+
+
 class TestPost(TestServicesList):
     """
     Contains unit tests for the post method
     """
+
+    @given(_valid_post_requests())
+    def test_valid_post(self, request_body: dict):
+        request = mock.MagicMock(spec=Request)
+        request.get_json = mock.MagicMock(return_value=request_body)
+        endpoint = ServicesList(
+            self.session, request
+        )
+        response = endpoint.post()
+        self.assertEqual(response.status_code, 201)
+
+    @given(dictionaries(text(), text()))
+    def test_invalid_post(self, request_body: dict) -> None:
+        assume("name" not in request_body.keys())
+        assume("description" not in request_body.keys())
+        assume("job_registration_schema" not in request_body.keys())
+        assume("job_result_schema" not in request_body.keys())
+
+        request = mock.MagicMock(spec=Request)
+        request.get_json = mock.MagicMock(return_value=request_body)
+        endpoint = ServicesList(
+            self.session, request
+        )
+
+        with self.assertRaises(endpoint.Abort):
+            endpoint.post()
+
+        self.assertTrue(endpoint.errors)

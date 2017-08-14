@@ -64,8 +64,8 @@ class ServicesList(AbstractEndpoint):
         :return: A flask response indicating whether creation of the service
             was successful or not
         """
-        serializer = NewServiceSerializer(strict=True, many=False)
-        data, errors = serializer.load(request.json)
+        serializer = NewServiceSerializer(strict=False, many=False)
+        data, errors = serializer.load(self._request.get_json())
 
         if errors:
             self._report_client_serialization_errors(errors)
@@ -113,8 +113,12 @@ class ServicesList(AbstractEndpoint):
             )
         }
 
-    def _report_client_serialization_errors(self, errors: list) -> None:
-        self.errors.extend(DeserializationError(error) for error in errors)
+    def _report_client_serialization_errors(self, errors: dict) -> None:
+        self.errors.extend(
+            DeserializationError(
+                source, errors[source]
+            ) for source in errors.keys()
+        )
 
     def _report_server_serialization_errors(self, errors: list) -> None:
         self.errors.extend(SerializationError(error) for error in errors)
