@@ -7,3 +7,4 @@ from .service_not_found_error import ServiceWithUUIDNotFound
 from .not_uuid_error import NotUUIDError
 from .deserialization_error import DeserializationError
 from .serialization_error import SerializationError
+from .request_not_json_error import RequestNotJSONError

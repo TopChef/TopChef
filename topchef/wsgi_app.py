@@ -48,20 +48,19 @@ class ProductionWSGIAppFactory(
         )
         self._app.add_url_rule(
             '/services',
-            methods=["GET", "POST"],
             view_func=ServicesList.as_view(
                 ServicesList.__name__, self._session_factory()
             )
         )
         self._app.add_url_rule(
             '/service/<service_id>',
-            methods=["GET", "POST"],
             view_func=ServiceDetail.as_view(
                 ServiceDetail.__name__, self._session_factory()
             )
         )
         self._app.add_url_rule(
-            '/jobs', view_func=JobsList.as_view(
+            '/jobs',
+            view_func=JobsList.as_view(
                 JobsList.__name__, self._session_factory()
             )
         )

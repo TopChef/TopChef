@@ -5,23 +5,29 @@ as well as providing a ``links`` object containing the endpoint to itself.
 """
 from functools import reduce
 from flask import Response, jsonify
-from flask.views import View
+from flask.views import View, MethodViewType
 from flask import url_for, Request
 from flask import request as flask_request
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 import abc
 from typing import List, Iterable, Callable, Optional, Any
 from topchef.models import APIError
 from topchef.models.errors import MethodNotAllowedError
 from topchef.models.errors import SQLAlchemyError
+from topchef.models.errors import RequestNotJSONError
 from topchef.serializers import APIException as ExceptionSerializer
 from topchef.serializers import JSONSchema
 
 __all__ = ['AbstractEndpoint']
 
 
-class AbstractEndpoint(View, metaclass=abc.ABCMeta):
+class AbstractMethodViewType(abc.ABCMeta, MethodViewType):
+    """
+    Maps the class for abstract method views
+    """
+
+
+class AbstractEndpoint(View, metaclass=AbstractMethodViewType):
     """
     Defines the abstract endpoint, taking care of errors.
 
@@ -42,31 +48,6 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
     endpoint. If an endpoint will be paginated, the pagination links should
     go into this object.
     """
-    def __new__(cls, session: Session, *args, **kwargs):
-        """
-        Determine the allowed HTTP methods for this endpoint based on the
-        methods that the class defines. These need to be assigned to a
-        ``methods`` list so that Flask can understand which methods are
-        allowed for this endpoint. This list of methods will be read out
-        during ``OPTIONS`` requests to the URL that this endpoint is mapped to
-
-        :param session: The database session to use
-        :return: The methods to be implemented
-        """
-        cls.methods = {'OPTIONS', 'HEAD'}
-        if hasattr(cls, 'get'):
-            cls.methods.add('GET')
-        if hasattr(cls, 'post'):
-            cls.methods.add('POST')
-        if hasattr(cls, 'put'):
-            cls.methods.add('PUT')
-        if hasattr(cls, 'patch'):
-            cls.methods.add('PATCH')
-        if hasattr(cls, 'delete'):
-            cls.methods.add('DELETE')
-
-        return super(AbstractEndpoint, cls).__new__(cls)
-
     def __init__(
             self, session: Session, request: Request=flask_request
     ) -> None:
@@ -111,6 +92,18 @@ class AbstractEndpoint(View, metaclass=abc.ABCMeta):
             response = self._error_response
 
         return response
+
+    @property
+    def request_json(self) -> dict:
+        """
+
+        :return: The JSON in the request body, if it exists
+        """
+        json = self._request.get_json(cache=True)
+        if json is None:
+            raise RequestNotJSONError()
+        else:
+            return json
 
     @property
     def links(self) -> dict:

@@ -60,12 +60,21 @@ class ServicesList(AbstractEndpoint):
 
     def post(self) -> Response:
         """
+        Create a new service
+
+        **Example Request**
+
+        POST /services HTTP/1.1
+        Host: example.com
+        Content-Type: application/json
+
+
 
         :return: A flask response indicating whether creation of the service
             was successful or not
         """
         serializer = NewServiceSerializer(strict=False, many=False)
-        data, errors = serializer.load(self._request.get_json())
+        data, errors = serializer.load(self.request_json)
 
         if errors:
             self._report_client_serialization_errors(errors)
@@ -123,7 +132,7 @@ class ServicesList(AbstractEndpoint):
     def _report_server_serialization_errors(self, errors: list) -> None:
         self.errors.extend(SerializationError(error) for error in errors)
 
-    def _make_service_from_data(self, data) -> Response:
+    def _make_service_from_data(self, data: dict) -> Response:
         self.service_list.new(
             data['name'],
             data['description'],

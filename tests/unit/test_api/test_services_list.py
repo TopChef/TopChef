@@ -9,6 +9,7 @@ from tests.unit.test_api import TestAPI
 import unittest.mock as mock
 from sqlalchemy.orm import Session
 from topchef.api import ServicesList
+from topchef.models.errors import RequestNotJSONError
 from hypothesis import given, assume
 from hypothesis.strategies import composite, text, dictionaries
 from tests.unit.model_generators.service_list import service_lists
@@ -114,3 +115,14 @@ class TestPost(TestServicesList):
             endpoint.post()
 
         self.assertTrue(endpoint.errors)
+
+    def test_post_request_not_json(self) -> None:
+        """
+
+        """
+        self.request.get_json = mock.MagicMock(return_value=None)
+        endpoint = ServicesList(
+            self.session, self.request
+        )
+        with self.assertRaises(RequestNotJSONError):
+            endpoint.post()

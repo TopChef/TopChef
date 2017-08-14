@@ -11,11 +11,11 @@ from topchef.models.service_list import ServiceList as ServiceListModel
 from topchef.models.errors import NotUUIDError, ServiceWithUUIDNotFound
 from uuid import UUID
 from topchef.models import Service
-from .abstract_endpoint import AbstractEndpoint
+from .abstract_endpoint import AbstractEndpoint, AbstractMethodViewType
 from typing import Union, Optional
 
 
-class EndpointForServiceIdMeta(type):
+class EndpointForServiceIdMeta(AbstractMethodViewType):
     """
     A metaclass for getting the service
     """
