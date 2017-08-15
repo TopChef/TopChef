@@ -13,6 +13,7 @@ from uuid import UUID
 from topchef.models import Service
 from .abstract_endpoint import AbstractEndpoint, AbstractMethodViewType
 from typing import Union, Optional
+from flask import url_for
 
 
 class EndpointForServiceIdMeta(AbstractMethodViewType):
@@ -110,3 +111,7 @@ class AbstractEndpointForService(
     @property
     def service_list(self) -> ServiceList:
         return self._service_list
+
+    def self_url(self, service: Service) -> str:
+        return url_for(self.__class__.__name__, service_id=service.id,
+                       _external=True)

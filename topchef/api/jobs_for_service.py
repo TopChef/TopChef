@@ -5,7 +5,7 @@ from flask import Response, jsonify
 from topchef.api.abstract_endpoints import AbstractEndpointForService
 from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
 from topchef.models import Service
-from topchef.models.errors import SerializationError
+from topchef.models.errors import DeserializationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
 from topchef.serializers.new_job import NewJobSchema as NewJobSerializer
@@ -20,6 +20,12 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
     polled
     """
     def get(self, service: Service) -> Response:
+        """
+        Get the list of
+
+        :param service: The service for which jobs are to be retrieved
+        :return: A flask response containing the data to display to the user
+        """
         serializer = JobDetailSerializer()
         response = jsonify({
             'data': serializer.dump(service.jobs, many=True).data,
@@ -27,32 +33,92 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
                 'new_job_schema': self._new_job_schema(service),
                 'data_schema': self._data_schema
             },
-            'links': self.links
+            'links': {'self': self.self_url(service)}
         })
         response.status_code = 200
         return response
 
     def post(self, service: Service) -> Response:
         """
-        Create a new job
+        Create a new job. The request must satisfy the schema specified in the
+        key ``meta/new_job_schema``.
+
+        **Example Request**
+
+        .. sourcecode:: http
+
+            POST /services/668ac2ea-063d-4122-ba7a-97a3e8e46a8a/jobs HTTP/1.1
+            Content-Type: application/json
+
+            {
+                "parameters": {
+                    "experiment_type": "RABI",
+                    "wait_time": 500e-9
+                }
+            }
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 201 CREATED
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                    "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                    "parameters": {
+                      "experiment_type": "RABI",
+                      "wait_time": 500e-9,
+                    },
+                    "results": null,
+                    "status": "REGISTERED"
+                }
+                "meta": "new job ID is b0b58425-165f-4add-97b0-86da6b38757f"
+            }
+
+        :statuscode 201: The job was successfully created
+        :statuscode 400: The job could not be created.
+        :statuscode 404: A service with the ID could not be found
 
         :param service: The service for which the new job is to be made
         :return:
         """
         data, errors = NewJobSerializer().load(self.request_json)
         if errors:
-            self.errors.extend(SerializationError(error) for error in errors)
+            self.errors.extend(
+                DeserializationError(key, errors[key]) for key in errors.keys()
+            )
             raise self.Abort()
 
         new_job = service.new_job(data['parameters'])
 
-        response = jsonify({'meta': 'new job ID is %s' % new_job.id})
+        job_data_serializer = JobDetailSerializer()
+
+        response = jsonify({
+            'data': job_data_serializer.dump(new_job).data,
+            'meta': 'new job ID is %s' % new_job.id
+        })
         response.status_code = 201
         return response
 
     @staticmethod
     def _new_job_schema(service: Service) -> dict:
-        return service.job_registration_schema
+        json_schema = JSONSchema(
+            title='New Job Schema',
+            description='The schema that a POST request must satisfy in '
+                        'order to create a new job')
+        schema = {
+            'title': json_schema.title,
+            'description': json_schema.description,
+            '$schema': json_schema.schema,
+            'type': 'object',
+            'properties': {
+                'parameters': service.job_registration_schema
+            }
+        }
+        return schema
 
     @property
     def _data_schema(self) -> dict:

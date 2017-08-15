@@ -28,7 +28,7 @@ class ServiceDetail(AbstractEndpointForService):
         response = jsonify({
             'data': serializer.dump(service, many=False).data,
             'meta': {'service_schema': serializer_schema.dump(serializer)},
-            'links': self.links
+            'links': {'self': self.self_url(service)}
         })
         response.status_code = 200
         return response

@@ -40,7 +40,70 @@ class JobsList(AbstractEndpoint):
             self.job_list = job_list_model
 
     def get(self) -> Response:
-        """
+        r"""
+        Get the list of all jobs on the system
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": [
+                    {
+                      "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                      "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                      "status": "REGISTERED"
+                    }
+                ],
+                "links": {
+                    "self": "http://127.0.0.1:5000/jobs"
+                },
+                "meta": {
+                    "data_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "Describes how jobs are presented in the \"data\" endpoint",
+                        "items": {
+                            "$schema": "http://json-schema.org/draft-04/schema#",
+                            "properties": {
+                            "date_submitted": {
+                                "format": "date-time",
+                                "readonly": true,
+                                "title": "date_submitted",
+                                "type": "string"
+                            },
+                            "id": {
+                                "format": "uuid",
+                                "readonly": true,
+                                "title": "id",
+                                "type": "string"
+                            },
+                            "status": {
+                                "enum": [
+                                    "REGISTERED",
+                                    "WORKING",
+                                    "COMPLETED",
+                                    "ERROR"
+                                ],
+                                "type": "string"
+                                }
+                            },
+                            "required": [
+                              "date_submitted",
+                              "id",
+                              "status"
+                            ],
+                            "type": "object"
+                        },
+                        "title": "Job Endpoint Schema",
+                        "type": "array"
+                    }
+                }
+            }
+
+        :statuscode 200: The request completed successfully
 
         :return: The list of all jobs on the system
         """
