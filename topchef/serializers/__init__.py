@@ -7,3 +7,4 @@ from .service_detail import ServiceDetail
 from .job_overview import JobOverview
 from .job_detail import JobDetail
 from .job_modification import JobModification
+from .json_schema_validator import JSONSchemaValidator

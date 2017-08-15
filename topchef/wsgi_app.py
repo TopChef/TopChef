@@ -6,6 +6,7 @@ from flask import Flask
 from .api import APIMetadata, ServicesList, ServiceDetail
 from .api import JobsList, JobsForService, JobQueueForService
 from .api import NextJob as NextJobEndpoint, JobDetail
+from .api import JSONSchemaValidator
 from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -87,6 +88,12 @@ class ProductionWSGIAppFactory(
             '/services/<service_id>/jobs/next',
             view_func=NextJobEndpoint.as_view(
                 NextJobEndpoint.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/validator',
+            view_func=JSONSchemaValidator.as_view(
+                JSONSchemaValidator.__name__, self._session_factory()
             )
         )
 
