@@ -1,7 +1,7 @@
 """
 Maps the ``jobs/<job_id>`` endpoint
 """
-from flask import Response, jsonify
+from flask import Response, jsonify, url_for
 from topchef.models import Job
 from topchef.api.abstract_endpoints import AbstractEndpointForJob
 from topchef.api.abstract_endpoints import AbstractEndpointForJobMeta
@@ -10,6 +10,7 @@ from topchef.serializers import JobDetail as JobSerializer
 from topchef.serializers import JobModification as JobModificationSerializer
 from topchef.models.errors import DeserializationError
 from typing import Dict
+from uuid import UUID
 
 
 class JobDetail(AbstractEndpointForJob):
@@ -36,7 +37,9 @@ class JobDetail(AbstractEndpointForJob):
                     job_modification_serializer
                 )
             },
-            'links': self.links
+            'links': {
+                'self': self._self_url(job.id)
+            }
         })
         response.status_code = 200
         return response
@@ -67,6 +70,10 @@ class JobDetail(AbstractEndpointForJob):
         self.errors.extend(
             DeserializationError(key, errors[key]) for key in errors.keys()
         )
+
+    def _self_url(self, job_id: UUID) -> str:
+        return url_for(self.__class__.__name__, job_id=str(job_id),
+                       _external=True)
 
 
 class JobDetailForJobID(

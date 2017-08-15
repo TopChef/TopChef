@@ -120,6 +120,8 @@ class Service(ServiceInterface):
             database_job_constructor: Type[DatabaseJob]=DatabaseJob.new
     ) -> Job:
         db_job = database_job_constructor(self.db_model, parameters)
+        session = self._session_getter_for_model(self.db_model)
+        session.add(db_job)
 
         return Job(db_job)
 

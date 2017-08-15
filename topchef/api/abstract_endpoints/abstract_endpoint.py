@@ -139,7 +139,6 @@ class AbstractEndpoint(View, metaclass=AbstractMethodViewType):
             json = self._request.get_json(cache=True)
         except BadRequest:
             raise RequestNotJSONError()
-
         if json is None:
             raise RequestNotJSONError()
         else:

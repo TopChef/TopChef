@@ -3,56 +3,9 @@ Contains acceptance tests for the ``/services`` endpoint. This is the first
 endpoint to make use of the DB.
 """
 import json
-from topchef import APP_FACTORY
-from topchef.models.service_list import ServiceList
-from topchef.serializers import JSONSchema
-from tests.acceptance import AcceptanceTestCase
-from sqlalchemy.orm import Session
-from marshmallow import Schema, fields
 
-
-class AcceptanceTestCaseWithService(AcceptanceTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        """
-        Add a service to the DB
-        """
-        AcceptanceTestCase.setUpClass()
-        cls.service_name = 'Testing Service'
-        cls.description = 'Description for the Testing Service'
-
-        cls.job_registration_schema = JSONSchema(
-            title='Job Registration Schema',
-            description='Must be fulfilled for an experiment'
-        ).dump(cls.JobRegistrationSchema())
-
-        cls.job_result_schema = JSONSchema(
-            title='Job Result Schema',
-            description='Must be fulfilled to post results'
-        ).dump(cls.JobRegistrationSchema())
-
-        session = Session(bind=APP_FACTORY.engine)
-
-        service_list = ServiceList(session)
-        cls.service = service_list.new(
-            cls.service_name, cls.description, cls.job_registration_schema,
-            cls.job_result_schema
-        )
-        session.commit()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        """
-        Delete the service from the DB
-        """
-        if hasattr(cls, 'service') and hasattr(cls, 'engine'):
-            session = Session(bind=cls.engine)
-            session.delete(cls.service)
-            session.commit()
-        AcceptanceTestCase.tearDownClass()
-
-    class JobRegistrationSchema(Schema):
-        value = fields.Int()
+from tests.acceptance import AcceptanceTestCaseWithService
+from tests.acceptance.test_cases.acceptance_test_case import AcceptanceTestCase
 
 
 class ServicesEndpointTestCase(AcceptanceTestCaseWithService):
@@ -100,7 +53,7 @@ class TestGetEndpoint(ServicesEndpointTestCase):
         )
 
 
-class TestPostEndpoint(AcceptanceTestCase):
+class TestPostEndpoint(ServicesEndpointTestCase):
     """
     Tests that sending a ``POST`` request to the ``/services`` endpoint
     creates a new service
@@ -115,10 +68,17 @@ class TestPostEndpoint(AcceptanceTestCase):
         self.job_registration_schema = {'type': 'object'}
         self.job_result_schema = {'type': 'object'}
 
+    def test_post(self):
+        response = self.client.post(
+            self.url, headers=self.headers, data=json.dumps(self.data)
+        )
+        self.assertEqual(201, response.status_code)
+
     @property
     def data(self) -> dict:
         return {
             'name': self.new_service_name,
             'description': self.new_service_description,
-            'job_registration_schema': self.job_registration_schema
+            'job_registration_schema': self.job_registration_schema,
+            'job_result_schema': self.job_result_schema
         }
