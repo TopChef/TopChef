@@ -94,7 +94,7 @@ class AbstractEndpointForJob(AbstractEndpoint, metaclass=abc.ABCMeta):
             self, session: Session, flask_request: Request=request,
             job_list: Optional[JobList]=None
     ):
-        super(AbstractEndpointForJob, self).__init__(session, request)
+        super(AbstractEndpointForJob, self).__init__(session, flask_request)
         if job_list is None:
             self._job_list = JobListModel(self.database_session)
 
