@@ -5,7 +5,7 @@ import abc
 from flask import Flask
 from .api import APIMetadata, ServicesList, ServiceDetail
 from .api import JobsList, JobsForService, JobQueueForService
-from .api import NextJob as NextJobEndpoint
+from .api import NextJob as NextJobEndpoint, JobDetail
 from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -69,6 +69,12 @@ class ProductionWSGIAppFactory(
             '/jobs',
             view_func=JobsList.as_view(
                 JobsList.__name__, self._session_factory()
+            )
+        )
+        self._app.add_url_rule(
+            '/jobs/<job_id>',
+            view_func=JobDetail.as_view(
+                JobDetail.__name__, self._session_factory()
             )
         )
         self._app.add_url_rule(
