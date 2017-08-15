@@ -21,7 +21,9 @@ class TestService(unittest.TestCase):
             spec=DatabaseService
         )  # type: DatabaseService
 
-        self.service = Service(self.database_service)
+        self.session_getter = mock.MagicMock(spec=Session.object_session)
+        self.service = Service(self.database_service,
+                               session_getter_for_model=self.session_getter)
 
     @staticmethod
     @composite

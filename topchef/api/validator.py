@@ -146,9 +146,7 @@ class JSONSchemaValidator(AbstractEndpoint):
             'data': {
                 'status': 'Validation was successful'
             },
-            'links': {
-                self.links
-            }
+            'links': self.links
         })
         response.status_code = 200
         return response
