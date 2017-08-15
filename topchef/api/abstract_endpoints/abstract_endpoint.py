@@ -8,6 +8,7 @@ from flask import Response, jsonify
 from flask.views import View, http_method_funcs
 from flask import url_for, Request
 from flask import request as flask_request
+from werkzeug.exceptions import BadRequest
 from sqlalchemy.orm import Session
 import abc
 from typing import List, Iterable, Callable, Optional, Any, Set
@@ -134,7 +135,11 @@ class AbstractEndpoint(View, metaclass=AbstractMethodViewType):
 
         :return: The JSON in the request body, if it exists
         """
-        json = self._request.get_json(cache=True)
+        try:
+            json = self._request.get_json(cache=True)
+        except BadRequest:
+            raise RequestNotJSONError()
+
         if json is None:
             raise RequestNotJSONError()
         else:
@@ -172,7 +177,7 @@ class AbstractEndpoint(View, metaclass=AbstractMethodViewType):
             serialized
         """
         serializer = ExceptionSerializer(many=True)
-        return serializer.dump(self.errors)
+        return serializer.dump(self.errors).data
 
     @property
     def _error_status_code(self) -> int:

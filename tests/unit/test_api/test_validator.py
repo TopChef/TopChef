@@ -56,7 +56,7 @@ class TestGet(TestValidator):
 class TestPost(TestValidator):
     def test_post_valid_instance(self):
         self.request.get_json = mock.MagicMock(return_value={
-            'schema': self.schema, 'instance': self.valid_instance
+            'schema': self.schema, 'object': self.valid_instance
         })
         endpoint = JSONSchemaValidator(self.session, self.request)
         response = endpoint.post()
@@ -66,7 +66,7 @@ class TestPost(TestValidator):
     def test_post_invalid_instance_valid_request(self):
         self.request.get_json = mock.MagicMock(
             return_value={
-                'schema': self.schema, 'instance': self.invalid_instance
+                'schema': self.schema, 'object': self.invalid_instance
             }
         )
         endpoint = JSONSchemaValidator(self.session, self.request)
@@ -77,7 +77,7 @@ class TestPost(TestValidator):
     def test_post_invalid_request(self):
         self.request.get_json = mock.MagicMock(
             return_value={
-                'schema': self.schema, 'object': self.valid_instance
+                'schema': self.schema, 'instance': self.valid_instance
             }
         )
         endpoint = JSONSchemaValidator(self.session, self.request)

@@ -17,7 +17,47 @@ class JSONSchemaValidator(AbstractEndpoint):
     """
     def get(self) -> Response:
         """
+        Return a schema indicating how the endpoint is to be used. The
+        ``validator_schema`` keyword contains a JSON schema that must be
+        satisified in order to ``POST`` requests to the API
 
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": {},
+                "links": {
+                    "self": "http://localhost:5000/validator"
+                },
+                "meta": {
+                    "validator_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The POST request schema",
+                        "properties": {
+                            "object": {
+                                "title": "object",
+                                "type": "object"
+                            },
+                            "schema": {
+                                "title": "schema",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "object",
+                            "schema"
+                        ],
+                        "title": "JSON Schema Validator",
+                        "type": "object"
+                    }
+                }
+            }
+
+        :statuscode 200: The request completed successfully
         :return: A flask response indicating how this validator is to be used
         """
         return jsonify({
@@ -30,6 +70,58 @@ class JSONSchemaValidator(AbstractEndpoint):
 
     def post(self) -> Response:
         """
+        If a JSON schema validator cannot be found for the client side,
+        use this method to validate against the server side
+
+        **Example Request**
+
+        .. sourcecode:: http
+
+            POST /validator HTTP/1.1
+            Content-Type: application/json
+
+            {
+                "schema": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "Validator Schema",
+                    "description":
+                        "A schema used for documenting this endpoit",
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10
+                        }
+                    }
+                },
+                "object": {
+                    "value": 1
+                }
+            }
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "status": "Validation was successful"
+                },
+                "links": {
+                    "self": "http://localhost:5000/validator"
+                }
+            }
+
+        :statuscode 200: The Validation completed successfully. The provided
+            JSON object is an instance of the provided JSON Schema
+        :statuscode 400: The validation was not successful. This may be due
+            to the request not being correct JSON, or to the object not
+            matching the schema. The ``errors`` object returned in this
+            response will contain more information related to the error
 
         :return: A flask response indicating whether validation was
             successful or not
@@ -44,13 +136,20 @@ class JSONSchemaValidator(AbstractEndpoint):
 
         json_schema_validator = jsonschema.Draft4Validator(data['schema'])
 
-        if not json_schema_validator.is_valid(data['instance']):
+        if not json_schema_validator.is_valid(data['object']):
             self._report_validation_errors(
-                json_schema_validator.iter_errors(data['instance'])
+                json_schema_validator.iter_errors(data['object'])
             )
             raise self.Abort()
 
-        response = Response()
+        response = jsonify({
+            'data': {
+                'status': 'Validation was successful'
+            },
+            'links': {
+                self.links
+            }
+        })
         response.status_code = 200
         return response
 
