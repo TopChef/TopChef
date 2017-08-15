@@ -17,3 +17,5 @@ class ServiceDetail(Schema):
     job_result_schema = fields.Dict(required=True, dump_only=True)
     is_service_available = fields.Boolean(required=True, dump_only=True)
     jobs = IterableField(JobOverview)
+    has_timed_out = fields.Boolean(required=True, dump_only=True)
+    timeout = fields.TimeDelta(required=True, dump_only=True)

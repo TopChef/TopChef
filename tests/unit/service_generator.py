@@ -25,6 +25,7 @@ class Service(IService):
         self._name = name
         self._description = desc
         self._is_available = is_available
+        self._timeout = 30
 
     @property
     def id(self) -> UUID:
@@ -93,6 +94,14 @@ class Service(IService):
     @property
     def jobs(self):
         return self.jobs_list
+
+    @property
+    def timeout(self) -> int:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, new_timeout: int) -> None:
+        self._timeout = new_timeout
 
 
 @composite

@@ -3,6 +3,7 @@ Contains a generator for making services
 """
 from hypothesis.strategies import composite
 from hypothesis.strategies import uuids, text, dictionaries, booleans
+from hypothesis.strategies import timedeltas
 from tests.unit.model_generators.job import Job as MockJob
 from tests.unit.model_generators.job_list import JobList as MockJobList
 from tests.unit.model_generators.job_list import job_lists
@@ -15,7 +16,7 @@ from topchef.database.models import Service as DatabaseService
 from topchef.database.models import Job as DatabaseJob
 from topchef.models import Job
 from topchef.models import JobList as JobListInterface
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class Service(ServiceInterface):
@@ -31,7 +32,8 @@ class Service(ServiceInterface):
             registration_schema: dict,
             result_schema: dict,
             is_service_available: bool,
-            job_list: JobListInterface
+            job_list: JobListInterface,
+            timeout: timedelta
     ) -> None:
         """
 
@@ -51,6 +53,8 @@ class Service(ServiceInterface):
         self._result_schema = result_schema
         self._is_service_available = is_service_available
         self._jobs = job_list
+        self._has_timed_out = False
+        self._timeout = timeout
 
     @property
     def id(self) -> UUID:
@@ -87,6 +91,25 @@ class Service(ServiceInterface):
     @is_service_available.setter
     def is_service_available(self, service_available: bool) -> None:
         self._is_service_available = service_available
+
+    @property
+    def has_timed_out(self) -> bool:
+        return self._has_timed_out
+
+    @has_timed_out.setter
+    def has_timed_out(self, has_timed_out: bool) -> None:
+        self._has_timed_out = has_timed_out
+
+    def check_in(self):
+        pass
+
+    @property
+    def timeout(self) -> timedelta:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, new_timeout: int) -> None:
+        self._timeout = new_timeout
 
     @classmethod
     def new(
@@ -149,6 +172,7 @@ class Service(ServiceInterface):
 
         return '%s(%s)' % (self.__class__.__name__, argument_string)
 
+
 @composite
 def services(
         draw,
@@ -158,10 +182,12 @@ def services(
         registration_schemas=dictionaries(text(), text()),
         result_schemas=dictionaries(text(), text()),
         are_available=booleans(),
-        service_job_lists=job_lists()
+        service_job_lists=job_lists(),
+        timeouts=timedeltas()
 ) -> ServiceInterface:
     return Service(
         draw(ids), draw(names), draw(descriptions),
         draw(registration_schemas), draw(result_schemas),
-        draw(are_available), draw(service_job_lists)
+        draw(are_available), draw(service_job_lists),
+        draw(timeouts)
     )

@@ -3,12 +3,15 @@ Contains unit tests for :mod:`topchef.models.service.Service`
 """
 import unittest
 import unittest.mock as mock
+from freezegun import freeze_time
+from datetime import timedelta, datetime
 from topchef.models.service import Service
 from sqlalchemy.orm import Session
 from topchef.database.models import Service as DatabaseService
 from topchef.models import JobList as JobListInterface
 from hypothesis.strategies import text, booleans, dictionaries, composite
-from hypothesis import given
+from hypothesis.strategies import timedeltas
+from hypothesis import given, assume
 from tests.unit.database_model_generators import services as service_generator
 
 
@@ -136,6 +139,86 @@ class TestIsServiceAvailable(TestService):
         self.service.is_service_available = boolean
         self.assertEqual(self.service.is_service_available, boolean)
         self.assertEqual(self.database_service.is_service_available, boolean)
+
+
+class TestHasTimedOut(TestService):
+    @given(
+        timedeltas(min_delta=timedelta(seconds=0.01)),
+        timedeltas(min_delta=timedelta(seconds=0))
+    )
+    def test_has_timed_out_true(
+            self, timeout: timedelta, time_to_wait: timedelta
+    ) -> None:
+        """
+
+        :param timeout: The timeout to set and wait for
+        :param time_to_wait: The time to wait on top of the timeout,
+             in order to ensure that the server timed out
+        :return:
+        """
+        self.service.timeout = timeout
+        self.service.check_in()
+
+        assume(
+            self._target_time_in_range(
+                datetime.utcnow(), timeout, time_to_wait
+            )
+        )
+
+        time_to_freeze_to = datetime.utcnow() + timeout + time_to_wait
+
+        with freeze_time(time_to_freeze_to):  # ZA WARUDO!
+            self.assertTrue(self.service.has_timed_out)
+
+    @given(
+        timedeltas(min_delta=timedelta(seconds=0.01)),
+        timedeltas(max_delta=timedelta(seconds=-0.01))
+    )
+    def test_has_timed_out_false(
+            self, timeout: timedelta, time_to_wait: timedelta
+    ) -> None:
+        self.service.timeout = timeout
+        self.service.check_in()
+
+        assume(
+            self._target_time_in_range(
+                datetime.utcnow(), timeout, time_to_wait
+            )
+        )
+
+        with freeze_time(
+            datetime.utcnow() + timeout + time_to_wait
+        ):  # ZA WARUDO!
+            self.assertFalse(self.service.has_timed_out)
+
+    @staticmethod
+    def _target_time_in_range(
+            base: datetime, timeout: timedelta, time_to_wait: timedelta
+    ) -> bool:
+        try:
+            base + timeout + time_to_wait
+            return True
+        except OverflowError:
+            return False
+
+
+class TestTimeout(TestService):
+    """
+    Contains unit tests for the ``timeout`` property
+    """
+    @given(timedeltas(min_delta=timedelta(microseconds=1)))
+    def test_that_setting_valid_timeout_changes_it(
+            self, timeout: timedelta
+    ):
+        self.service.timeout = timeout
+        self.assertEqual(
+            timeout.total_seconds(), self.service.timeout.total_seconds()
+        )
+
+    @given(timedeltas(max_delta=timedelta(microseconds=0)))
+    def test_setting_invalid_timeout(self, timeout: timedelta) -> None:
+        with self.assertRaises(ValueError):
+            self.service.timeout = timeout
 
 
 class TestNew(TestService):

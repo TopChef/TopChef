@@ -14,6 +14,7 @@ from topchef.database.models import Job as DatabaseJob
 from topchef.database.models import Service as DatabaseService
 from topchef.json_type import JSON_TYPE as JSON
 from topchef.models.interfaces.job import Job
+from datetime import timedelta
 
 
 class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
@@ -118,6 +119,42 @@ class Service(Iterable, AsyncIterable, metaclass=abc.ABCMeta):
 
         :param service_available: The state to which the
             ``is_service_available`` flag is to be set
+        """
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def has_timed_out(self) -> bool:
+        """
+
+        :return: ``True`` if the server has timed out, otherwise ``False``
+        """
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def timeout(self) -> timedelta:
+        """
+
+        :return: The length of time that must pass between checkins before
+            the service is considered to have timed out
+        """
+        raise NotImplementedError()
+
+    @timeout.setter
+    @abc.abstractmethod
+    def timeout(self, new_timeout: timedelta) -> None:
+        """
+
+        :param new_timeout: The desired time to elapse before the service has
+            timed out
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def check_in(self) -> None:
+        """
+        Reset the timeout
         """
         raise NotImplementedError()
 

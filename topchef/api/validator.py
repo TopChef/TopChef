@@ -164,7 +164,11 @@ class JSONSchemaValidator(AbstractEndpoint):
         )
         return schema_serializer.dump(ValidatorSerializer())
 
-    def _report_deserialization_errors(self, errors: dict):
+    def _report_deserialization_errors(self, errors: dict) -> None:
+        """
+
+        :param errors: The errors returned from Marshmallow
+        """
         self.errors.extend(
             (DeserializationError(key, errors[key]) for key in errors.keys())
         )
@@ -172,6 +176,10 @@ class JSONSchemaValidator(AbstractEndpoint):
     def _report_validation_errors(
             self, errors: Iterable[jsonschema.ValidationError]
     ) -> None:
+        """
+
+        :param errors: The validation errors returned from JSONSchema
+        """
         self.errors.extend(
             ReportableValidationError(error) for error in errors
         )

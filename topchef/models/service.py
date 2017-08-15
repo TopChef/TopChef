@@ -5,6 +5,7 @@ required data from a SQLAlchemy model class.
 import json
 from typing import Type, Callable
 from uuid import UUID
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from .interfaces import Service as ServiceInterface
@@ -19,7 +20,7 @@ from ..json_type import JSON_TYPE as JSON
 class Service(ServiceInterface):
     """
     Provides a model class that gets all its data from an underlying
-    database service already in the API's database
+    database service already in the API database
     """
     def __init__(
             self,
@@ -104,6 +105,31 @@ class Service(ServiceInterface):
         :param service_available: The desired value for the flag
         """
         self.db_model.is_service_available = service_available
+
+    @property
+    def has_timed_out(self) -> bool:
+        """
+
+        :return: Whether the service has timed out or not
+        """
+        return (
+                   datetime.utcnow() - self.db_model.last_checked_in
+               ) > self.timeout
+
+    @property
+    def timeout(self) -> timedelta:
+        return timedelta(seconds=self.db_model.timeout)
+
+    @timeout.setter
+    def timeout(self, new_timeout: timedelta) -> None:
+        if not new_timeout.total_seconds() > 0:
+            raise ValueError(
+                'The timeout must be a time longer than 0 seconds'
+            )
+        self.db_model.timeout = new_timeout.total_seconds()
+
+    def check_in(self) -> None:
+        self.db_model.last_checked_in = datetime.utcnow()
 
     @classmethod
     def new(cls, name: str, description: str, registration_schema: JSON,

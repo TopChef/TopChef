@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 from ...json_type import JSON_TYPE as JSON
 from .job import Job
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 
 class Service(BASE):
@@ -26,6 +27,8 @@ class Service(BASE):
     job_registration_schema = __table__.c.job_registration_schema  # type: JSON
     job_result_schema = __table__.c.job_result_schema  # type: JSON
     is_service_available = __table__.c.is_service_available
+    last_checked_in = __table__.c.last_checked_in
+    timeout = __table__.c.heartbeat_timeout_seconds
 
     jobs = relationship(
         Job, backref='service', cascade='all, delete-orphan',
@@ -43,6 +46,8 @@ class Service(BASE):
         self.job_registration_schema = registration_schema
         self.job_result_schema = result_schema
         self.is_service_available = False
+        self.last_checked_in = datetime.utcnow()
+        self.timeout = 30
 
     @classmethod
     def new(
