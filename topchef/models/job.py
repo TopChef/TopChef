@@ -69,6 +69,14 @@ class Job(JobInterface):
         self._assert_json(new_results)
         self.db_model.results = new_results
 
+    @property
+    def parameter_schema(self) -> dict:
+        return self.db_model.service.job_registration_schema
+
+    @property
+    def result_schema(self) -> dict:
+        return self.db_model.service.job_result_schema
+
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))
 

@@ -19,13 +19,17 @@ class Job(JobInterface):
             status: JobInterface.JobStatus,
             parameters: dict,
             results: dict,
-            date_submitted: datetime
+            date_submitted: datetime,
+            parameter_schema: dict,
+            result_schema: dict
     ):
         self._job_id = job_id
         self._status = status
         self._parameters = parameters
         self._results = results
         self._date_submitted = date_submitted
+        self._parameter_schema = parameter_schema
+        self._result_schema = result_schema
 
     @property
     def id(self) -> UUID:
@@ -55,6 +59,14 @@ class Job(JobInterface):
     def date_submitted(self) -> datetime:
         return self._date_submitted
 
+    @property
+    def parameter_schema(self) -> dict:
+        return self._parameter_schema
+
+    @property
+    def result_schema(self) -> dict:
+        return self._result_schema
+
     def __hash__(self) -> int:
         return hash((self.__class__.__name__, self.id))
 
@@ -81,10 +93,14 @@ def jobs(
         statuses=sampled_from(JobInterface.JobStatus),
         parameters=dictionaries(text(), text()),
         results=dictionaries(text(), text()),
-        dates_submitted=datetimes()
+        dates_submitted=datetimes(),
+        registration_schemas=dictionaries(text(), text()),
+        result_schemas=dictionaries(text(), text())
 ) -> JobInterface:
     return Job(
         draw(ids), draw(statuses), draw(parameters), draw(results),
-        draw(dates_submitted)
+        draw(dates_submitted),
+        draw(registration_schemas),
+        draw(result_schemas)
     )
 
