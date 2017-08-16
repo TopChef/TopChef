@@ -65,11 +65,10 @@ class TestPatch(TestJobDetail):
 
     @given(
         jobs(),
-        sampled_from(Job.JobStatus),
-        dictionaries(text(), text())
+        sampled_from(Job.JobStatus)
     )
-    def test_patch_happy_path(
-            self, job: Job, status: Job.JobStatus, results: dict
+    def test_patch_set_status(
+            self, job: Job, status: Job.JobStatus
     ) -> None:
         """
 
@@ -77,15 +76,75 @@ class TestPatch(TestJobDetail):
         :param status: The randomly-generated status to set
         """
         request_body = {
-            'status': self._JOB_STATUS_LOOKUP[status],
-            'results': results
+            'status': self._JOB_STATUS_LOOKUP[status]
         }
         self.request.get_json = mock.MagicMock(return_value=request_body)
         endpoint = JobDetail(self.session, flask_request=self.request)
         response = endpoint.patch(job)
         self.assertEqual(200, response.status_code)
         self.assertEqual(job.status, status)
-        self.assertEqual(job.results, results)
+
+    @given(
+        jobs(),
+        dictionaries(text(), text())
+    )
+    def test_patch_set_results_schema_matches(
+            self,
+            job: Job,
+            new_results: dict
+    ) -> None:
+        """
+        Tests that the results can be set correctly if they pass JSON schema
+        validation
+        """
+        request_body = {
+            'results': new_results
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        validator = mock.MagicMock(spec=Draft4Validator)
+        validator.is_valid = mock.MagicMock(return_value=True)
+
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request,
+            validator_factory=mock.MagicMock(return_value=validator)
+        )
+        response = endpoint.patch(job)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(job.results, new_results)
+
+    @given(
+        jobs(),
+        dictionaries(text(), text())
+    )
+    def test_patch_results_do_not_match(
+            self, job: Job, bad_results: dict
+    ) -> None:
+        """
+
+        Tests that if the result is not valid, that an exception is raised
+
+        :param job:
+        :param bad_results:
+        """
+        request_body = {
+            'results': bad_results
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        validator = mock.MagicMock(spec=Draft4Validator)
+        validator.is_valid = mock.MagicMock(return_value=False)
+        validator.iter_errors = mock.MagicMock(
+            return_value=iter({mock.MagicMock(spec=ValidationError)})
+        )
+
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request,
+            validator_factory=mock.MagicMock(return_value=validator)
+        )
+
+        with self.assertRaises(endpoint.Abort):
+            endpoint.patch(job)
 
     @given(
         jobs(),
@@ -104,44 +163,6 @@ class TestPatch(TestJobDetail):
         assume('results' not in bad_results.keys())
         self.request.get_json = mock.MagicMock(return_value=bad_results)
         endpoint = JobDetail(self.session, flask_request=self.request)
-
-        with self.assertRaises(endpoint.Abort):
-            endpoint.patch(job)
-
-        self.assertTrue(endpoint.errors)
-
-    @given(
-        jobs(),
-        sampled_from(Job.JobStatus),
-        dictionaries(text(), text())
-    )
-    def test_patch_validation_error(
-            self, job: Job, new_status: Job.JobStatus, bad_results: dict
-    ) -> None:
-        """
-
-        :param job:
-        :param bad_results:
-        :return:
-        """
-        validator = mock.MagicMock(spec=Draft4Validator)
-        validator.is_valid = mock.MagicMock(return_value=False)
-        validator.iter_errors = mock.MagicMock(
-            return_value=iter([ValidationError("Error")])
-        )
-        validator_factory = mock.MagicMock(spec=type, return_value=validator)
-
-        self.request.get_json = mock.MagicMock(
-            return_value={
-                'status': self._JOB_STATUS_LOOKUP[new_status],
-                'results': bad_results
-            }
-        )
-
-        endpoint = JobDetail(
-            self.session, validator_factory=validator_factory,
-            flask_request=self.request
-        )
 
         with self.assertRaises(endpoint.Abort):
             endpoint.patch(job)

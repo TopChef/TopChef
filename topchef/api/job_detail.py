@@ -75,16 +75,11 @@ class JobDetail(AbstractEndpointForJob):
             self._report_loading_errors(errors)
             raise self.Abort()
 
-        json_schema_validator = self._validator_factory(job.result_schema)
+        if 'results' in data.keys():
+            self._modify_job_results(job, data['results'])
 
-        if not json_schema_validator.is_valid(data['results']):
-            self._report_validation_errors(
-                json_schema_validator.iter_errors(data['results'])
-            )
-            raise self.Abort()
-
-        job.status = data['status']
-        job.results = data['results']
+        if 'status' in data.keys():
+            self._modify_job_status(job, data['status'])
 
         response = jsonify(job_reporting_serializer.dump(job).data)
         response.status_code = 200
@@ -105,6 +100,21 @@ class JobDetail(AbstractEndpointForJob):
     def _self_url(self, job_id: UUID) -> str:
         return url_for(self.__class__.__name__, job_id=str(job_id),
                        _external=True)
+
+    def _modify_job_results(self, job: Job, results: dict) -> None:
+        json_schema_validator = self._validator_factory(job.result_schema)
+
+        if not json_schema_validator.is_valid(results):
+            self._report_validation_errors(
+                json_schema_validator.iter_errors(results)
+            )
+            raise self.Abort()
+        else:
+            job.results = results
+
+    @staticmethod
+    def _modify_job_status(job: Job, status: Job.JobStatus) -> None:
+        job.status = status
 
 
 class JobDetailForJobID(
