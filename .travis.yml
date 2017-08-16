@@ -1,3 +1,4 @@
+dist: trusty
 sudo: false
 
 language: python
@@ -7,6 +8,9 @@ cache: pip
 services:
   - postgresql
   - mysql
+
+addons:
+  postgresql: "9.6"
 
 env:
   - DATABASE_URI=postgres://postgres:@localhost:5432/test_database
