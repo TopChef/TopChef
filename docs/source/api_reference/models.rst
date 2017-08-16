@@ -1,19 +1,11 @@
 Models
 ======
 
-All resources in the API should be represented by a model class exported by
-this package. The model classes in this package provide a layer of
-abstraction between the models stored in the database, and the resources
-that the user of this API will interact with. This package also provides
-well-defined interfaces for working with resources, in order to describe a
-contract for interacting the model classes. The contract in this case refers
-to the set of properties and methods that an implementation of the contract
-is guaranteed to implement. Unlike statically-typed languages like Java,
-Python does not require such a contract to exist, as variable types can be
-inferred dynamically. Nevertheless, it is recommended to use the
-contracts defined here when making new implementations of model classes
-for managing resources. Implementing these interfaces will also get the
-most use out of the type-hinting syntax introduced in Python 3.4.
+.. automodule:: topchef.models.__init__
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
 
 Interfaces
 ----------
@@ -147,9 +139,11 @@ Service List
 Errors
 ------
 
-This package describes all reportable errors that the API may handle. Each
-error type has an HTTP status code associated with it. API errors are also
-throwable.
+.. automodule:: topchef.models.errors.__init__
+    :members:
+    :private-members:
+    :special-members:
+    :exclude-members: __dict__, __weakref__, __module__
 
 Deserialization Error
 ~~~~~~~~~~~~~~~~~~~~~
