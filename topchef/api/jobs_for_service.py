@@ -98,7 +98,9 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
         validator = JSONSchemaValidator(service.job_registration_schema)
 
         if not validator.is_valid(data['parameters']):
-            self._report_json_schema_errors(validator.iter_errors())
+            self._report_json_schema_errors(
+                validator.iter_errors(data['parameters'])
+            )
 
         new_job = service.new_job(data['parameters'])
 

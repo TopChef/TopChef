@@ -47,6 +47,10 @@ class TestAPIMetadata(AcceptanceTestCase):
         if not validator.is_valid(data['data']):
             self.fail(
                 'Errors were encountered while validating response: %s' % (
-                    ', '.join(error for error in validator.iter_errors())
+                    ', '.join(
+                            error for error in validator.iter_errors(
+                                data['data']
+                            )
+                        )
                 )
             )
