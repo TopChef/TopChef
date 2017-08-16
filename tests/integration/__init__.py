@@ -27,5 +27,7 @@ class IntegrationTestCase(TestCase, metaclass=ABCMeta):
 
     @classmethod
     def tearDownClass(cls) -> None:
+        if hasattr(cls, 'session'):
+            cls.session.commit()
         if hasattr(cls, 'database') and hasattr(cls, 'engine'):
             cls.database.metadata.drop_all(bind=cls.engine)

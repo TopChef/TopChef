@@ -16,6 +16,7 @@ class AcceptanceTestCase(unittest.TestCase):
         cls.protocol = 'http'
         cls.app = APP_FACTORY.app
         cls.app_process = mp.Process(target=cls.app.run)
+        cls.app_process.daemon = True
         cls.app_process.start()
 
         cls._create_database(APP_FACTORY.engine)
@@ -26,6 +27,7 @@ class AcceptanceTestCase(unittest.TestCase):
 
         if hasattr(cls, 'app_process'):
             cls.app_process.terminate()
+            _ = cls.app_process.exit_code
 
     @property
     def app_url(self) -> str:

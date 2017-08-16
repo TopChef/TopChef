@@ -37,7 +37,10 @@ class JSON(TypeDecorator):
         if dialect.name == 'postgresql':
             return dialect.type_descriptor(postgresql.JSON())
         elif dialect.name == 'mysql':
-            return dialect.type_descriptor(mysql.JSON())
+            if 'JSON' in dialect.ischema_names:
+                return dialect.type_descriptor(mysql.JSON())
+            else:
+                return dialect.type_descriptor(VARCHAR())
         else:
             return dialect.type_descriptor(VARCHAR())
 
