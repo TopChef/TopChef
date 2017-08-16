@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinxcontrib.autohttp.flask'
@@ -365,3 +366,9 @@ epub_exclude_files = ['search.html']
 
 # Sphinxcontrib options
 http_strict_mode = True
+
+# Intersphinx mapping to other Sphinx docs
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6', None),
+    'sqlalchemy': ('http://docs.sqlalchemy.org/en/latest/', None)
+}

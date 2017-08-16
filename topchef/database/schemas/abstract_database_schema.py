@@ -1,5 +1,9 @@
 """
-Describes the database schemas
+Contains the interface for interacting with a ``SQLAlchemy`` database
+schema. Each table in the schema should map to a property defined in this
+interface. This is done to prevent accidental overwriting of tables. The
+``metadata`` property in this schema holds the instance of
+:class:`sqlalchemy.MetaData`
 """
 import abc
 from sqlalchemy import Table, MetaData

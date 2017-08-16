@@ -3,7 +3,7 @@ Models job sets
 """
 from .job import Job
 from ..schemas import database
-from .abstract_database_model import BASE
+from .declarative_base import BASE
 from sqlalchemy.orm import relationship
 from uuid import UUID, uuid4
 from typing import Iterable
