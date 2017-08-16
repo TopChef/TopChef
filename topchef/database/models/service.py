@@ -5,7 +5,7 @@ Contains a model for a TopChef service. A service is any operation that maps a
  outputs the result.
 """
 from ..schemas import database
-from .abstract_database_model import BASE
+from .declarative_base import BASE
 from uuid import UUID, uuid4
 from ...json_type import JSON_TYPE as JSON
 from .job import Job

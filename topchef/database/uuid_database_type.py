@@ -1,7 +1,15 @@
 """
-Contains a backend-agnostic UUID type that checks if the incoming string
-into the DB is a UUID. If the database is a PostgreSQL DB, the data will be
-written into a column of type UUID. Otherwise, it will be written as a string
+In a similar vein to the JSON column type defined in
+:mod:`topchef.database.json_type`, this type provides a back-end
+agnostic way of storing Universally Unique Identifiers (UUIDs) in the
+database. If the database is a Postgres DB, then it will use Postgres' UUID
+data type to store the UUID. If such a type does not exist, then the UUID
+will be stored as CHAR(32). This type represents a string that MUST have 32
+characters.
+
+This code was heavily inspired by SQLAlchemy's UUID type implementation,
+as defined in :class:`sqlalchemy.types.TypeDecorator`.
+
 """
 from sqlalchemy import TypeDecorator
 from sqlalchemy.types import CHAR

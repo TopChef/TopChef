@@ -1,7 +1,20 @@
 """
-Contains a backend-agnostic JSON data type. If the database supports JSON,
-then write the data in as JSON. If it does not, serialize and write json as
-a string
+SQL-based databases are strongly and statically typed. This means that every
+variable must have a type associated with it, that type must be defined in
+the schema, and the variable has that type for as long as this variable
+exists. This definition implies that "changing the type" of a variable
+(known as "casting") involves executing a function that maps one variable
+and creates a new variable of a different type.
+
+This module defines a backend-agnostic data type for storing JavaScript
+Object Notation (JSON) objects in a relational database. Increasingly,
+databases like MySQL and PostgreSQL are supporting JSON as a valid variable
+type in their schemas. Using a JSON type to store JSON instead of a String
+is a more elegant solution, as databases that support JSON make some effort
+of checking that the JSON placed into a relational database is at least
+syntactically correct. The type defined here will use a JSON type on MySQL
+and PostgreSQL. If these types are not available, it will default into
+storing the JSON as a string.
 """
 from sqlalchemy import TypeDecorator
 from sqlalchemy.types import VARCHAR
