@@ -21,6 +21,7 @@ class JSON(TypeDecorator):
     when it is loaded from the DB
     """
     impl = VARCHAR
+    _MAX_VARCHAR_LIMIT = 100000
 
     def load_dialect_impl(self, dialect: dialects) -> DialectType:
         """
@@ -40,9 +41,11 @@ class JSON(TypeDecorator):
             if 'JSON' in dialect.ischema_names:
                 return dialect.type_descriptor(mysql.JSON())
             else:
-                return dialect.type_descriptor(VARCHAR())
+                return dialect.type_descriptor(
+                    VARCHAR(self._MAX_VARCHAR_LIMIT)
+                )
         else:
-            return dialect.type_descriptor(VARCHAR())
+            return dialect.type_descriptor(VARCHAR(self._MAX_VARCHAR_LIMIT))
 
     def process_bind_param(
             self, value: ValueType, dialect: dialects
