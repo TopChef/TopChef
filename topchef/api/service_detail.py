@@ -2,7 +2,7 @@
 Describes an endpoint where detailed information about the service can be
 obtained
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Response, jsonify
 from topchef.api.abstract_endpoints import AbstractEndpointForService
 from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
@@ -19,7 +19,115 @@ class ServiceDetail(AbstractEndpointForService):
     Describes the endpoint that returns the details for a particular service
     """
     def get(self, service: Service) -> Response:
-        """
+        r"""
+        Return details for a given service
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "description": "A quick testing service",
+                    "has_timed_out": true,
+                    "id": "495d76fd-044c-4f02-8815-5ec6e7634330",
+                    "is_service_available": false,
+                    "job_registration_schema": {
+                        "type": "object"
+                    },
+                    "job_result_schema": {
+                        "type": "object"
+                    },
+                    "jobs": [
+                        {
+                        "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                        "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                        "status": "REGISTERED"
+                        }
+                    ],
+                    "name": "Testing Service",
+                    "timeout": 30
+                    },
+                    "links": {
+                        "self":
+                            "/services/495d76fd-044c-4f02-8815-5ec6e7634330"
+                    },
+                    "meta": {
+                        "service_schema": {
+                            "$schema":
+                                "http://json-schema.org/draft-04/schema#",
+                            "description":
+                                "A comprehensive schema for services",
+                            "properties": {
+                                "description": {
+                                    "readonly": true,
+                                    "title": "description",
+                                    "type": "string"
+                                },
+                                "has_timed_out": {
+                                    "readonly": true,
+                                    "title": "has_timed_out",
+                                    "type": "boolean"
+                                },
+                                "id": {
+                                    "format": "uuid",
+                                    "readonly": true,
+                                    "title": "id",
+                                    "type": "string"
+                                },
+                                "is_service_available": {
+                                    "readonly": true,
+                                    "title": "is_service_available",
+                                    "type": "boolean"
+                                },
+                                "job_registration_schema": {
+                                    "readonly": true,
+                                    "title": "job_registration_schema",
+                                    "type": "object"
+                                },
+                                "job_result_schema": {
+                                    "readonly": true,
+                                    "title": "job_result_schema",
+                                    "type": "object"
+                                },
+                                "jobs": {
+                                    "items": {
+                                    "type": "object"
+                                    },
+                                    "type": "array"
+                                },
+                                "name": {
+                                    "readonly": true,
+                                    "title": "name",
+                                    "type": "string"
+                                },
+                                "timeout": {
+                                    "readonly": true,
+                                    "title": "timeout",
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "description",
+                                "has_timed_out",
+                                "id",
+                                "is_service_available",
+                                "job_registration_schema",
+                                "job_result_schema",
+                                "name",
+                                "timeout"
+                            ],
+                            "title": "Detailed Service Schema",
+                            "type": "object"
+                        }
+                    }
+                }
+
+        :statuscode 200: The request completed successfully
+        :statuscode 404: A service with the ID was not found
 
         :param service: The service for which a response is to be retrieved
         :return: A flask response with the appropriate data
@@ -28,6 +136,56 @@ class ServiceDetail(AbstractEndpointForService):
 
     def patch(self, service: Service) -> Response:
         """
+        Change the mutable parameters of the service
+
+        **Example Request**
+
+        .. sourcecode:: http
+
+            PATCH /services/<service_id> HTTP/1.1
+            Content-Type: application/json
+
+            {
+                "is_available": false,
+                "name": "Changed name",
+                "description": "Changed description",
+                "timeout": 20
+            }
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "description": "A quick testing service",
+                "has_timed_out": true,
+                "id": "495d76fd-044c-4f02-8815-5ec6e7634330",
+                "is_service_available": false,
+                "job_registration_schema": {
+                    "type": "object"
+                },
+                "job_result_schema": {
+                    "type": "object"
+                },
+                "jobs": [
+                    {
+                        "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                        "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                        "status": "REGISTERED"
+                    }
+                ],
+                "name": "Testing Service",
+                "timeout": 30
+            }
+
+        :statuscode 200: The request completed successfully
+        :statuscode 400: If an attempt is made to provide JSON as a request
+            body, and the JSON is either syntactically or semantically
+            incorrect.
+        :statuscode 404: A service with that ID was not found in the database
 
         :param service: The service to patch
         :return: Reset the service's timeout
