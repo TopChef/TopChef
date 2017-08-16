@@ -1,5 +1,6 @@
 import unittest
 import unittest.mock as mock
+from jsonschema import Draft4Validator, ValidationError
 from sqlalchemy.orm import Session
 from flask import Request, Flask
 from hypothesis import given, assume
@@ -90,7 +91,9 @@ class TestPatch(TestJobDetail):
         jobs(),
         dictionaries(text(), text())
     )
-    def test_patch_error(self, job: Job, bad_results: dict) -> None:
+    def test_patch_serialization_error(
+            self, job: Job, bad_results: dict
+    ) -> None:
         """
 
         :param job: The job to modify
@@ -101,6 +104,44 @@ class TestPatch(TestJobDetail):
         assume('results' not in bad_results.keys())
         self.request.get_json = mock.MagicMock(return_value=bad_results)
         endpoint = JobDetail(self.session, flask_request=self.request)
+
+        with self.assertRaises(endpoint.Abort):
+            endpoint.patch(job)
+
+        self.assertTrue(endpoint.errors)
+
+    @given(
+        jobs(),
+        sampled_from(Job.JobStatus),
+        dictionaries(text(), text())
+    )
+    def test_patch_validation_error(
+            self, job: Job, new_status: Job.JobStatus, bad_results: dict
+    ) -> None:
+        """
+
+        :param job:
+        :param bad_results:
+        :return:
+        """
+        validator = mock.MagicMock(spec=Draft4Validator)
+        validator.is_valid = mock.MagicMock(return_value=False)
+        validator.iter_errors = mock.MagicMock(
+            return_value=iter([ValidationError("Error")])
+        )
+        validator_factory = mock.MagicMock(spec=type, return_value=validator)
+
+        self.request.get_json = mock.MagicMock(
+            return_value={
+                'status': self._JOB_STATUS_LOOKUP[new_status],
+                'results': bad_results
+            }
+        )
+
+        endpoint = JobDetail(
+            self.session, validator_factory=validator_factory,
+            flask_request=self.request
+        )
 
         with self.assertRaises(endpoint.Abort):
             endpoint.patch(job)

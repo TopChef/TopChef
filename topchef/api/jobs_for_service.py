@@ -5,10 +5,13 @@ from flask import Response, jsonify
 from topchef.api.abstract_endpoints import AbstractEndpointForService
 from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
 from topchef.models import Service
-from topchef.models.errors import DeserializationError
+from topchef.models.errors import DeserializationError, ValidationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
-from topchef.serializers.new_job import NewJobSchema as NewJobSerializer
+from topchef.serializers.new_job import NewJob as NewJobSerializer
+from jsonschema import Draft4Validator as JSONSchemaValidator
+from typing import Iterable
+from jsonschema import ValidationError as JSONSchemaError
 
 
 class JobsForServiceEndpoint(AbstractEndpointForService):
@@ -92,6 +95,11 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             )
             raise self.Abort()
 
+        validator = JSONSchemaValidator(service.job_registration_schema)
+
+        if not validator.is_valid(data['parameters']):
+            self._report_json_schema_errors(validator.iter_errors())
+
         new_job = service.new_job(data['parameters'])
 
         job_data_serializer = JobDetailSerializer()
@@ -136,6 +144,12 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             'items': json_schema.dump(JobDetailSerializer())
         }
         return schema
+
+    def _report_json_schema_errors(
+            self, errors: Iterable[JSONSchemaError]
+    ) -> None:
+        self.errors.extend(ValidationError(error) for error in errors)
+
 
 
 class JobsForServiceID(
