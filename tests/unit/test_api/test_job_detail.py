@@ -152,22 +152,24 @@ class TestPatch(TestJobDetail):
 
     @given(
         jobs(),
-        dictionaries(text(), text())
+        text()
     )
     def test_patch_serialization_error(
-            self, job: Job, bad_results: dict
+            self, job: Job, bad_status: str
     ) -> None:
         """
-        Tests that an error is reported if an attempt is made to post JSON
-        which does not contain a ``status`` key or a ``results`` key
+        Tests that if an invalid entry is placed into the status entry,
+        that an exception is thrown. This is testing the branch of the code
+        that checks that the marshmallow serializer correctly reports bad data.
 
         :param job: The job to modify
-        :param bad_results: The illegal JSON for which errors are to be
-            reported
+        :param bad_status: An illegal job status to be caught by the
+            marshmallow serializer
         """
-        assume('status' not in bad_results.keys())
-        assume('results' not in bad_results.keys())
-        self.request.get_json = mock.MagicMock(return_value=bad_results)
+        assume(bad_status not in self._JOB_STATUS_LOOKUP.values())
+        request_body = {'status': bad_status}
+
+        self.request.get_json = mock.MagicMock(return_value=request_body)
         endpoint = JobDetail(self.session, flask_request=self.request)
 
         with self.assertRaises(endpoint.Abort):

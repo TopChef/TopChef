@@ -1,4 +1,4 @@
-from marshmallow import fields
+from marshmallow import fields, ValidationError
 
 from topchef.models import Job
 
@@ -28,9 +28,10 @@ class JobStatusField(fields.Field):
         elif value is Job.JobStatus.ERROR:
             status = "ERROR"
         else:
-            raise ValueError(
-                'Attempted to serialize a value %s for which a value is not '
-                'defined'
+            raise ValidationError(
+                message='Attempted to serialize a value %s for which a value '
+                        'is not defined',
+                fields=attr
             )
         return status
 
@@ -45,8 +46,9 @@ class JobStatusField(fields.Field):
         elif value_to_check == "ERROR":
             status = Job.JobStatus.ERROR
         else:
-            raise ValueError(
-                'Unknown value for enum'
+            raise ValidationError(
+                message='Unknown value for job status enum',
+                fields=attr
             )
         return status
 
