@@ -16,7 +16,7 @@ class JobQueueForService(AbstractEndpointForService):
     Maps the endpoint
     """
     def get(self, service: Service) -> Response:
-        """
+        r"""
         Returns the next 10 jobs available for a given service
 
         **Example Request**
@@ -100,6 +100,7 @@ class JobQueueForService(AbstractEndpointForService):
         **Example Response With No Job**
 
         .. sourcecode:: http
+
             HTTP/1.1 204 NO CONTENT
 
         :statuscode 200: The request completed successfully
