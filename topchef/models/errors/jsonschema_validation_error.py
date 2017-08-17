@@ -36,4 +36,6 @@ class ValidationError(APIError):
 
         :return: A detailed message explaining what went wrong
         """
-        return str(self._error)
+        return "Validation of schema %s threw error %s" % (
+            self._error.context, self._error.message
+        )

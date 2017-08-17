@@ -1,3 +1,6 @@
+"""
+Contains unit tests for the ``/jobs/<job_id>`` endpoint
+"""
 import unittest
 import unittest.mock as mock
 from jsonschema import Draft4Validator, ValidationError
@@ -17,7 +20,6 @@ class TestJobDetail(unittest.TestCase):
     def setUp(self) -> None:
         """
         Set up the test
-        :return:
         """
         self.session = mock.MagicMock(spec=Session)
         self.request = mock.MagicMock(spec=Request)
@@ -122,10 +124,12 @@ class TestPatch(TestJobDetail):
     ) -> None:
         """
 
-        Tests that if the result is not valid, that an exception is raised
+        Tests that an exception is raised if an attempt is made to post
+        results that do not match the result schema
 
-        :param job:
-        :param bad_results:
+        :param job: A randomly-generated job that will be the subject of
+            this test
+        :param bad_results: The invalid results to be rejected by the API
         """
         request_body = {
             'results': bad_results
@@ -154,6 +158,8 @@ class TestPatch(TestJobDetail):
             self, job: Job, bad_results: dict
     ) -> None:
         """
+        Tests that an error is reported if an attempt is made to post JSON
+        which does not contain a ``status`` key or a ``results`` key
 
         :param job: The job to modify
         :param bad_results: The illegal JSON for which errors are to be

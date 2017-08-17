@@ -98,6 +98,11 @@ class JobDetail(AbstractEndpointForJob):
         )
 
     def _self_url(self, job_id: UUID) -> str:
+        """
+
+        :param job_id: The ID of the job for which the endpoint has been found
+        :return: The URL for the endpoint that was accessed by the user
+        """
         return url_for(self.__class__.__name__, job_id=str(job_id),
                        _external=True)
 
