@@ -47,8 +47,79 @@ class ServicesList(AbstractEndpoint):
             HTTP/1.1 200 OK
             Content-Type: application/json
 
+            {
+                "data": [
+                    {
+                    "description": "A quick testing service",
+                    "id": "495d76fd-044c-4f02-8815-5ec6e7634330",
+                    "name": "Testing Service"
+                    },
+                ],
+                "links": {
+                    "self": "http://localhost:5000/services"
+                },
+                "meta": {
+                    "new_service_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "properties": {
+                            "description": {
+                                "title": "description",
+                                "type": "string"
+                            },
+                            "job_registration_schema": {
+                                "title": "job_registration_schema",
+                                "type": "object"
+                            },
+                            "job_result_schema": {
+                                "title": "job_result_schema",
+                                "type": "object"
+                            },
+                            "name": {
+                                "title": "name",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "description",
+                            "job_registration_schema",
+                            "job_result_schema",
+                            "name"
+                        ],
+                        "title": "New Service Schema",
+                        "type": "object"
+                       },
+                    "service_schema": {
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "properties": {
+                        "description": {
+                            "readonly": true,
+                            "title": "description",
+                            "type": "string"
+                        },
+                        "id": {
+                            "format": "uuid",
+                            "readonly": true,
+                            "title": "id",
+                            "type": "string"
+                        },
+                        "name": {
+                            "readonly": true,
+                            "title": "name",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "description",
+                        "id",
+                        "name"
+                    ],
+                    "title": "Service overview schema",
+                    "type": "object"
+                    }
+                }
+            }
 
-
+        :statuscode 200: The request completed successfully
         :return: A Flask response with the appropriate data
         """
         response = jsonify({
@@ -64,11 +135,96 @@ class ServicesList(AbstractEndpoint):
 
         **Example Request**
 
-        POST /services HTTP/1.1
-        Host: example.com
-        Content-Type: application/json
+        The request below will create a service for running Rabi experiments
+        remotely. The only experiment parameter in this case is the
+        ``pulse_time``. In the case of the Rabi experiment, this can
+        represent how long the pulse is to be switched on for. Using JSON
+        schema, we can also bound the pulse time to be between 0 and 50
+        microseconds. This is done because we know ahead of time that it
+        would be silly to run Rabi experiments with a negative pulse time.
+        All the ``title`` and ``description`` fields in the schema are
+        optional, and are there so that humans understand the schema.
 
+        .. warning::
 
+            By default, properties in JSON schema are not required. There
+            needs to be a ``required`` keyword with the required parameters
+            in the schema in order to mandate that objects have the property.
+
+        .. sourcecode:: http
+
+            POST /services HTTP/1.1
+            Host: example.com
+            Content-Type: application/json
+
+            {
+                "name": "NV Experiments",
+                "description": "Describes a sample NV center experiment",
+                "job_registration_schema": {
+                    "type": "object",
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "Job Registration Schema",
+                    "description":
+                        "Describes a schema for a Rabi experiment only",
+                    "properties": {
+                        "pulse_time": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 50e-6
+                        }
+                    },
+                    "required": [
+                        "pulse_time"
+                    ]
+                },
+                "job_result_schema": {
+                    "type": "object",
+                    "$schema": "http://json-schema.org/draft-04/schema#",
+                    "title": "Job Result Schema",
+                    "description": "Describes a schema for the results",
+                    "properties": {
+                        "light_count": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "dark_count": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "result_count": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    "required": [
+                        "light_count",
+                        "dark_count",
+                        "result_count"
+                    ]
+                }
+            }
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 201 CREATED
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "message": "service successfully created"
+                },
+                "links": {
+                    "self": "http://localhost:5000/services"
+                }
+            }
+
+        :statuscode 201: The service was successfully created
+        :statuscode 400: The request could not be understood, due to either
+            incorrect JSON, or not adhering to the schema in the
+            ``new_service_schema`` presented in the ``GET`` method of this
+            endpoint
 
         :return: A flask response indicating whether creation of the service
             was successful or not
