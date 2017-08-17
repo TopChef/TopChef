@@ -1,5 +1,9 @@
+"""
+Contains unit tests for the ``/jobs/<job_id>`` endpoint
+"""
 import unittest
 import unittest.mock as mock
+from jsonschema import Draft4Validator, ValidationError
 from sqlalchemy.orm import Session
 from flask import Request, Flask
 from hypothesis import given, assume
@@ -16,7 +20,6 @@ class TestJobDetail(unittest.TestCase):
     def setUp(self) -> None:
         """
         Set up the test
-        :return:
         """
         self.session = mock.MagicMock(spec=Session)
         self.request = mock.MagicMock(spec=Request)
@@ -64,11 +67,10 @@ class TestPatch(TestJobDetail):
 
     @given(
         jobs(),
-        sampled_from(Job.JobStatus),
-        dictionaries(text(), text())
+        sampled_from(Job.JobStatus)
     )
-    def test_patch_happy_path(
-            self, job: Job, status: Job.JobStatus, results: dict
+    def test_patch_set_status(
+            self, job: Job, status: Job.JobStatus
     ) -> None:
         """
 
@@ -76,30 +78,98 @@ class TestPatch(TestJobDetail):
         :param status: The randomly-generated status to set
         """
         request_body = {
-            'status': self._JOB_STATUS_LOOKUP[status],
-            'results': results
+            'status': self._JOB_STATUS_LOOKUP[status]
         }
         self.request.get_json = mock.MagicMock(return_value=request_body)
         endpoint = JobDetail(self.session, flask_request=self.request)
         response = endpoint.patch(job)
         self.assertEqual(200, response.status_code)
         self.assertEqual(job.status, status)
-        self.assertEqual(job.results, results)
 
     @given(
         jobs(),
         dictionaries(text(), text())
     )
-    def test_patch_error(self, job: Job, bad_results: dict) -> None:
+    def test_patch_set_results_schema_matches(
+            self,
+            job: Job,
+            new_results: dict
+    ) -> None:
+        """
+        Tests that the results can be set correctly if they pass JSON schema
+        validation
+        """
+        request_body = {
+            'results': new_results
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        validator = mock.MagicMock(spec=Draft4Validator)
+        validator.is_valid = mock.MagicMock(return_value=True)
+
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request,
+            validator_factory=mock.MagicMock(return_value=validator)
+        )
+        response = endpoint.patch(job)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(job.results, new_results)
+
+    @given(
+        jobs(),
+        dictionaries(text(), text())
+    )
+    def test_patch_results_do_not_match(
+            self, job: Job, bad_results: dict
+    ) -> None:
         """
 
-        :param job: The job to modify
-        :param bad_results: The illegal JSON for which errors are to be
-            reported
+        Tests that an exception is raised if an attempt is made to post
+        results that do not match the result schema
+
+        :param job: A randomly-generated job that will be the subject of
+            this test
+        :param bad_results: The invalid results to be rejected by the API
         """
-        assume('status' not in bad_results.keys())
-        assume('results' not in bad_results.keys())
-        self.request.get_json = mock.MagicMock(return_value=bad_results)
+        request_body = {
+            'results': bad_results
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        validator = mock.MagicMock(spec=Draft4Validator)
+        validator.is_valid = mock.MagicMock(return_value=False)
+        validator.iter_errors = mock.MagicMock(
+            return_value=iter({mock.MagicMock(spec=ValidationError)})
+        )
+
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request,
+            validator_factory=mock.MagicMock(return_value=validator)
+        )
+
+        with self.assertRaises(endpoint.Abort):
+            endpoint.patch(job)
+
+    @given(
+        jobs(),
+        text()
+    )
+    def test_patch_serialization_error(
+            self, job: Job, bad_status: str
+    ) -> None:
+        """
+        Tests that if an invalid entry is placed into the status entry,
+        that an exception is thrown. This is testing the branch of the code
+        that checks that the marshmallow serializer correctly reports bad data.
+
+        :param job: The job to modify
+        :param bad_status: An illegal job status to be caught by the
+            marshmallow serializer
+        """
+        assume(bad_status not in self._JOB_STATUS_LOOKUP.values())
+        request_body = {'status': bad_status}
+
+        self.request.get_json = mock.MagicMock(return_value=request_body)
         endpoint = JobDetail(self.session, flask_request=self.request)
 
         with self.assertRaises(endpoint.Abort):

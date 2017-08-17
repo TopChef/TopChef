@@ -59,6 +59,24 @@ class Job(object, metaclass=abc.ABCMeta):
     def date_submitted(self) -> datetime:
         raise NotImplementedError()
 
+    @property
+    @abc.abstractmethod
+    def parameter_schema(self) -> dict:
+        """
+
+        :return: The schema used to write down parameters
+        """
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def result_schema(self) -> dict:
+        """
+
+        :return: The schema used to write down valid results
+        """
+        raise NotImplementedError()
+
     @abc.abstractmethod
     def __hash__(self) -> int:
         """

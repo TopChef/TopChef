@@ -1,5 +1,5 @@
 from marshmallow import Schema, fields
 
 
-class NewJobSchema(Schema):
+class NewJob(Schema):
     parameters = fields.Dict(required=True)

@@ -45,3 +45,4 @@ after_success:
   - sh -c "if [ '${TRAVIS_PULL_REQUEST}' = 'false' && '${TRAVIS_BRANCH}' = 'master' ]; 
         then curl -X POST $DOCKER_BUILD_URL; 
         fi"
+  - coveralls

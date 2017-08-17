@@ -3,5 +3,5 @@ from .custom_fields import JobStatusField
 
 
 class JobModification(Schema):
-    status = JobStatusField(required=True)
-    results = fields.Dict(required=True)
+    status = JobStatusField(required=False)
+    results = fields.Dict(required=False)
