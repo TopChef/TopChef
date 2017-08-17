@@ -39,8 +39,7 @@ class HTTPMethodOverrideMiddleware(object):
         """
         method = environ.get('HTTP_X_HTTP_METHOD_OVERRIDE', '').upper()
         if method in self.allowed_methods:
-            encoded_method = method.encode('ascii', 'replace')
-            environ['REQUEST_METHOD'] = encoded_method
+            environ['REQUEST_METHOD'] = method
 
         if method in self.bodyless_methods:
             print("bodyless method conditional hit")
