@@ -57,7 +57,7 @@ class TestCall(TestMethodOverrideMiddleware):
         self.environment.get = mock.MagicMock(return_value="POST")
         self.http_middleware(self.environment, self.start_response)
         self.assertEqual(
-            mock.call("REQUEST_METHOD", b'POST'),
+            mock.call("REQUEST_METHOD", 'POST'),
             self.environment.__setitem__.call_args
         )
 
@@ -69,7 +69,7 @@ class TestCall(TestMethodOverrideMiddleware):
         self.environment.get = mock.MagicMock(return_value="PATCH")
         self.http_middleware(self.environment, self.start_response)
         self.assertEqual(
-            mock.call("REQUEST_METHOD", b'PATCH'),
+            mock.call("REQUEST_METHOD", 'PATCH'),
             self.environment.__setitem__.call_args
         )
 
@@ -84,8 +84,8 @@ class TestCall(TestMethodOverrideMiddleware):
         self.assertEqual(2, self.environment.__setitem__.call_count)
         self.assertEqual(
             [
-                mock.call("REQUEST_METHOD", b'GET'),
-                mock.call("CONTENT_LENGTH", b'0')
+                mock.call("REQUEST_METHOD", 'GET'),
+                mock.call("CONTENT_LENGTH", '0')
             ],
             self.environment.__setitem__.call_args_list
         )
