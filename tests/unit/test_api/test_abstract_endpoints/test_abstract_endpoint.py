@@ -79,6 +79,14 @@ class TestAbstractEndpoint(unittest.TestCase):
         def get(self):
             raise self.Abort()
 
+    class ConcreteEndpointWithArgument(AbstractEndpoint):
+        """
+        Contains an endpoint that takes in an argument, in order to test
+        graceful HTTP status code 405 handling
+        """
+        def get(self, argument):
+            return jsonify({'argument': argument, 'status': 'success'})
+
 
 class TestInitAndNew(TestAbstractEndpoint):
     """
@@ -215,6 +223,20 @@ class TestDispatchRequest(TestAbstractEndpoint):
         )
         response = endpoint.dispatch_request()
         self.assertEqual(500, response.status_code)
+
+    def test_get_method_not_allowed_handler(self):
+        self.app.add_url_rule(
+            '/<argument>',
+            view_func=self.ConcreteEndpointWithArgument.as_view(
+                self.ConcreteEndpointWithArgument.__name__
+            )
+        )
+        self.request.method = 'POST'
+        endpoint = self.ConcreteEndpointWithArgument(
+            self.session, self.request
+        )
+        response = endpoint.dispatch_request()
+        self.assertEqual(405, response.status_code)
 
     class ExplosiveGetEndpoint(AbstractEndpoint):
         """
