@@ -24,7 +24,96 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
     """
     def get(self, service: Service) -> Response:
         """
-        Get the list of
+        Get the list of jobs available for a service
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": [
+                    {
+                        "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                        "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                        "parameters": {
+                            "foo": "bar"
+                        },
+                        "results": {
+                            "foo": "bar"
+                        },
+                        "status": "REGISTERED"
+                    }
+                ],
+                "links": {
+                    "self": "http://localhost:5000/services/495d76fd-044c-4f02-8815-5ec6e7634330/jobs"
+                },
+                "meta": {
+                    "data_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The schema for reading data contained in the data key of this response",
+                        "items": {
+                            "$schema": "http://json-schema.org/draft-04/schema#",
+                            "description": "The schema for reading data contained in the data key of this response",
+                            "properties": {
+                                "date_submitted": {
+                                    "format": "date-time",
+                                    "title": "date_submitted",
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "format": "uuid",
+                                    "title": "id",
+                                    "type": "string"
+                                },
+                                "parameters": {
+                                    "title": "parameters",
+                                    "type": "object"
+                                },
+                                "results": {
+                                    "title": "results",
+                                    "type": "object"
+                                },
+                                "status": {
+                                    "enum": [
+                                        "REGISTERED",
+                                        "WORKING",
+                                        "COMPLETED",
+                                        "ERROR"
+                                    ],
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "parameters",
+                                "results",
+                                "status"
+                            ],
+                            "title": "Data Schema",
+                            "type": "object"
+                        },
+                        "title": "Data Schema",
+                        "type": "array"
+                    },
+                    "new_job_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The schema that a POST request must satisfy in order to create a new job",
+                        "properties": {
+                            "parameters": {
+                                "type": "object"
+                            }
+                        },
+                        "title": "New Job Schema",
+                        "type": "object"
+                    }
+                }
+            }
+
+        :statuscode 200: The request completed successfully
+        :statuscode 404: A service with that ID could not be found
 
         :param service: The service for which jobs are to be retrieved
         :return: A flask response containing the data to display to the user
@@ -151,7 +240,6 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             self, errors: Iterable[JSONSchemaError]
     ) -> None:
         self.errors.extend(ValidationError(error) for error in errors)
-
 
 
 class JobsForServiceID(

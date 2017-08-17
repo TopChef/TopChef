@@ -76,7 +76,7 @@ class ProductionWSGIAppFactory(
             )
         )
         self._app.add_url_rule(
-            '/services/<service_id>/jobs/queue',
+            '/services/<service_id>/queue',
             view_func=JobQueueForService.as_view(
                 JobQueueForService.__name__, self._session_factory()
             )

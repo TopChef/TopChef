@@ -35,9 +35,100 @@ class JobDetail(AbstractEndpointForJob):
 
     def get(self, job: Job) -> Response:
         """
+        Return the details for a job with a particular ID
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": {
+                    "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                    "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                    "parameters": {
+                    "foo": "bar"
+                    },
+                    "results": null,
+                    "status": "REGISTERED"
+                },
+                "links": {
+                    "self": "http://localhost:5000/jobs/42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7"
+                },
+                "meta": {
+                    "job_info_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The schema for all displayable data for a job",
+                        "properties": {
+                            "date_submitted": {
+                                "format": "date-time",
+                                "title": "date_submitted",
+                                "type": "string"
+                            },
+                            "id": {
+                                "format": "uuid",
+                                "title": "id",
+                                "type": "string"
+                            },
+                            "parameters": {
+                                "title": "parameters",
+                                "type": "object"
+                            },
+                            "results": {
+                                "title": "results",
+                                "type": "object"
+                            },
+                            "status": {
+                                "enum": [
+                                    "REGISTERED",
+                                    "WORKING",
+                                    "COMPLETED",
+                                    "ERROR"
+                                ],
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "parameters",
+                            "results",
+                            "status"
+                        ],
+                        "title": "Detailed Job Schema",
+                        "type": "object"
+                    },
+                    "patch_request_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The schema for all displayable data for a job",
+                        "properties": {
+                            "results": {
+                                "title": "results",
+                                "type": "object"
+                            },
+                            "status": {
+                                "enum": [
+                                "REGISTERED",
+                                "WORKING",
+                                "COMPLETED",
+                                "ERROR"
+                                ],
+                                "type": "string"
+                            }
+                        },
+                        "required": [],
+                        "title": "Detailed Job Schema",
+                        "type": "object"
+                    }
+                }
+            }
+
+        :statuscode 200: The request completed successfully
+        :statuscode 404: A job with that ID could not be found
 
         :param job: The job for which a response is to be obtained
-        :return:
+        :return: A Flask response containing the data for a given job
         """
         serializer = JobSerializer()
         serializer_schema = JSONSchema(
@@ -62,6 +153,58 @@ class JobDetail(AbstractEndpointForJob):
 
     def patch(self, job: Job) -> Response:
         """
+        Modify the mutable properties of the job. These are the job status
+        and the job results. A request to this endpoint must satisfy the
+        schema in the ``patch_request_schema`` key in the ``meta`` key of
+        the GET request of this endpoint
+
+        **Example Request**
+
+        Let's say we completed the NV-experiment, and received a light count
+        of 153 photons, a dark count of 100 photons, and a result count of
+        113 photons. This request will set the job status to "COMPLETED" to
+        indicate that the job is finished, and it will update the job
+        results. Keep in mind that we need to satisfy the
+        ``job_result_schema`` of the job's service in order to post valid
+        results. Our results will be validated here.
+
+        .. sourcecode:: http
+
+            PATCH /jobs/42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7 HTTP/1.1
+            Content-Type: application/json
+
+            {
+                "status": "COMPLETED",
+                "results": {
+                    "light_count": 153,
+                    "dark_count": 100,
+                    "result_count": 113
+                }
+            }
+
+        **Example Response**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                "parameters": {
+                    "pulse_time": 250e-9
+                },
+                "results": {
+                    "light_count": 153,
+                    "dark_count": 100,
+                    "result_count": 113
+                },
+                "status": "COMPLETED"
+            }
+
+        :statuscode 200: The request completed successfully
+        :statuscode 404: A job with that ID could not be found
 
         :param job: The job to be modified
         :return: The response

@@ -16,6 +16,101 @@ class JobQueueForService(AbstractEndpointForService):
     Maps the endpoint
     """
     def get(self, service: Service) -> Response:
+        """
+        Returns the next 10 jobs available for a given service
+
+        **Example Request**
+
+        .. sourcecode:: http
+
+            GET /services/495d76fd-044c-4f02-8815-5ec6e7634330/queue HTTP/1.1
+            Content-Type: application/json
+
+        **Example Response With A Job**
+
+        .. sourcecode:: http
+
+            HTTP/1.1 200 OK
+            Content-Type: application/json
+
+            {
+                "data": [
+                    {
+                        "date_submitted": "2017-08-15T18:29:07.902093+00:00",
+                        "id": "42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7",
+                        "parameters": {
+                            "foo": "bar"
+                        },
+                        "results": null,
+                        "status": "REGISTERED"
+                    }
+                ],
+                "links": {
+                    "self": "http://localhost:5000/services/495d76fd-044c-4f02-8815-5ec6e7634330/queue"
+                },
+                "meta": {
+                    "data_schema": {
+                        "$schema": "http://json-schema.org/draft-04/schema#",
+                        "description": "The schema for the data in the \"data\" key",
+                        "items": {
+                            "$schema": "http://json-schema.org/draft-04/schema#",
+                            "properties": {
+                                "date_submitted": {
+                                    "format": "date-time",
+                                    "title": "date_submitted",
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "format": "uuid",
+                                    "title": "id",
+                                    "type": "string"
+                                },
+                            "parameters": {
+                                "title": "parameters",
+                                "type": "object"
+                            },
+                            "results": {
+                                "title": "results",
+                                "type": "object"
+                            },
+                            "status": {
+                                "enum": [
+                                  "REGISTERED",
+                                  "WORKING",
+                                  "COMPLETED",
+                                  "ERROR"
+                                ],
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "parameters",
+                            "results",
+                            "status"
+                        ],
+                        "type": "object"
+                        },
+                        "title": "Job List Schema",
+                        "type": "array"
+                    }
+                }
+            }
+
+        **Example Response With No Job**
+
+        .. sourcecode:: http
+            HTTP/1.1 204 NO CONTENT
+
+        :statuscode 200: The request completed successfully
+        :statuscode 204: The request completed successfully, but there are
+            no jobs in the queue right now.
+        :statuscode 404: A service with that ID could not be found
+
+        :param service: The service for which the next few jobs are to be
+            retrieved
+        :return: A flask response with the appropriate data
+        """
         registered_jobs = filter(
             self._is_job_registered, service.jobs
         )
@@ -35,7 +130,7 @@ class JobQueueForService(AbstractEndpointForService):
                 'meta': {
                     'data_schema': self.data_schema
                 },
-                'links': self.links
+                'links': {'self': self.self_url(service)}
             })
             response.status_code = 200
 
@@ -57,7 +152,7 @@ class JobQueueForService(AbstractEndpointForService):
     @staticmethod
     def _get_data(sorted_jobs_by_date: Iterable[Job]) -> dict:
         serializer = JobDetail()
-        return serializer.dump(sorted_jobs_by_date, many=True)
+        return serializer.dump(sorted_jobs_by_date, many=True).data
 
     @property
     def data_schema(self) -> dict:
