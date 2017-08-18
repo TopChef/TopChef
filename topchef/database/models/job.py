@@ -41,9 +41,9 @@ class Job(BASE):
     def new(cls, service: 'Service', parameters: JSON) -> 'Job':
         """
 
-        :param Service service: The service for which this job is being
+        :param service: The service for which this job is being
             created.
-        :param JSON parameters: The job parameters
+        :param parameters: The job parameters
         :return: The newly-created job
         """
         new_id = uuid4()
