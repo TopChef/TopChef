@@ -6,12 +6,16 @@
 Welcome to TopChef's documentation!
 ===================================
 
+The ``routing table`` link will take you to all the HTTP endpoints that this
+server implements.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
    http_api
+   user_documentation/index
    api_reference/index
 
 

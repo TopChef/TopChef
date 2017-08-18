@@ -29,9 +29,19 @@ class TestJobDetail(AcceptanceTestCaseWithJob):
 
 
 class TestGet(TestJobDetail):
+    """
+    Contains unit tests for the function that is mapped to the request
+
+    .. sourcecode:: http
+
+        GET /jobs/(job_id) HTTP/1.1
+        Content-Type: application/json
+
+    """
     def setUp(self) -> None:
         """
-        Create a bad URL to the job
+        In addition to sending the job for testing, create a bad job ID that
+        can be used to check if a system fails
         """
         TestJobDetail.setUp(self)
         self.bad_job_id = uuid4()
@@ -39,6 +49,11 @@ class TestGet(TestJobDetail):
 
     @property
     def bad_url(self) -> str:
+        """
+
+        :return: A well-formed URL that points to the job with a bad job ID.
+            This endpoint should return 404.
+        """
         return '%s/jobs/%s' % (self.app_url, self.bad_job_id)
 
     @property

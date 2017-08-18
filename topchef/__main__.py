@@ -22,7 +22,7 @@ from topchef.database.schemas import DatabaseSchema, AbstractDatabaseSchema
 
 class TopchefManager(Manager):
     """
-    Responsible for starting and running the server
+    The flask-script manager that is to be used in
     """
     def __init__(
             self,

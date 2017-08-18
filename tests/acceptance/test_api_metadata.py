@@ -8,7 +8,7 @@ from tests.acceptance import AcceptanceTestCase
 
 class TestAPIMetadata(AcceptanceTestCase):
     """
-    Contains an acceptance test for the root endpoint
+    Contains an acceptance test for the `/` endpoint.
     """
     @property
     def url(self) -> str:
