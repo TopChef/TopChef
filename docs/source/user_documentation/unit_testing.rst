@@ -303,3 +303,82 @@ ruined our application.
 Property-Driven Testing
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+We have parametrized unit tests, and we also have a random number generator
+in our computer, so why don't we let the computer make random data for us
+instead? This approach to testing originally came from the
+`QuickCheck <https://goo.gl/TB7V7Q>`_ library from Haskell, and it has a
+bunch of advantages. By testing against a random finite subset of potential
+inputs to our function, we can test our code to a high degree of confidence
+even in cases where that set would be infinite. We can also define
+strategies for "exploring" this infinite space, attempting to generate
+simpler, more digestible test data in case a test fails.
+
+In Python, the :mod:`hypothesis` library provides such a test data generator.
+It also provides tools for creating more complicated generators out of their
+"primitive" generators, in the same way that we can create more complicated
+data structures out of simpler data types.
+
+This procedure is called property-driven testing as each test case will now
+involve a property that is invariant under the randomly-generated test data.
+In the case of the factorial function, this might seem non-obvious, as the
+factorial of an integer is going to change depending on what that integer is.
+How can we test the factorial without calculating the factorial for
+ourselves? What if that calculation is wrong?
+
+Well, consider the property
+
+.. math::
+
+    n = \frac{n!}{(n - 1)!} \forall n > 1, n \in \mathbb{Z}
+
+The proof is trivial and left as an exercise to the reader (I always
+wanted to say that!). A property-driven test that makes use of this could
+look like something in the listing below. Note the use of the
+`decorator syntax <https://goo.gl/tjA9cH>`_ for wiring :mod:`hypothesis`
+into the test suite. The two functions that we will need are
+:meth:`hypothesis.given` and :meth:`hypothesis.strategies.integers`
+
+.. sourcecode:: python
+
+    import unittest
+    from hypothesis import given
+    from hypothesis.strategies import integers
+
+    class TestFactorial(unittest.TestCase):
+        """
+        Contains unit tests for the factorial function
+        """
+        def test_n_less_than_0(self):
+            """
+            Tests that the factorial raises a ``ValueError`` if an attempt
+            is made to calculate a factorial for ``n < 0``.
+            """
+            with self.assertRaises(ValueError):
+                _ = factorial(-1)
+
+        def test_n_is_0(self):
+            """
+            Tests that the result of the factorial is ``1`` if ``n == 0``
+            """
+            self.assertEqual(factorial(0), 1)
+
+        @given(integers(minimum=1))
+        def test_n_greater_than_0(self, n: int) -> None:
+            """
+            Tests that the factorial is calculated correctly by checking
+            whether the factorial of a number divided by the factorial of
+            that number minus one is the original number
+            """
+            result = factorial(n) / factorial(n - 1)
+            self.assertEqual(n, result)
+
+Notice as well how we changed our conversation about factorials. In the
+previous test case, we treated our factorial as a black box into which a
+number went, and a number came out. All the test case did was assert that
+the number that came out was the number that we expected. This may be a bit
+of a personal (Michal Kononenko wrote this) opinion, but the use of
+property-driven testing enables a more substantive conversation about the
+code we wrote. The tests that we write state a property of our code, rather
+than simply checking that one number maps to another. The question we ask is
+"what do factorials do?" rather than "what number do I expect for factorial
+(10)?".

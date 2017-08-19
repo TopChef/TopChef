@@ -374,5 +374,6 @@ intersphinx_mapping = {
     'flask': ('http://flask.pocoo.org/docs/0.12/', None),
     'marshmallow': ('https://marshmallow.readthedocs.io/en/latest', None),
     'requests': ('http://docs.python-requests.org/en/master/', None),
-    'nose': ('https://nose.readthedocs.io/en/latest/', None)
+    'nose': ('https://nose.readthedocs.io/en/latest/', None),
+    'hypothesis': ('https://hypothesis.readthedocs.io/en/latest/', None)
 }
