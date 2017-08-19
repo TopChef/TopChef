@@ -372,5 +372,6 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3.6', None),
     'sqlalchemy': ('http://docs.sqlalchemy.org/en/latest/', None),
     'flask': ('http://flask.pocoo.org/docs/0.12/', None),
-    'marshmallow': ('https://marshmallow.readthedocs.io/en/latest', None)
+    'marshmallow': ('https://marshmallow.readthedocs.io/en/latest', None),
+    'requests': ('http://docs.python-requests.org/en/master/', None)
 }
