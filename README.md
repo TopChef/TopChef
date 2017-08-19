@@ -23,6 +23,8 @@ Please report bugs, feature requests, and other issues to the
 [issue tracker](https://github.com/TopChef/TopChef/issues). For support, 
 please open an issue in the issue tracker.
 
+This project supports Python versions 3.5 and 3.6.
+
 ***Running TopChef***
 
 The easiest way to run TopChef is via the
