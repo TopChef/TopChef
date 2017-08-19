@@ -14,6 +14,9 @@ experiment design.
 The ``routing table`` link will take you to all the HTTP endpoints that this
 server implements.
 
+If you have an issue with the code or the documentation, please report it in
+the project's `issue tracker <https://github.com/TopChef/TopChef/issues>`.
+
 
 Contents
 --------

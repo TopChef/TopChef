@@ -13,72 +13,96 @@ https://requires.io/github/TopChef/TopChef/requirements.svg?branch=master
 )](
 https://requires.io/github/TopChef/TopChef/requirements/?branch=master)
 
-***Introduction***
+TopChef is an asynchronous task queue that allows posting jobs for services 
+defined at runtime. Service contracts are enforced using JSON schema, and 
+the functionality is exposed through a REST API. This project solves the 
+problem of running and queueing remote procedure calls between computers 
+over an HTTP layer.
 
-TopChef is a job queue designed for online experiment design involving a
-control computer running experimental equipment, and a remote computing
-service. The queueing and recording is handled by an HTTP REST API. The
-service contracts between the server are handled using 
-[JSON Schema](http://json-schema.org/).
+Please report bugs, feature requests, and other issues to the 
+[issue tracker](https://github.com/TopChef/TopChef/issues). For support, 
+please open an issue in the issue tracker.
 
-***Project Management***
-This project is being managed on [Asana](
-    https://app.asana.com/0/349544982046885/349547942248954).
+***Running TopChef***
 
-***Directory Structure***
-
-All documentation is generated and kept in the ``docs`` directory. Each 
-client is given a directory. The topchef REST API is kept in the ``topchef``
-directory. A client for an NMR spectrometer is kept in the ``nmr_client``
-directory. The client was designed to run on the Python interpreter in 
-TOPSPIN 2.1. A computing client is located in the ``topchef_client``
-directory. Each package has its own ``setup.py`` file, allowing independent
-installation with distutils. Each package also has its own ``requirements.txt``
-file. 
-
-**Installing the Server**
-
-1. Clone this repository using
+The easiest way to run TopChef is via the
+[docker container](https://hub.docker.com/r/topchef/topchef/). To run this, 
+install [docker](https://www.docker.com/) and run
 
 ```bash
-    git clone git@github.com:whitewhim2718/TopChef.git
+    docker pull topchef/topchef
 ```
 
-2. If installing the server, cd into the ``topchef`` directory, and install
-   the required dependencies using
+from the command line. This will download the latest build from the 
+``master`` branch of this repository. In order to run the container, run
+
+```bash
+    docker run -i -t -p <port>:80 topchef/topchef
+```
+
+Where ``<port>`` is the port on which you want the container to run. If you 
+want to configure the application, pass in the required environment 
+variables after an ``-e`` flag. For instance, to set the database URI, run
+
+```bash
+    docker run -i -t -p <port>:80 -e DATABASE_URI=<database_uri> topchef/topchef
+```
+
+The Docker container runs TopChef via [Apache](https://httpd.apache.org/) 
+using [mod_wsgi](https://en.wikipedia.org/wiki/Mod_wsgi). If a database URI 
+is not provided, the container will create its own SQLite database inside 
+the container.
+
+****The Flask Development Server****
+
+[Flask](http://flask.pocoo.org/) provides a development web server. To run 
+this server, clone this repository onto your computer using
+
+```bash
+    git clone https://github.com/TopChef/TopChef
+```
+
+``cd`` into that directory, and run
+
+```bash
+    pip install .
+```
+
+This will install the core dependencies. Create a server database using
+
+```bash
+    python topchef create-db
+```
+
+This will create a test sqlite database in the repository's main directory 
+titled ``db.sqlite3``. Finally, run the server using
+
+```bash
+    python topchef runserver
+```
+
+This will start a development server at ``http://localhost:5000``.
+
+***Running The Tests***
+
+TopChef maintains a unit, integration, and acceptance test suite. In order 
+to run the unit tests, clone the repository and run
 
 ```bash
     pip install -r requirements.txt
 ```
 
-3. Install the server by ``cd``'ing into the ``topchef`` directory and
-    running.
+In order to install the package dependencies. Finally, run
 
 ```bash
-    python setup.py install
+    nosetests test/unit --processes=-1 --process-timeout=180 --process-restartworker
 ```
 
-4. Start the development server by running
-```bash
-    python topchef
-```
-   The ``__main__.py`` file in the ``topchef`` directory will start a
-   development server at ``localhost:5000``.
+To run the unit tests on all the cores available on the processor. Make sure
+to set a long (about 3 minutes) timeout on tests, as hypothesis can take a 
+long time to generate random examples for a test. Some test cases can take 
+up to a minute to finish. 
 
-***Installing the Client***
-
-Installing the client is similar to that of the server, except instead of
-``cd``'ing into ``topchef``, ``cd`` into ``topchef_client``. Then run 
-``pip install -r requirements.txt`` and ``python setup.py install``.
-
-***Running the Unit Tests***
-
-Each package in this repository has a ``tests`` directory. The 
-[py.test](http://doc.pytest.org/en/latest/) library was used to design the
-unit tests. In order to run these tests, run ``py.test`` from one of the 
-package directories. The test runner will discover all tests in the ``tests``
-directory and run them. To run all tests from a specific file, pass the
-filename as an argument to ``py.test``.
 
 ***Maintainers***
 
