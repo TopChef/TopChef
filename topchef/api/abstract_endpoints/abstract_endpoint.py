@@ -239,8 +239,7 @@ class AbstractEndpoint(View, metaclass=AbstractMethodViewType):
             'errors': serializer.dump(exception),
             'meta': {
                 'error_schema': error_schema.dump(serializer)
-            },
-            'links': self.links
+            }
         })
         response.status_code = exception.status_code
         return response
