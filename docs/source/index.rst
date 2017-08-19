@@ -33,8 +33,8 @@ providing a broker between multiple experiments and clients. To do this, we
 need to consider the idea of a ``Service``, and a ``Job``.
 
 A ``Service`` represents some entity that can listen for jobs, and that does
-"one thing". Each ``Service`` has one :ref:`JSON Schema` for posting new
-jobs, and one :ref:`JSON Schema` for posting results. These two schemas
+"one thing". Each ``Service`` has one :ref:`json-schema` for posting new
+jobs, and one :ref:`json-schema` for posting results. These two schemas
 specify the contract for the service
 
 

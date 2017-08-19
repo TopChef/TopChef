@@ -17,3 +17,4 @@ API.
     http_request
     relational_databases
     json_and_json_schema
+    unit_testing
