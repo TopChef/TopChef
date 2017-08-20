@@ -40,6 +40,8 @@ An example of a JSON document is given below
         ]
     }
 
+.. _json-schema:
+
 JSON Schema
 -----------
 
