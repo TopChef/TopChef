@@ -1,11 +1,14 @@
 """
 Describes the endpoint for listing services
 """
-from flask import jsonify, Response, request, Request
+from flask import jsonify, Response, request, Request, url_for
 from sqlalchemy.orm import Session
 from typing import Optional
 from topchef.api.abstract_endpoints.abstract_endpoint import AbstractEndpoint
+from topchef.api.service_detail import ServiceDetailForServiceID as \
+    ServiceDetail
 from topchef.models import ServiceList as ServiceListInterface
+from topchef.models import Service
 from topchef.models.errors import DeserializationError, SerializationError
 from topchef.models.service_list import ServiceList as ServiceListModel
 from topchef.serializers import JSONSchema
@@ -289,18 +292,22 @@ class ServicesList(AbstractEndpoint):
         self.errors.extend(SerializationError(error) for error in errors)
 
     def _make_service_from_data(self, data: dict) -> Response:
-        self.service_list.new(
+        service = self.service_list.new(
             data['name'],
             data['description'],
             data['job_registration_schema'],
             data['job_result_schema']
         )
-        return self._make_correct_response()
+        return self._make_correct_response(service)
 
-    def _make_correct_response(self) -> Response:
+    def _make_correct_response(self, service: Service) -> Response:
         response = jsonify({
             'data': {'message': 'service successfully created'},
             'links': self.links
         })
         response.status_code = 201
+        response.headers['Location'] = url_for(
+            ServiceDetail.__name__, service_id=service.id,
+            _external=True
+        )
         return response
