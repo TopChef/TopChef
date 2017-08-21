@@ -1,3 +1,4 @@
+dist: trusty
 sudo: false
 
 language: python
@@ -6,11 +7,19 @@ cache: pip
 
 services:
   - postgresql
-  - docker
+  - mysql
+
+addons:
+  postgresql: "9.6"
+
+env:
+  - DATABASE_URI=postgres://postgres:@localhost:5432/test_database
+  - DATABASE_URI=mysql://root:@localhost:3306/test_database
+  - DATABASE_URI=sqlite://
 
 python:
-  - "2.7"
   - "3.5"
+  - "3.6"
 
 notifications:
   email: false
@@ -18,17 +27,22 @@ notifications:
 install:
   - pip install -r requirements.txt
   - pip install psycopg2 # Postgres driver
+  - pip install mysqlclient # MySQL driver
 
 before_script:
 
-  - psql -c 'create database test_db;' -U postgres
+  - psql -c 'DROP DATABASE IF EXISTS test_database;' -U postgres
+  - psql -c 'CREATE DATABASE test_database;' -U postgres
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS test_database;'
 
 script:
   - python setup.py install
-  - cd tests
-  - py.test
+  - nosetests tests/unit --with-coverage --processes=-1 --process-timeout=180 --process-restartworker
+  - nosetests tests/integration/test_database
+  - nosetests tests/integration/test_models
 
 after_success:
   - sh -c "if [ '${TRAVIS_PULL_REQUEST}' = 'false' && '${TRAVIS_BRANCH}' = 'master' ]; 
         then curl -X POST $DOCKER_BUILD_URL; 
         fi"
+  - coveralls

@@ -17,6 +17,8 @@ class Config(Iterable):
     AUTHOR = 'Michal Kononenko'
     AUTHOR_EMAIL = 'michalkononenko@gmail.com'
 
+    DOCUMENTATION_URL = 'https://topchef.readthedocs.io/en/latest/'
+
     # HOSTING PARAMETERS
     PORT = 5000
     HOSTNAME = 'localhost'
@@ -88,9 +90,10 @@ class Config(Iterable):
         return new_value
 
     def __iter__(self):
-        for attribute in self.__class__.__dict__:
-            if attribute == attribute.upper():
-                yield attribute
+        return (
+            attribute for attribute in self.__class__.__dict__ if
+            attribute == attribute.upper()
+        )
 
     @property
     def parameter_dict(self):
