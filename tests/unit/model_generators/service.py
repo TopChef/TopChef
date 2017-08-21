@@ -140,9 +140,10 @@ class Service(ServiceInterface):
         job_id = uuid4()
         new_job = MockJob(
             job_id, Job.JobStatus.REGISTERED, parameters, {},
-            datetime.utcnow()
+            datetime.utcnow(), self.job_registration_schema,
+            self.job_result_schema
         )
-        self._jobs += new_job
+        self._jobs[new_job.id] = new_job
 
         return new_job
 

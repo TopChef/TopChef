@@ -1,17 +1,19 @@
 """
 Maps the ``/services/<service_id>/jobs`` endpoint
 """
-from flask import Response, jsonify
+from flask import Response, jsonify, url_for, Request, request
 from topchef.api.abstract_endpoints import AbstractEndpointForService
 from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
-from topchef.models import Service
+from topchef.api.job_detail import JobDetailForJobID as JobDetail
+from topchef.models import Service, ServiceList
 from topchef.models.errors import DeserializationError, ValidationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
 from topchef.serializers.new_job import NewJob as NewJobSerializer
 from jsonschema import Draft4Validator as JSONSchemaValidator
-from typing import Iterable
+from typing import Iterable, Optional, Type
 from jsonschema import ValidationError as JSONSchemaError
+from sqlalchemy.orm import Session
 
 
 class JobsForServiceEndpoint(AbstractEndpointForService):
@@ -22,6 +24,21 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
     ``PATCH`` request here will reset the time since the service was last
     polled
     """
+    def __init__(
+            self,
+            session: Session,
+            flask_request: Request=request,
+            service_list: Optional[ServiceList]=None,
+            validator_factory: Optional[Type[JSONSchemaValidator]]=None
+    ):
+        super(JobsForServiceEndpoint, self).__init__(
+            session, flask_request, service_list=service_list
+        )
+        if validator_factory is None:
+            self._validator_factory = JSONSchemaValidator
+        else:
+            self._validator_factory = validator_factory
+
     def get(self, service: Service) -> Response:
         """
         Get the list of jobs available for a service
@@ -133,7 +150,9 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
     def post(self, service: Service) -> Response:
         """
         Create a new job. The request must satisfy the schema specified in the
-        key ``meta/new_job_schema``.
+        key ``meta/new_job_schema``. A request indicating a successful
+        response will also include a ``Location`` header indicating where
+        the new job is located.
 
         **Example Request**
 
@@ -155,6 +174,7 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
 
             HTTP/1.1 201 CREATED
             Content-Type: application/json
+            Location: http://localhost:5000/jobs/42094fe4-9c71-4d6e-94fd-7ed6e2b46ce7
 
             {
                 "data": {
@@ -175,7 +195,8 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
         :statuscode 404: A service with the ID could not be found
 
         :param service: The service for which the new job is to be made
-        :return:
+        :return: A flask response with the appropriate response as per the
+            documentation in this endpoint
         """
         data, errors = NewJobSerializer().load(self.request_json)
         if errors:
@@ -184,12 +205,13 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             )
             raise self.Abort()
 
-        validator = JSONSchemaValidator(service.job_registration_schema)
+        validator = self._validator_factory(service.job_registration_schema)
 
         if not validator.is_valid(data['parameters']):
             self._report_json_schema_errors(
                 validator.iter_errors(data['parameters'])
             )
+            raise self.Abort()
 
         new_job = service.new_job(data['parameters'])
 
@@ -200,6 +222,9 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             'meta': 'new job ID is %s' % new_job.id
         })
         response.status_code = 201
+        response.headers['Location'] = url_for(
+            JobDetail.__name__, job_id=new_job.id, _external=True
+        )
         return response
 
     @staticmethod

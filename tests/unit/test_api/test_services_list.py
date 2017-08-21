@@ -97,6 +97,7 @@ class TestPost(TestServicesList):
         )
         response = endpoint.post()
         self.assertEqual(response.status_code, 201)
+        self.assertIn('Location', response.headers)
 
     @given(dictionaries(text(), text()))
     def test_invalid_post(self, request_body: dict) -> None:
