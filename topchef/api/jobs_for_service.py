@@ -1,18 +1,19 @@
 """
 Maps the ``/services/<service_id>/jobs`` endpoint
 """
-from flask import Response, jsonify, url_for
+from flask import Response, jsonify, url_for, Request, request
 from topchef.api.abstract_endpoints import AbstractEndpointForService
 from topchef.api.abstract_endpoints import AbstractEndpointForServiceMeta
 from topchef.api.job_detail import JobDetailForJobID as JobDetail
-from topchef.models import Service
+from topchef.models import Service, ServiceList
 from topchef.models.errors import DeserializationError, ValidationError
 from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
 from topchef.serializers.new_job import NewJob as NewJobSerializer
 from jsonschema import Draft4Validator as JSONSchemaValidator
-from typing import Iterable
+from typing import Iterable, Optional, Type
 from jsonschema import ValidationError as JSONSchemaError
+from sqlalchemy.orm import Session
 
 
 class JobsForServiceEndpoint(AbstractEndpointForService):
@@ -23,6 +24,21 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
     ``PATCH`` request here will reset the time since the service was last
     polled
     """
+    def __init__(
+            self,
+            session: Session,
+            flask_request: Request=request,
+            service_list: Optional[ServiceList]=None,
+            validator_factory: Optional[Type[JSONSchemaValidator]]=None
+    ):
+        super(JobsForServiceEndpoint, self).__init__(
+            session, flask_request, service_list=service_list
+        )
+        if validator_factory is None:
+            self._validator_factory = JSONSchemaValidator
+        else:
+            self._validator_factory = validator_factory
+
     def get(self, service: Service) -> Response:
         """
         Get the list of jobs available for a service
@@ -189,12 +205,13 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             )
             raise self.Abort()
 
-        validator = JSONSchemaValidator(service.job_registration_schema)
+        validator = self._validator_factory(service.job_registration_schema)
 
         if not validator.is_valid(data['parameters']):
             self._report_json_schema_errors(
                 validator.iter_errors(data['parameters'])
             )
+            raise self.Abort()
 
         new_job = service.new_job(data['parameters'])
 
