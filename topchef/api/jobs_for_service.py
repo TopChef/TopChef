@@ -11,7 +11,7 @@ from topchef.serializers import JSONSchema
 from topchef.serializers import JobDetail as JobDetailSerializer
 from topchef.serializers.new_job import NewJob as NewJobSerializer
 from jsonschema import Draft4Validator as JSONSchemaValidator
-from typing import Iterable, Optional, Type
+from typing import Iterable, Optional
 from jsonschema import ValidationError as JSONSchemaError
 from sqlalchemy.orm import Session
 
@@ -29,7 +29,7 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
             session: Session,
             flask_request: Request=request,
             service_list: Optional[ServiceList]=None,
-            validator_factory: Optional[Type[JSONSchemaValidator]]=None
+            validator_factory: Optional[type]=None
     ):
         super(JobsForServiceEndpoint, self).__init__(
             session, flask_request, service_list=service_list
