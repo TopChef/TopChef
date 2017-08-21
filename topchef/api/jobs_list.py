@@ -43,6 +43,8 @@ class JobsList(AbstractEndpoint):
         r"""
         Get the list of all jobs on the system
 
+        .. :quickref: Job List; Get all the jobs in the API
+
         **Example Response**
 
         .. sourcecode:: http

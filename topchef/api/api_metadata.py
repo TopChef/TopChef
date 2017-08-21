@@ -40,6 +40,8 @@ class APIMetadata(AbstractEndpoint):
         """
         Get the metadata for this API
 
+        .. :quickref: Metadata; Get API Metadata
+
         **Example Response**
 
         .. sourcecode:: http

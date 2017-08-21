@@ -36,7 +36,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinxcontrib.autohttp.flask'
+    'sphinxcontrib.autohttp.flask',
+    'sphinxcontrib.autohttp.flaskqref'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -375,5 +376,8 @@ intersphinx_mapping = {
     'marshmallow': ('https://marshmallow.readthedocs.io/en/latest', None),
     'requests': ('http://docs.python-requests.org/en/master/', None),
     'nose': ('https://nose.readthedocs.io/en/latest/', None),
-    'hypothesis': ('https://hypothesis.readthedocs.io/en/latest/', None)
+    'hypothesis': ('https://hypothesis.readthedocs.io/en/latest/', None),
+    'topchef_client': (
+        'https://topchef-client.readthedocs.io/en/latest/', None
+    )
 }

@@ -1,3 +1,5 @@
+.. _http-requests:
+
 Anatomy of an HTTP Request
 ==========================
 

@@ -43,6 +43,8 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
         """
         Get the list of jobs available for a service
 
+        .. :quickref: Service; Get jobs for the service
+
         **Example Response**
 
         .. sourcecode:: http
@@ -153,6 +155,8 @@ class JobsForServiceEndpoint(AbstractEndpointForService):
         key ``meta/new_job_schema``. A request indicating a successful
         response will also include a ``Location`` header indicating where
         the new job is located.
+
+        .. :quickref: Service; create a new job
 
         **Example Request**
 

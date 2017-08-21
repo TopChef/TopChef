@@ -21,6 +21,8 @@ class JSONSchemaValidator(AbstractEndpoint):
         ``validator_schema`` keyword contains a JSON schema that must be
         satisified in order to ``POST`` requests to the API
 
+        .. :quickref: Validator; Describe how to validate
+
         **Example Response**
 
         .. sourcecode:: http
@@ -73,6 +75,8 @@ class JSONSchemaValidator(AbstractEndpoint):
         If a JSON schema validator cannot be found for the client side,
         use this method to validate against the server side
 
+        .. :quickref: Validator; Check an instance against a schema
+
         **Example Request**
 
         .. sourcecode:: http
@@ -85,7 +89,7 @@ class JSONSchemaValidator(AbstractEndpoint):
                     "$schema": "http://json-schema.org/draft-04/schema#",
                     "title": "Validator Schema",
                     "description":
-                        "A schema used for documenting this endpoit",
+                        "A schema used for documenting this endpoint",
                     "type": "object",
                     "properties": {
                         "value": {
