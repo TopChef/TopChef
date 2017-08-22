@@ -6,30 +6,88 @@
 Welcome to TopChef's documentation!
 ===================================
 
-TopChef provides an easy way to run tasks asynchronously, and expose them
-across many clients via a RESTful web service. It grew out of a need to
-connect simulation computers to physics experiment controllers for adaptive
-experiment design.
+TopChef solves the problem of getting a computer "here" to do something on a
+computer over "there". It provides an abstraction layer over the networking,
+so that the computer "here" doesn't need to known how to connect to the
+computer "there", as long as it can connect to the TopChef server. It also
+wraps all the logic behind an interface that runs through HTTP, so that
+`any <http://docs.python-requests.org/en/master/>`_
+`of <https://docs.oracle.com/javase/7/docs/api/java/net/package-summary.html>`_
+`the <https://reference.wolfram.com/language/guide/WebOperations.html>`_
+`multitude <http://cpp-netlib.org/#>`_
+`of <https://www.mathworks.com/help/matlab/ref/webread.html>`_
+`HTTP <https://hackage.haskell.org/package/http-client>`_
+`clients <https://en.wikipedia.org/wiki/Ajax_(programming)>`_ out there can
+work together to solve a problem. TopChef wants to make HTTP networking as
+easy as making an HTTP request.
 
-The ``routing table`` link will take you to all the HTTP endpoints that this
-server implements.
+TopChef was originally developed at the Institute for Quantum Computing, in
+order to enable online experiment design, connecting machine learning
+algorithms to the control computers running experiments. To run TopChef, you
+will need a server capable of connecting to both "here" and "there". The
+recommended approach is to use the
+`docker container <https://www.docker.com/what-container>`_. For more
+information about installation and running the application, consult the
+project's `README <https://github.com/TopChef/TopChef/blob/master/README.md>`_.
 
-If you have an issue with the code or the documentation, please report it in
-the project's `issue tracker <https://github.com/TopChef/TopChef/issues>`.
+The project source code is hosted on
+`GitHub <https://github.com/TopChef/TopChef>`_. Report bugs, feature
+requests, support requests, and other issues to the project's
+`issue tracker <https://github.com/TopChef/TopChef/issues>`_.
 
-
-Contents
+Features
 --------
+
+   * :ref:`json-schema` checks to make sure all messages are valid
+   * Job result storage on
+      - `MySQL <https://www.mysql.com/>`_
+      - `PostgreSQL <https://www.postgresql.org/>`_
+   * HTTP REST API for sending and receiving messages
+   * HTTP method override
+
+HTTP API Guide
+--------------
+
+This section contains a detailed description of the HTTP endpoints exposed
+by this application. For more details about about how HTTP works, see the
+section :ref:`http-requests`.
+
+.. qrefflask:: topchef:APP_FACTORY.app
+   :undoc-static:
 
 .. toctree::
    :maxdepth: 3
 
    http_api
+
+The User Guide
+--------------
+
+This section contains tutorials on using the server, and on server
+maintenance. It also provides introductory guides to some of the
+technologies that TopChef needs to make it tick. If you want to know how to
+do something in this server, or why some code was implemented in a
+particular way, this is the section for you!
+
+.. toctree::
+   :maxdepth: 3
+
    user_documentation/index
+
+API Reference
+-------------
+
+This section contains the nuts-and-bolts, nitty-gritty description of
+TopChef. This section is composed primarily of auto-generated documentation
+built from the source code that runs the server.
+
+.. toctree::
+   :maxdepth: 3
+
    api_reference/index
 
-Aims
-----
+Overview
+--------
 
 The aim of this project is to have one TopChef server running per group,
 providing a broker between multiple experiments and clients. To do this, we
@@ -38,11 +96,11 @@ need to consider the idea of a ``Service``, and a ``Job``.
 A ``Service`` represents some entity that can listen for jobs, and that does
 "one thing". Each ``Service`` has one :ref:`json-schema` for posting new
 jobs, and one :ref:`json-schema` for posting results. These two schemas
-specify the contract for the service
+specify the contract for the service.
 
 
 A Practical Example:
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 Suppose we want a service that adds one to a given integer. The JSON that
 will create our service is given below. Let's assign this to a Python

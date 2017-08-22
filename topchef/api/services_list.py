@@ -43,6 +43,8 @@ class ServicesList(AbstractEndpoint):
         """
         Returns a list of all services exposed by this API
 
+        .. :quickref: Service List; Get all the services in the API
+
         **Example Response**
 
         .. sourcecode:: http
@@ -135,6 +137,8 @@ class ServicesList(AbstractEndpoint):
     def post(self) -> Response:
         """
         Create a new service
+
+        .. :quickref: Service List; Create a new service
 
         **Example Request**
 

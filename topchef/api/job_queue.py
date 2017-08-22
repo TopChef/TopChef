@@ -19,6 +19,8 @@ class JobQueueForService(AbstractEndpointForService):
         r"""
         Returns the next 10 jobs available for a given service
 
+        .. :quickref: Job; Get the next few jobs
+
         **Example Request**
 
         .. sourcecode:: http

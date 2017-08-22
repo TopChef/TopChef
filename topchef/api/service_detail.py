@@ -22,6 +22,8 @@ class ServiceDetail(AbstractEndpointForService):
         r"""
         Return details for a given service
 
+        .. :quickref: Service; Get service data
+
         **Example Response**
 
         .. sourcecode:: http
@@ -137,6 +139,8 @@ class ServiceDetail(AbstractEndpointForService):
     def patch(self, service: Service) -> Response:
         """
         Change the mutable parameters of the service
+
+        .. :quickref: Service; Change service parameters or check in
 
         **Example Request**
 

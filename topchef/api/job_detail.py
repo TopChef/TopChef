@@ -37,6 +37,8 @@ class JobDetail(AbstractEndpointForJob):
         """
         Return the details for a job with a particular ID
 
+        .. :quickref: Job; Get Job Information
+
         **Example Response**
 
         .. sourcecode:: http
@@ -167,6 +169,8 @@ class JobDetail(AbstractEndpointForJob):
         results. Keep in mind that we need to satisfy the
         ``job_result_schema`` of the job's service in order to post valid
         results. Our results will be validated here.
+
+        .. :quickref: Job; Modify job status or results
 
         .. sourcecode:: http
 
