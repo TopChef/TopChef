@@ -12,9 +12,9 @@ setup(
     install_requires=[
         'Flask==0.12.2',
         'jsonschema==2.6.0',
-        'marshmallow==2.13.5',
-        'marshmallow-jsonschema==0.3.0',
-        'SQLAlchemy==1.1.10',
+        'marshmallow==2.13.6',
+        'marshmallow-jsonschema==0.4.0',
+        'SQLAlchemy==1.1.13',
         'Flask-Script==2.0.5'
     ]
 )
