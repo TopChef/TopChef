@@ -16,6 +16,8 @@ class NextJob(AbstractEndpointForService):
     def get(self, service: Service) -> Response:
         """
 
+        .. :quickref: Service; get the next job
+
         **Example Response With Job**
 
         .. sourcecode:: http
