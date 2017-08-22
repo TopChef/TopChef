@@ -2,7 +2,6 @@
 Contains a serializer that can output detailed information related to a service
 """
 from marshmallow import Schema, fields
-from topchef.serializers.custom_fields.iterable_field import IterableField
 from topchef.serializers.job_overview import JobOverview
 
 
@@ -16,6 +15,6 @@ class ServiceDetail(Schema):
     job_registration_schema = fields.Dict(required=True, dump_only=True)
     job_result_schema = fields.Dict(required=True, dump_only=True)
     is_service_available = fields.Boolean(required=True, dump_only=True)
-    jobs = IterableField(JobOverview)
+    jobs = fields.Nested(JobOverview, many=True, dump_only=True)
     has_timed_out = fields.Boolean(required=True, dump_only=True)
     timeout = fields.TimeDelta(required=True, dump_only=True)
