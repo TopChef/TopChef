@@ -1,3 +1,9 @@
+"""
+Contains all the :mod:`marshmallow` schemas used in the API. These are the
+templates for entering in data into the API, and have a role similar to
+forms in conventional web applications. Marshmallow handles the error
+checking and reporting.
+"""
 from .json_schema import JSONSchema
 from .api_metadata import APIMetadata
 from .new_service import NewService

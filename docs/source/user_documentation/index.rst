@@ -14,6 +14,7 @@ server
     :maxdepth: 2
 
     creating_a_service
+    consuming_the_api
 
 The Basics
 ----------

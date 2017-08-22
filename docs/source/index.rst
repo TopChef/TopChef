@@ -43,6 +43,7 @@ Features
       - `MySQL <https://www.mysql.com/>`_
       - `PostgreSQL <https://www.postgresql.org/>`_
    * HTTP REST API for sending and receiving messages
+   * HTTP method override
 
 HTTP API Guide
 --------------
