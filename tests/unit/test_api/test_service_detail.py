@@ -132,7 +132,7 @@ class TestPatch(TestServiceDetail):
         self.assertEqual(name, service.name)
 
     @given(services(), timedeltas(min_value=timedelta(microseconds=1)))
-    @settings(deadline=1000)
+    @settings(deadline=None)
     def test_patch_timeout_bigger_than_0(
             self, service: Service, timeout: timedelta
     ) -> None:

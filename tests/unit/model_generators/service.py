@@ -176,7 +176,7 @@ class Service(ServiceInterface):
 
 
 @composite
-@settings(deadline=1000)
+@settings(deadline=None)
 def services(
         draw,
         ids=uuids(),

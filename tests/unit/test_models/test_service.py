@@ -146,7 +146,7 @@ class TestHasTimedOut(TestService):
         timedeltas(min_value=timedelta(seconds=0.01)),
         timedeltas(min_value=timedelta(seconds=0)),
     )
-    @settings(deadline=1000)
+    @settings(deadline=None)
     def test_has_timed_out_true(
             self, timeout: timedelta, time_to_wait: timedelta
     ) -> None:
@@ -175,7 +175,7 @@ class TestHasTimedOut(TestService):
         timedeltas(min_value=timedelta(seconds=0.01)),
         timedeltas(max_value=timedelta(seconds=-0.01))
     )
-    @settings(deadline=1000)
+    @settings(deadline=None)
     def test_has_timed_out_false(
             self, timeout: timedelta, time_to_wait: timedelta
     ) -> None:
@@ -209,7 +209,7 @@ class TestTimeout(TestService):
     Contains unit tests for the ``timeout`` property
     """
     @given(timedeltas(min_value=timedelta(microseconds=1)))
-    @settings(deadline=1000)
+    @settings(deadline=None)
     def test_that_setting_valid_timeout_changes_it(
             self, timeout: timedelta
     ):
@@ -219,7 +219,7 @@ class TestTimeout(TestService):
         )
 
     @given(timedeltas(max_value=timedelta(microseconds=0)))
-    @settings(deadline=1000)
+    @settings(deadline=None)
     def test_setting_invalid_timeout(self, timeout: timedelta) -> None:
         with self.assertRaises(ValueError):
             self.service.timeout = timeout
