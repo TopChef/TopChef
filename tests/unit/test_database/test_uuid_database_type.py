@@ -126,3 +126,13 @@ class TestProcessBindParam(TestUUIDDatabaseType):
             self.expected_de_hyphenated_uuid_length,
             len(value_to_store)
         )
+
+
+class TestCopy(TestUUIDDatabaseType):
+    """
+    Tests the copy method of the database dialect type
+    """
+    def test_copy(self):
+        db_uuid = DB_UUID()
+        copy = db_uuid.copy()
+        self.assertEqual(db_uuid.__class__, copy.__class__)
