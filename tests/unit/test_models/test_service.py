@@ -11,7 +11,7 @@ from topchef.database.models import Service as DatabaseService
 from topchef.models import JobList as JobListInterface
 from hypothesis.strategies import text, booleans, dictionaries, composite
 from hypothesis.strategies import timedeltas
-from hypothesis import given, assume
+from hypothesis import given, assume, settings
 from tests.unit.database_model_generators import services as service_generator
 
 
@@ -143,9 +143,10 @@ class TestIsServiceAvailable(TestService):
 
 class TestHasTimedOut(TestService):
     @given(
-        timedeltas(min_delta=timedelta(seconds=0.01)),
-        timedeltas(min_delta=timedelta(seconds=0))
+        timedeltas(min_value=timedelta(seconds=0.01)),
+        timedeltas(min_value=timedelta(seconds=0)),
     )
+    @settings(deadline=1000)
     def test_has_timed_out_true(
             self, timeout: timedelta, time_to_wait: timedelta
     ) -> None:
@@ -171,9 +172,10 @@ class TestHasTimedOut(TestService):
             self.assertTrue(self.service.has_timed_out)
 
     @given(
-        timedeltas(min_delta=timedelta(seconds=0.01)),
-        timedeltas(max_delta=timedelta(seconds=-0.01))
+        timedeltas(min_value=timedelta(seconds=0.01)),
+        timedeltas(max_value=timedelta(seconds=-0.01))
     )
+    @settings(deadline=1000)
     def test_has_timed_out_false(
             self, timeout: timedelta, time_to_wait: timedelta
     ) -> None:
@@ -206,7 +208,8 @@ class TestTimeout(TestService):
     """
     Contains unit tests for the ``timeout`` property
     """
-    @given(timedeltas(min_delta=timedelta(microseconds=1)))
+    @given(timedeltas(min_value=timedelta(microseconds=1)))
+    @settings(deadline=1000)
     def test_that_setting_valid_timeout_changes_it(
             self, timeout: timedelta
     ):
@@ -215,7 +218,8 @@ class TestTimeout(TestService):
             timeout.total_seconds(), self.service.timeout.total_seconds()
         )
 
-    @given(timedeltas(max_delta=timedelta(microseconds=0)))
+    @given(timedeltas(max_value=timedelta(microseconds=0)))
+    @settings(deadline=1000)
     def test_setting_invalid_timeout(self, timeout: timedelta) -> None:
         with self.assertRaises(ValueError):
             self.service.timeout = timeout

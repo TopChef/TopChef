@@ -1,6 +1,7 @@
 """
 Contains a generator for making services
 """
+from hypothesis import settings
 from hypothesis.strategies import composite
 from hypothesis.strategies import uuids, text, dictionaries, booleans
 from hypothesis.strategies import timedeltas
@@ -175,6 +176,7 @@ class Service(ServiceInterface):
 
 
 @composite
+@settings(deadline=1000)
 def services(
         draw,
         ids=uuids(),
