@@ -37,7 +37,7 @@ before_script:
 
 script:
   - python setup.py install
-  - nosetests tests/unit --with-coverage --processes=-1 --process-timeout=180 --process-restartworker
+  - nosetests tests/unit --with-coverage --processes=-1 --process-timeout=240 --process-restartworker
   - nosetests tests/integration/test_database
   - nosetests tests/integration/test_models
 

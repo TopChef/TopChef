@@ -75,7 +75,7 @@ class TestProcessBindParam(TestUUIDDatabaseType):
         ))
 
     @given(uuids())
-    def bind_uuid_postgres(self, uuid: UUID) -> None:
+    def test_bind_uuid_postgres(self, uuid: UUID) -> None:
         """
         Tests that if the UUID is passed to a Postgres dialect, that it is
         returned as a string with hyphens
@@ -89,7 +89,7 @@ class TestProcessBindParam(TestUUIDDatabaseType):
         self.assertEqual(value_to_store, str(uuid))
 
     @given(uuids())
-    def bind_uuid_something_else(self, uuid: UUID) -> None:
+    def test_bind_uuid_something_else(self, uuid: UUID) -> None:
         """
         Tests that the UUID gets de-hyphenated if using the CHAR 32 type, same
         as always.
@@ -105,7 +105,7 @@ class TestProcessBindParam(TestUUIDDatabaseType):
         )
 
     @given(uuids())
-    def bind_uuid_not_uuid_type(self, uuid: UUID) -> None:
+    def test_bind_uuid_not_uuid_type(self, uuid: UUID) -> None:
         """
         Tests that if the parameter to write in is a string that looks like
         a UUID, then it is written to the DB as a de-hyphenated UUID. This
