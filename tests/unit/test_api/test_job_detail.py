@@ -91,8 +91,8 @@ class TestPatch(TestJobDetail):
     )
     def test_patch_job_status_none(self, job: Job) -> None:
         """
-        Tests taht the job status is not changed if the desired status is
-        None
+        Tests that the job status is not changed if the desired status is
+            None
 
         :param job: The randomly-generated job to modify
         """

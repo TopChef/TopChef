@@ -267,7 +267,7 @@ class JobDetail(AbstractEndpointForJob):
             job.results = results
 
     @staticmethod
-    def _modify_job_status(job: Job, status: Optional[Job.JobStatus]) -> None:
+    def _modify_job_status(job: Job, status: Job.JobStatus) -> None:
         job.status = status
 
 
