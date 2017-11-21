@@ -87,6 +87,26 @@ class TestPatch(TestJobDetail):
         self.assertEqual(job.status, status)
 
     @given(
+        jobs()
+    )
+    def test_patch_job_status_none(self, job: Job) -> None:
+        """
+        Tests that the job status is not changed if the desired status is
+            None
+
+        :param job: The randomly-generated job to modify
+        """
+        old_status = job.status
+        request_body = {
+            'status': None
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        endpoint = JobDetail(self.session, flask_request=self.request)
+        response = endpoint.patch(job)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(old_status, job.status)
+
+    @given(
         jobs(),
         dictionaries(text(), text())
     )
@@ -114,6 +134,57 @@ class TestPatch(TestJobDetail):
         response = endpoint.patch(job)
         self.assertEqual(200, response.status_code)
         self.assertEqual(job.results, new_results)
+
+    @given(
+        jobs()
+    )
+    def test_patch_set_results_are_none(
+            self,
+            job: Job
+    ) -> None:
+        """
+        Tests that the endpoint allows a result of null to be sent in
+        :param job: The randomly-generated job to modify
+        """
+        old_results = job.results
+        request_body = {
+            'results': None
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request
+        )
+        response = endpoint.patch(job)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(old_results, job.results)
+
+    @given(
+        jobs()
+    )
+    def test_patch_both_status_and_results_are_none(self, job: Job) -> None:
+        """
+        Tests that the endpoint doesn't modify the job status or the job
+        results if they are both None
+
+        :param job: The randomly-generated job to modify
+        """
+        old_results = job.results
+        old_status = job.status
+
+        request_body = {
+            'status': None,
+            'results': None
+        }
+        self.request.get_json = mock.MagicMock(return_value=request_body)
+        endpoint = JobDetail(
+            self.session,
+            flask_request=self.request
+        )
+        response = endpoint.patch(job)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(old_results, job.results)
+        self.assertEqual(old_status, job.status)
 
     @given(
         jobs(),

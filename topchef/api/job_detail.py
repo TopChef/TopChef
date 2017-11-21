@@ -223,10 +223,12 @@ class JobDetail(AbstractEndpointForJob):
             raise self.Abort()
 
         if 'results' in data.keys():
-            self._modify_job_results(job, data['results'])
+            if data['results'] is not None:
+                self._modify_job_results(job, data['results'])
 
         if 'status' in data.keys():
-            self._modify_job_status(job, data['status'])
+            if data['status'] is not None:
+                self._modify_job_status(job, data['status'])
 
         response = jsonify(job_reporting_serializer.dump(job).data)
         response.status_code = 200
