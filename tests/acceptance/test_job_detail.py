@@ -96,6 +96,14 @@ class TestPatch(TestJobDetail):
         return {'status': 'WORKING'}
 
     @property
+    def patch_request_body_null_results(self) -> dict:
+        """
+
+        :return: The request body
+        """
+        return {'status': 'WORKING', 'results': None}
+
+    @property
     def undo_request(self) -> dict:
         """
 
@@ -103,7 +111,7 @@ class TestPatch(TestJobDetail):
         """
         return {'status': 'REGISTERED'}
 
-    def test_set_job_results(self):
+    def test_set_job_status(self):
         """
         Tests that the job status can successfully be set back to ``WORKING``
         """
@@ -114,6 +122,20 @@ class TestPatch(TestJobDetail):
         self.assertEqual(200, response.status_code)
         response = self.client.get(self.url, headers=self.headers)
         self.assertEqual(response.status_code, 200)
+        response_body = json.loads(response.data.decode('utf-8'))
+        self.assertEqual('WORKING', response_body['data']['status'])
+
+    def test_set_job_status_null_request(self) -> None:
+        """
+        Tests that the job status can successfully be set even if the
+        results are explicitly set to ``null``
+        """
+        response = self.client.patch(
+            self.url, headers=self.headers,
+            data=json.dumps(self.patch_request_body_null_results)
+        )
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(self.url, headers=self.headers)
         response_body = json.loads(response.data.decode('utf-8'))
         self.assertEqual('WORKING', response_body['data']['status'])
 
