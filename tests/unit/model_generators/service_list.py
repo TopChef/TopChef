@@ -56,6 +56,11 @@ class _ServiceList(ServiceListInterface):
 @composite
 def service_lists(
         draw,
-        service_generator=lists(services(), average_size=3)
+        min_size=None, average_size=None, max_size=None,
+        unique_by=None, unique=False
 ) -> _ServiceList:
+    service_generator = lists(
+        services(), min_size=min_size, average_size=average_size,
+        max_size=max_size, unique_by=unique_by, unique=unique
+    )
     return _ServiceList(draw(service_generator))

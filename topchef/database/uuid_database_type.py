@@ -68,10 +68,7 @@ class UUID(TypeDecorator):
         elif dialect.name == 'postgresql':
             return str(value)
         else:
-            if not isinstance(value, uuid.UUID):
-                return "%.32x" % int(uuid.UUID(value))
-            else:
-                return "%.32x" % int(value)
+            return str(value).replace('-', '')
 
     def process_result_value(
             self, value: Optional[str], dialect: dialects

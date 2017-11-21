@@ -177,3 +177,18 @@ def jobs(
         draw(registration_schemas),
         draw(result_schemas)
     )
+
+
+@composite
+def registered_jobs(draw, jobs=jobs()):
+    """
+
+    :param draw: A function provided by hypothesis that draw from a test
+        data generator
+    :param jobs: The generator for jobs
+    :return: A generated job that is guaranteed to have a job status of
+        ``REGISTERED``
+    """
+    job = draw(jobs)
+    job.status = job.JobStatus.REGISTERED
+    return job

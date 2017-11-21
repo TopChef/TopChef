@@ -27,7 +27,7 @@ class AcceptanceTestCase(unittest.TestCase):
 
         if hasattr(cls, 'app_process'):
             cls.app_process.terminate()
-            _ = cls.app_process.exit_code
+            _ = cls.app_process.exitcode
 
     @property
     def app_url(self) -> str:

@@ -5,9 +5,12 @@ import unittest
 import unittest.mock as mock
 from topchef.api.next_job import NextJob
 from hypothesis import given, assume
+from hypothesis.strategies import just
 from topchef.models import Job
 from typing import Sequence
 from tests.unit.model_generators.service import services
+from tests.unit.model_generators.job_list import job_lists
+from tests.unit.model_generators.job import registered_jobs
 from topchef.models import Service
 from sqlalchemy.orm import Session
 from flask import Request, Flask
@@ -32,14 +35,17 @@ class TestNextJob(unittest.TestCase):
 
 
 class TestGet(TestNextJob):
-    @given(services())
+    @given(
+        services(
+            service_job_lists=job_lists(min_size=1, jobs=registered_jobs())
+        )
+    )
     def test_get_job_available(self, service: Service) -> None:
-        assume(len(self._registered_jobs(service)) > 1)
         endpoint = NextJob(self.session, self.request)
         response = endpoint.get(service)
         self.assertEqual(200, response.status_code)
 
-    @given(services())
+    @given(services(service_job_lists=just(list())))
     def test_get_job_unavailable(self, service: Service) -> None:
         assume(len(self._registered_jobs(service)) == 0)
         endpoint = NextJob(self.session, self.request)

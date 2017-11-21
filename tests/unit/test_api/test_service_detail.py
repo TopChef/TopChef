@@ -9,7 +9,7 @@ from math import floor
 from topchef.api.service_detail import ServiceDetail
 from sqlalchemy.orm import Session
 from flask import Flask, Request
-from hypothesis import given
+from hypothesis import given, settings
 from topchef.models import Service, ServiceList
 from topchef.serializers import ServiceDetail as ServiceSerializer
 from hypothesis.strategies import booleans, text, timedeltas
@@ -131,10 +131,8 @@ class TestPatch(TestServiceDetail):
         self._send_patch_request(service, body)
         self.assertEqual(name, service.name)
 
-    from hypothesis import settings
-
-    @given(services(), timedeltas(min_delta=timedelta(microseconds=1)))
-    @settings(perform_health_check=False)
+    @given(services(), timedeltas(min_value=timedelta(microseconds=1)))
+    @settings(deadline=None)
     def test_patch_timeout_bigger_than_0(
             self, service: Service, timeout: timedelta
     ) -> None:

@@ -1,6 +1,7 @@
 """
 Contains a generator for job lists
 """
+from hypothesis import settings
 from hypothesis.strategies import composite, lists
 from tests.unit.model_generators.job import jobs
 from topchef.models import JobList as JobListInterface
@@ -62,7 +63,10 @@ class JobList(JobListInterface):
 
 
 @composite
+@settings(deadline=None)
 def job_lists(
-        draw, jobs=lists(jobs(), average_size=3)
+        draw, min_size=None, max_size=None, average_size=None, jobs=jobs()
 ) -> JobListInterface:
-    return JobList(draw(jobs))
+    job_list_maker = lists(jobs, min_size=min_size, max_size=max_size,
+                           average_size=average_size)
+    return JobList(draw(job_list_maker))
