@@ -82,3 +82,48 @@ class TestGet(TestJobDetail):
         self.assertEqual(200, response.status_code)
         response_body = json.loads(response.data.decode('utf-8'))
         self.assertEqual(self.expected_job_data, response_body['data'])
+
+
+class TestPatch(TestJobDetail):
+    """
+    Base class for testing PATCH requests to the job endpoint
+    """
+    @property
+    def patch_request_body(self) -> dict:
+        """
+        :return The request body
+        """
+        return {'status': 'WORKING'}
+
+    @property
+    def undo_request(self) -> dict:
+        """
+
+        :return: The request body that sets the status back to registered
+        """
+        return {'status': 'REGISTERED'}
+
+    def test_set_job_results(self):
+        """
+        Tests that the job status can successfully be set back to ``WORKING``
+        """
+        response = self.client.patch(
+            self.url, headers=self.headers,
+            data=json.dumps(self.patch_request_body)
+        )
+        self.assertEqual(200, response.status_code)
+        response = self.client.get(self.url, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        response_body = json.loads(response.data.decode('utf-8'))
+        self.assertEqual('WORKING', response_body['data']['status'])
+
+    def tearDown(self):
+        """
+
+        Set the job status back to ``REGISTERED`` for the next test
+        """
+        self.client.patch(
+            self.url, headers=self.headers,
+            data=json.dumps(self.undo_request)
+        )
+        TestJobDetail.tearDown(self)
