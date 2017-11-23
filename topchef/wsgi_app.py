@@ -22,6 +22,7 @@ from .method_override_middleware import HTTPMethodOverrideMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session
 from .config import config
 
 
@@ -122,7 +123,7 @@ class ProductionWSGIAppFactory(
 
     @property
     def _session_factory(self) -> sessionmaker:
-        return sessionmaker(bind=self._engine)
+        return scoped_session(sessionmaker(bind=self._engine))
 
 
 class TestingWSGIAPPFactory(
