@@ -100,6 +100,9 @@ RUN chmod 664 /var/www/topchef/db.sqlite3
 RUN chown root:www-data /var/www/topchef/topchef.log
 RUN chmod 664 /var/www/topchef/topchef.log
 
+# Set the ServerName for the Apache server to be the hostname
+RUN echo ServerName ${HOSTNAME} >> /etc/apache2/apache2.conf
+
 EXPOSE 80
 
 ENTRYPOINT /usr/sbin/apache2ctl -D FOREGROUND
