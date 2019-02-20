@@ -3,6 +3,7 @@ Contains user-serviceable configuration parameters
 """
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from collections import namedtuple, Iterable
 from sqlalchemy import create_engine
 
@@ -67,7 +68,7 @@ class Config(Iterable):
         self._engine = create_engine(self.DATABASE_URI)
 
         if self.LOGFILE:
-            hdlr = logging.FileHandler(self.LOGFILE)
+            hdlr = RotatingFileHandler(self.LOGFILE, maxBytes=5*1024*1024)
             formatter = logging.Formatter(
                 '%(asctime)s %(levelname)s %(message)s')
             hdlr.setFormatter(formatter)
