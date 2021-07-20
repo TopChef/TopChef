@@ -14,7 +14,7 @@ setup(
         'jsonschema==2.6.0',
         'marshmallow==2.13.6',
         'marshmallow-jsonschema==0.4.0',
-        'SQLAlchemy==1.1.13',
+        'SQLAlchemy==1.3.0',
         'Flask-Script==2.0.5'
     ]
 )
